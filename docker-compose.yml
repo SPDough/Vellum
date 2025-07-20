@@ -1,0 +1,220 @@
+services:
+  # PostgreSQL 16 with pgvector extension
+  db:
+    image: ankane/pgvector:latest
+    environment:
+      POSTGRES_DB: otomeshon
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    ports: [ "5432:5432" ]
+    volumes: 
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d otomeshon"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Neo4j 6 Enterprise with vector indexing
+  neo4j:
+    image: neo4j:5.23-enterprise
+    environment:
+      NEO4J_ACCEPT_LICENSE_AGREEMENT: "yes"
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-changeme}
+      NEO4J_server_memory_heap_max__size: 4G
+      NEO4J_PLUGINS: '["apoc", "gds"]'
+      NEO4J_db_query__cache__type: "none"
+      NEO4J_dbms_security_procedures_unrestricted: "gds.*,apoc.*"
+    ports: [ "7687:7687", "7474:7474" ]
+    volumes: 
+      - neo_data:/data
+      - neo_plugins:/plugins
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "${NEO4J_PASSWORD:-changeme}", "RETURN 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Apache Kafka 4 (single-broker, KRaft mode)
+  kafka:
+    image: bitnami/kafka:3.7
+    environment:
+      KAFKA_ENABLE_KRAFT: "yes"
+      KAFKA_CFG_NODE_ID: 0
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9093
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    ports: [ "9092:9092" ]
+    volumes: [ kafka_data:/bitnami/kafka ]
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Temporal (all-in-one dev setup)
+  temporal:
+    image: temporalio/auto-setup:1.25
+    environment:
+      DB: postgresql
+      POSTGRES_USER: app
+      POSTGRES_PWD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_SEEDS: db
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+    ports: [ "7233:7233", "8233:8233" ]
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "temporal:7233", "cluster", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Keycloak OIDC provider
+  keycloak:
+    image: keycloak/keycloak:25.0
+    command: start-dev --http-port=8080 --hostname-strict=false
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://db:5432/otomeshon
+      KC_DB_USERNAME: app
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HEALTH_ENABLED: "true"
+    ports: [ "8080:8080" ]
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Jaeger (OpenTelemetry + Jaeger UI)
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports: [ "16686:16686", "4317:4317", "4318:4318" ]
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:16686/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Ollama for local embeddings
+  ollama:
+    image: ollama/ollama:latest
+    ports: [ "11434:11434" ]
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      OLLAMA_HOST: "0.0.0.0"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Drools 9 Rules Engine (using Kogito)
+  drools:
+    image: quay.io/kiegroup/kogito-runtime-jvm:latest
+    ports: [ "8090:8080" ]
+    environment:
+      QUARKUS_HTTP_PORT: 8080
+    volumes:
+      - ./drools:/home/kogito/serverless-workflow-project/src/main/resources
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/q/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # FastAPI Backend with LangGraph
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql://app:${POSTGRES_PASSWORD:-changeme}@db:5432/otomeshon
+      NEO4J_URL: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-changeme}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      TEMPORAL_HOST: temporal
+      TEMPORAL_PORT: 7233
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_SERVICE_NAME: otomeshon-api
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OLLAMA_BASE_URL: http://ollama:11434
+      KEYCLOAK_URL: http://keycloak:8080
+      DROOLS_URL: http://drools:8080
+      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
+      LANGCHAIN_TRACING_V2: "true"
+      LANGCHAIN_PROJECT: otomeshon
+    volumes: [ ./backend:/code ]
+    ports: [ "8000:8000" ]
+    depends_on:
+      db:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # React 19 + Material UI Frontend
+  frontend:
+    build: ./frontend
+    ports: [ "3000:3000" ]
+    environment:
+      REACT_APP_API_URL: http://localhost:8000
+      REACT_APP_KEYCLOAK_URL: http://localhost:8080
+      REACT_APP_KEYCLOAK_REALM: otomeshon
+      REACT_APP_KEYCLOAK_CLIENT_ID: otomeshon-client
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # dbt for ELT transformations
+  dbt:
+    build: ./dbt
+    environment:
+      DATABASE_URL: postgresql://app:${POSTGRES_PASSWORD:-changeme}@db:5432/otomeshon
+      NEO4J_URL: bolt://neo4j:7687
+      NEO4J_USER: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-changeme}
+    volumes:
+      - ./dbt:/usr/app/dbt
+    depends_on:
+      db:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    profiles: ["dbt"]
+
+volumes:
+  db_data:
+  neo_data:
+  neo_plugins:
+  kafka_data:
+  ollama_data:
