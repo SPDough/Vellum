@@ -1,9 +1,9 @@
 import asyncio
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, Optional, Generator
 
 import psycopg
-from neo4j import AsyncGraphDatabase, GraphDatabase
+from neo4j import AsyncGraphDatabase, GraphDatabase, AsyncDriver
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -40,7 +40,7 @@ class DatabaseManager:
     """Manages database connections and operations."""
 
     def __init__(self) -> None:
-        self.neo4j_driver = None
+        self.neo4j_driver: Optional[AsyncDriver] = None
         self.postgres_engine = engine
 
     async def init_postgres(self) -> None:
@@ -161,7 +161,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 # Dependency for getting sync database session
-def get_sync_db() -> AsyncGenerator[Session, None]:
+def get_sync_db() -> Generator[Session, None, None]:
     """Get sync database session."""
     db = SessionLocal()
     try:
@@ -223,7 +223,7 @@ class Neo4jService:
             )
 
             record = await result.single()
-            return record["id"]
+            return str(record["id"]) if record else ""
 
     @staticmethod
     async def create_sop_relationships(sop_id: str, relationships: list) -> None:
