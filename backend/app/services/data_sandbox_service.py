@@ -14,7 +14,8 @@ from app.models.data_sandbox import (
     WorkflowOutputCreate, MCPDataStreamCreate, AgentResultCreate,
     DataSourceType, DataSourceStatus, FilterOperator
 )
-from app.core.database import get_db
+from app.core.database import get_db, get_sync_db
+from fastapi import Depends
 
 
 class DataSandboxService:
@@ -200,10 +201,8 @@ class DataSandboxService:
 
         self.db.add(data_record)
         
-        # Update data source record count
-        data_source.record_count = self.db.query(DataRecord).filter(
-            DataRecord.data_source_id == data_source.id
-        ).count() + 1
+        # Update data source record count efficiently
+        data_source.record_count = (data_source.record_count or 0) + 1
         data_source.last_updated = datetime.utcnow()
 
         self.db.commit()
@@ -266,10 +265,8 @@ class DataSandboxService:
 
         self.db.add(data_record)
         
-        # Update data source record count
-        data_source.record_count = self.db.query(DataRecord).filter(
-            DataRecord.data_source_id == data_source.id
-        ).count() + 1
+        # Update data source record count efficiently
+        data_source.record_count = (data_source.record_count or 0) + 1
         data_source.last_updated = datetime.utcnow()
 
         self.db.commit()
@@ -332,10 +329,8 @@ class DataSandboxService:
 
         self.db.add(data_record)
         
-        # Update data source record count
-        data_source.record_count = self.db.query(DataRecord).filter(
-            DataRecord.data_source_id == data_source.id
-        ).count() + 1
+        # Update data source record count efficiently
+        data_source.record_count = (data_source.record_count or 0) + 1
         data_source.last_updated = datetime.utcnow()
 
         self.db.commit()
@@ -436,7 +431,5 @@ class DataSandboxService:
 
 
 # Singleton service instance
-def get_data_sandbox_service(db: Session = None) -> DataSandboxService:
-    if db is None:
-        db = next(get_db())
+def get_data_sandbox_service(db: Session = Depends(get_sync_db)) -> DataSandboxService:
     return DataSandboxService(db)

@@ -409,7 +409,7 @@ async def websocket_data_stream(
     user_id: Optional[str] = None
 ):
     """WebSocket endpoint for real-time data updates."""
-    await data_stream_service.handle_websocket_connection(websocket, source_id, user_id)
+    await data_stream_service.handle_websocket_connection(websocket, source_id, user_id or "anonymous")
 
 
 @router.websocket("/ws")
@@ -418,7 +418,7 @@ async def websocket_global_stream(
     user_id: Optional[str] = None
 ):
     """WebSocket endpoint for global real-time updates."""
-    await data_stream_service.handle_websocket_connection(websocket, None, user_id)
+    await data_stream_service.handle_websocket_connection(websocket, "global", user_id or "anonymous")
 
 
 # Real-time Data (Server-Sent Events fallback)
@@ -440,7 +440,7 @@ async def stream_data_updates(
                 yield f"data: {{\"type\": \"heartbeat\", \"timestamp\": \"{datetime.utcnow().isoformat()}\"}}\n\n"
                 await asyncio.sleep(30)
         except Exception:
-            break
+            return
     
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 

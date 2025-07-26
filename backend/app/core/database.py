@@ -1,5 +1,5 @@
 import asyncio
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import sessionmaker, Session
@@ -11,6 +11,7 @@ from app.core.config import get_settings
 from app.models.trade import Base as TradeBase
 from app.models.sop import Base as SOPBase  
 from app.models.workflow import Base as WorkflowBase
+from app.models.data_sandbox import Base as DataSandboxBase
 
 
 settings = get_settings()
@@ -55,6 +56,7 @@ class DatabaseManager:
                 await conn.run_sync(TradeBase.metadata.create_all)
                 await conn.run_sync(SOPBase.metadata.create_all) 
                 await conn.run_sync(WorkflowBase.metadata.create_all)
+                await conn.run_sync(DataSandboxBase.metadata.create_all)
                 
             print("✅ PostgreSQL initialized successfully")
             
@@ -251,7 +253,7 @@ class Neo4jService:
             return [dict(record) async for record in result]
     
     @staticmethod
-    async def get_related_sops(sop_id: str, relationship_types: list = None) -> list:
+    async def get_related_sops(sop_id: str, relationship_types: Optional[list] = None) -> list:
         """Get SOPs related to a given SOP."""
         rel_filter = ""
         if relationship_types:
