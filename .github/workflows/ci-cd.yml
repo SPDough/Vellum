@@ -105,7 +105,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run type checking
-      run: mypy app/
+      run: mypy app/ --no-site-packages
 
     - name: Run linting
       run: |

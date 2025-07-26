@@ -37,6 +37,9 @@ class MCPServerType(str, Enum):
 class MCPClient(ABC):
     """Abstract base class for MCP client implementations."""
 
+    def __init__(self) -> None:
+        self.connected: bool = False
+
     @abstractmethod
     async def connect(self) -> bool:
         """Establish connection to MCP server."""
@@ -69,6 +72,7 @@ class HTTPMCPClient(MCPClient):
     """HTTP-based MCP client implementation."""
 
     def __init__(self, config: Dict[str, Any]) -> None:
+        super().__init__()
         self.base_url = config["base_url"]
         self.auth_type = config.get("auth_type", "none")
         self.api_key = config.get("api_key")
@@ -81,7 +85,6 @@ class HTTPMCPClient(MCPClient):
         self.client = httpx.AsyncClient(
             base_url=self.base_url, headers=self.headers, timeout=self.timeout
         )
-        self.connected = False
 
     async def connect(self) -> bool:
         """Test connection to MCP server."""
@@ -158,10 +161,10 @@ class WebSocketMCPClient(MCPClient):
     """WebSocket-based MCP client for real-time data."""
 
     def __init__(self, config: Dict[str, Any]) -> None:
+        super().__init__()
         self.ws_url = config["ws_url"]
         self.auth_token = config.get("auth_token")
         self.websocket = None
-        self.connected = False
         self.message_id = 0
         self.pending_requests: Dict[int, asyncio.Future] = {}
 
@@ -197,6 +200,8 @@ class WebSocketMCPClient(MCPClient):
     async def _handle_messages(self) -> None:
         """Handle incoming WebSocket messages."""
         try:
+            if not self.websocket:
+                return
             async for message in self.websocket:
                 data = json.loads(message)
 
@@ -231,9 +236,11 @@ class WebSocketMCPClient(MCPClient):
             "parameters": parameters,
         }
 
-        future = asyncio.Future()
+        future: asyncio.Future[Dict[str, Any]] = asyncio.Future()
         self.pending_requests[self.message_id] = future
 
+        if not self.websocket:
+            raise RuntimeError("WebSocket not connected")
         await self.websocket.send(json.dumps(message))
 
         # Wait for response with timeout
@@ -269,6 +276,7 @@ class MCPServerManager:
 
         try:
             # Create appropriate client based on protocol
+            client: MCPClient
             if server_config.get("protocol") == "websocket":
                 client = WebSocketMCPClient(server_config)
             else:

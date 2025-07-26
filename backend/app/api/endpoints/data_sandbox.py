@@ -1,5 +1,5 @@
 import io
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import (
     APIRouter,
@@ -422,7 +422,7 @@ async def websocket_data_stream(
 
 
 @router.websocket("/ws")
-async def websocket_global_stream(websocket: WebSocket, user_id: Optional[str] = None):
+async def websocket_global_stream(websocket: WebSocket, user_id: Optional[str] = None) -> None:
     """WebSocket endpoint for global real-time updates."""
     await data_stream_service.handle_websocket_connection(websocket, None, user_id)
 
@@ -434,7 +434,7 @@ async def stream_data_updates(
 ):
     """Stream real-time data updates for a source using Server-Sent Events."""
 
-    async def event_generator():
+    async def event_generator() -> None:
         yield "data: Connected to data stream\n\n"
         # This is a fallback for clients that don't support WebSockets
         # In practice, you'd implement actual SSE streaming here
@@ -453,7 +453,7 @@ async def stream_data_updates(
 
 
 @router.get("/ws/stats")
-async def get_websocket_stats():
+async def get_websocket_stats() -> Dict[str, Any]:
     """Get WebSocket connection statistics."""
     return connection_manager.get_connection_stats()
 

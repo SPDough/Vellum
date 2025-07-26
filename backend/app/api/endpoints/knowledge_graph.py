@@ -58,7 +58,7 @@ class EntitySearchRequest(BaseModel):
 
 
 @router.get("/health")
-async def health_check(neo4j_service: Neo4jService = Depends(get_neo4j_service)):
+async def health_check(neo4j_service: Neo4jService = Depends(get_neo4j_service)) -> Dict[str, Any]:
     """Check Neo4j connection health."""
     return {
         "status": "healthy" if neo4j_service.is_connected() else "unhealthy",
@@ -69,7 +69,7 @@ async def health_check(neo4j_service: Neo4jService = Depends(get_neo4j_service))
 @router.get("/statistics")
 async def get_graph_statistics(
     neo4j_service: Neo4jService = Depends(get_neo4j_service),
-):
+) -> Dict[str, Any]:
     """Get knowledge graph statistics."""
     try:
         stats = await neo4j_service.get_graph_statistics()
@@ -82,7 +82,7 @@ async def get_graph_statistics(
 async def create_entity(
     request: EntityCreateRequest,
     neo4j_service: Neo4jService = Depends(get_neo4j_service),
-):
+) -> Dict[str, Any]:
     """Create a new entity in the knowledge graph."""
     try:
         # Generate ID if not provided
@@ -104,7 +104,7 @@ async def get_entity(
     entity_type: EntityType,
     entity_id: str,
     neo4j_service: Neo4jService = Depends(get_neo4j_service),
-):
+) -> Dict[str, Any]:
     """Get a specific entity by type and ID."""
     try:
         entity = await neo4j_service.get_entity(entity_type.value, entity_id)
@@ -123,7 +123,7 @@ async def update_entity(
     entity_id: str,
     request: EntityUpdateRequest,
     neo4j_service: Neo4jService = Depends(get_neo4j_service),
-):
+) -> Dict[str, Any]:
     """Update an existing entity."""
     try:
         entity = await neo4j_service.update_entity(
@@ -141,7 +141,7 @@ async def delete_entity(
     entity_type: EntityType,
     entity_id: str,
     neo4j_service: Neo4jService = Depends(get_neo4j_service),
-):
+) -> Dict[str, str]:
     """Delete an entity and all its relationships."""
     try:
         success = await neo4j_service.delete_entity(entity_type.value, entity_id)
@@ -158,7 +158,7 @@ async def delete_entity(
 async def create_relationship(
     request: RelationshipCreateRequest,
     neo4j_service: Neo4jService = Depends(get_neo4j_service),
-):
+) -> Dict[str, Any]:
     """Create a relationship between two entities."""
     try:
         relationship = await neo4j_service.create_relationship(
@@ -180,7 +180,7 @@ async def get_entity_relationships(
     entity_id: str,
     direction: str = Query("both", regex="^(incoming|outgoing|both)$"),
     neo4j_service: Neo4jService = Depends(get_neo4j_service),
-):
+) -> Dict[str, Any]:
     """Get all relationships for an entity."""
     try:
         relationships = await neo4j_service.get_relationships(
@@ -194,7 +194,7 @@ async def get_entity_relationships(
 @router.post("/query/cypher")
 async def execute_cypher_query(
     request: GraphQueryRequest, neo4j_service: Neo4jService = Depends(get_neo4j_service)
-):
+) -> Dict[str, Any]:
     """Execute a custom Cypher query."""
     try:
         # Basic security check - restrict certain operations
@@ -229,7 +229,7 @@ async def execute_cypher_query(
 async def search_entities(
     request: EntitySearchRequest,
     neo4j_service: Neo4jService = Depends(get_neo4j_service),
-):
+) -> Dict[str, Any]:
     """Search for entities based on criteria."""
     try:
         # Build dynamic query based on search criteria
@@ -283,7 +283,7 @@ async def get_graph_visualization(
     depth: int = Query(2, ge=1, le=5),
     limit: int = Query(100, ge=1, le=500),
     neo4j_service: Neo4jService = Depends(get_neo4j_service),
-):
+) -> Dict[str, Any]:
     """Get graph data for visualization."""
     try:
         if center_entity_id:
@@ -383,7 +383,7 @@ async def get_centrality_analysis(
     entity_type: Optional[EntityType] = None,
     limit: int = Query(20, ge=1, le=100),
     neo4j_service: Neo4jService = Depends(get_neo4j_service),
-):
+) -> Dict[str, Any]:
     """Get centrality analysis for entities."""
     try:
         type_filter = f":{entity_type.value}" if entity_type else ""
@@ -423,7 +423,7 @@ async def get_shortest_path(
     to_entity_id: str,
     max_depth: int = Query(6, ge=1, le=10),
     neo4j_service: Neo4jService = Depends(get_neo4j_service),
-):
+) -> Dict[str, Any]:
     """Find shortest path between two entities."""
     try:
         query = """
