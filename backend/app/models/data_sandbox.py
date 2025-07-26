@@ -1,11 +1,22 @@
-from typing import List, Optional, Dict, Any, Union
+import uuid
 from datetime import datetime
 from enum import Enum
+from typing import Any, Dict, List, Optional, Union
+
 from pydantic import BaseModel, Field
-from sqlalchemy import Column, String, DateTime, JSON, Integer, Text, Float, Boolean, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID
-import uuid
+from sqlalchemy.orm import relationship
 
 from app.core.database import Base
 
@@ -58,16 +69,20 @@ class DataSource(Base):
     record_count = Column(Integer, default=0)
     last_updated = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Source-specific metadata
     source_metadata = Column(JSON)  # workflow_id, mcp_server_id, etc.
-    
+
     # Configuration
     config = Column(JSON)  # refresh_interval, retention_policy, etc.
-    
+
     # Relationships
-    data_records = relationship("DataRecord", back_populates="data_source", cascade="all, delete-orphan")
-    transformations = relationship("DataTransformation", back_populates="source_data_source")
+    data_records = relationship(
+        "DataRecord", back_populates="data_source", cascade="all, delete-orphan"
+    )
+    transformations = relationship(
+        "DataTransformation", back_populates="source_data_source"
+    )
 
 
 class DataRecord(Base):
@@ -78,7 +93,7 @@ class DataRecord(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
     data = Column(JSON, nullable=False)
     metadata = Column(JSON)  # execution_id, step_name, etc.
-    
+
     # Relationships
     data_source = relationship("DataSource", back_populates="data_records")
 
@@ -89,10 +104,12 @@ class DataTransformation(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String, nullable=False)
     description = Column(Text)
-    source_data_source_id = Column(String, ForeignKey("data_sources.id"), nullable=False)
+    source_data_source_id = Column(
+        String, ForeignKey("data_sources.id"), nullable=False
+    )
     transformations = Column(JSON, nullable=False)  # Array of transformation steps
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Relationships
     source_data_source = relationship("DataSource")
 
@@ -114,7 +131,9 @@ class SharedDataView(Base):
     __tablename__ = "shared_data_views"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    share_id = Column(String, unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
+    share_id = Column(
+        String, unique=True, nullable=False, default=lambda: str(uuid.uuid4())
+    )
     query = Column(JSON, nullable=False)
     visualization = Column(JSON)
     permissions = Column(JSON, nullable=False)

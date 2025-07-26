@@ -1,11 +1,13 @@
-from typing import Dict, List, Optional, Any, Union
 from datetime import datetime
-from pydantic import BaseModel, Field
 from enum import Enum
+from typing import Any, Dict, List, Optional, Union
+
+from pydantic import BaseModel, Field
 
 
 class EntityType(str, Enum):
     """Types of entities in the knowledge graph."""
+
     ACCOUNT = "Account"
     TRADE = "Trade"
     POSITION = "Position"
@@ -27,6 +29,7 @@ class EntityType(str, Enum):
 
 class RelationshipType(str, Enum):
     """Types of relationships in the knowledge graph."""
+
     HOLDS = "HOLDS"
     TRADES = "TRADES"
     SETTLES = "SETTLES"
@@ -48,6 +51,7 @@ class RelationshipType(str, Enum):
 
 class BaseEntity(BaseModel):
     """Base model for all knowledge graph entities."""
+
     id: str
     name: str
     description: Optional[str] = None
@@ -59,6 +63,7 @@ class BaseEntity(BaseModel):
 
 class Account(BaseEntity):
     """Account entity representing client accounts."""
+
     entity_type: EntityType = EntityType.ACCOUNT
     account_number: str
     account_type: str  # e.g., "CUSTODY", "TRADING", "OMNIBUS"
@@ -66,7 +71,7 @@ class Account(BaseEntity):
     custodian_id: Optional[str] = None
     fund_id: Optional[str] = None
     status: str = "ACTIVE"
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -77,13 +82,14 @@ class Account(BaseEntity):
                 "base_currency": "USD",
                 "custodian_id": "state_street_001",
                 "fund_id": "fund_gef_001",
-                "status": "ACTIVE"
+                "status": "ACTIVE",
             }
         }
 
 
 class Security(BaseEntity):
     """Security entity representing financial instruments."""
+
     entity_type: EntityType = EntityType.SECURITY
     symbol: str
     isin: Optional[str] = None
@@ -94,7 +100,7 @@ class Security(BaseEntity):
     exchange: Optional[str] = None
     sector: Optional[str] = None
     country: Optional[str] = None
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -106,13 +112,14 @@ class Security(BaseEntity):
                 "currency": "USD",
                 "exchange": "NASDAQ",
                 "sector": "Technology",
-                "country": "US"
+                "country": "US",
             }
         }
 
 
 class Trade(BaseEntity):
     """Trade entity representing executed trades."""
+
     entity_type: EntityType = EntityType.TRADE
     trade_id: str
     account_id: str
@@ -130,7 +137,7 @@ class Trade(BaseEntity):
     counterparty_id: Optional[str] = None
     execution_venue: Optional[str] = None
     status: str = "EXECUTED"
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -144,13 +151,14 @@ class Trade(BaseEntity):
                 "price": 150.25,
                 "gross_amount": 150250.00,
                 "currency": "USD",
-                "status": "EXECUTED"
+                "status": "EXECUTED",
             }
         }
 
 
 class Position(BaseEntity):
     """Position entity representing holdings."""
+
     entity_type: EntityType = EntityType.POSITION
     account_id: str
     security_id: str
@@ -160,7 +168,7 @@ class Position(BaseEntity):
     unrealized_pnl: float
     currency: str
     as_of_date: datetime
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -172,13 +180,14 @@ class Position(BaseEntity):
                 "market_value": 752500.00,
                 "book_cost": 750000.00,
                 "unrealized_pnl": 2500.00,
-                "currency": "USD"
+                "currency": "USD",
             }
         }
 
 
 class MCPServerEntity(BaseEntity):
     """MCP Server entity in the knowledge graph."""
+
     entity_type: EntityType = EntityType.MCP_SERVER
     server_url: str
     provider_type: str  # "CUSTODIAN", "MARKET_DATA", "PRICING"
@@ -186,7 +195,7 @@ class MCPServerEntity(BaseEntity):
     capabilities: List[str]
     status: str
     version: Optional[str] = None
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -196,20 +205,21 @@ class MCPServerEntity(BaseEntity):
                 "provider_type": "CUSTODIAN",
                 "auth_type": "API_KEY",
                 "capabilities": ["positions", "trades", "cash_balances"],
-                "status": "CONNECTED"
+                "status": "CONNECTED",
             }
         }
 
 
 class WorkflowEntity(BaseEntity):
     """Workflow entity in the knowledge graph."""
+
     entity_type: EntityType = EntityType.WORKFLOW
     workflow_type: str
     status: str
     trigger_schedule: Optional[str] = None
     last_execution: Optional[datetime] = None
     success_rate: Optional[float] = None
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -218,13 +228,14 @@ class WorkflowEntity(BaseEntity):
                 "workflow_type": "DATA_RECONCILIATION",
                 "status": "ACTIVE",
                 "trigger_schedule": "0 18 * * 1-5",
-                "success_rate": 99.5
+                "success_rate": 99.5,
             }
         }
 
 
 class DataStreamEntity(BaseEntity):
     """Data Stream entity in the knowledge graph."""
+
     entity_type: EntityType = EntityType.DATA_STREAM
     data_type: str
     source_system: str
@@ -232,7 +243,7 @@ class DataStreamEntity(BaseEntity):
     status: str
     throughput_rps: Optional[float] = None
     latency_ms: Optional[float] = None
-    
+
     class Config:
         schema_extra = {
             "example": {
@@ -243,13 +254,14 @@ class DataStreamEntity(BaseEntity):
                 "target_systems": ["risk_system", "portfolio_management"],
                 "status": "ACTIVE",
                 "throughput_rps": 1500.0,
-                "latency_ms": 45.0
+                "latency_ms": 45.0,
             }
         }
 
 
 class BaseRelationship(BaseModel):
     """Base model for relationships."""
+
     relationship_type: RelationshipType
     from_entity_id: str
     to_entity_id: str
@@ -259,6 +271,7 @@ class BaseRelationship(BaseModel):
 
 class HoldsRelationship(BaseRelationship):
     """Relationship representing account holdings."""
+
     relationship_type: RelationshipType = RelationshipType.HOLDS
     quantity: float
     market_value: float
@@ -268,6 +281,7 @@ class HoldsRelationship(BaseRelationship):
 
 class TradesRelationship(BaseRelationship):
     """Relationship representing trading activity."""
+
     relationship_type: RelationshipType = RelationshipType.TRADES
     trade_count: int
     total_volume: float
@@ -276,6 +290,7 @@ class TradesRelationship(BaseRelationship):
 
 class ProvidesDataRelationship(BaseRelationship):
     """Relationship representing data provision."""
+
     relationship_type: RelationshipType = RelationshipType.PROVIDES_DATA
     data_types: List[str]
     frequency: str  # "REAL_TIME", "DAILY", "INTRADAY"
@@ -284,6 +299,7 @@ class ProvidesDataRelationship(BaseRelationship):
 
 class ExecutesRelationship(BaseRelationship):
     """Relationship representing workflow execution."""
+
     relationship_type: RelationshipType = RelationshipType.EXECUTES
     execution_count: int
     success_count: int
@@ -293,6 +309,7 @@ class ExecutesRelationship(BaseRelationship):
 
 class KnowledgeGraphQuery(BaseModel):
     """Query model for knowledge graph operations."""
+
     entity_types: Optional[List[EntityType]] = None
     relationship_types: Optional[List[RelationshipType]] = None
     filters: Dict[str, Any] = Field(default_factory=dict)
@@ -303,6 +320,7 @@ class KnowledgeGraphQuery(BaseModel):
 
 class GraphTraversal(BaseModel):
     """Model for graph traversal operations."""
+
     start_entity_id: str
     traversal_pattern: str  # Cypher pattern like "(n)-[r]->(m)"
     max_depth: int = 3
@@ -312,6 +330,7 @@ class GraphTraversal(BaseModel):
 
 class GraphAnalytics(BaseModel):
     """Model for graph analytics results."""
+
     centrality_measures: Dict[str, float] = Field(default_factory=dict)
     clustering_coefficient: Optional[float] = None
     connected_components: List[List[str]] = Field(default_factory=list)
@@ -321,6 +340,7 @@ class GraphAnalytics(BaseModel):
 
 class GraphVisualization(BaseModel):
     """Model for graph visualization data."""
+
     nodes: List[Dict[str, Any]]
     edges: List[Dict[str, Any]]
     layout: str = "force"  # "force", "hierarchical", "circular"

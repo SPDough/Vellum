@@ -1,21 +1,41 @@
+import io
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Response, BackgroundTasks, WebSocket
+
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Response,
+    WebSocket,
+)
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-import io
 
 from app.core.database import get_db
-from app.services.data_sandbox_service import DataSandboxService, get_data_sandbox_service
 from app.models.data_sandbox import (
-    DataSourceCreate, DataSourceUpdate, DataSourceResponse,
-    DataQuery, DataQueryResult, DataExportRequest,
-    WorkflowOutputCreate, WorkflowOutput,
-    MCPDataStreamCreate, MCPDataStream,
-    AgentResultCreate, AgentResult,
-    DataVisualizationCreate, DataVisualizationResponse,
-    DataQualityAnalysis, DataLineage
+    AgentResult,
+    AgentResultCreate,
+    DataExportRequest,
+    DataLineage,
+    DataQualityAnalysis,
+    DataQuery,
+    DataQueryResult,
+    DataSourceCreate,
+    DataSourceResponse,
+    DataSourceUpdate,
+    DataVisualizationCreate,
+    DataVisualizationResponse,
+    MCPDataStream,
+    MCPDataStreamCreate,
+    WorkflowOutput,
+    WorkflowOutputCreate,
 )
-from app.services.websocket_service import data_stream_service, connection_manager
+from app.services.data_sandbox_service import (
+    DataSandboxService,
+    get_data_sandbox_service,
+)
+from app.services.websocket_service import connection_manager, data_stream_service
 
 router = APIRouter()
 
@@ -24,7 +44,7 @@ router = APIRouter()
 @router.post("/sources", response_model=DataSourceResponse)
 async def create_data_source(
     data_source: DataSourceCreate,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    service: DataSandboxService = Depends(get_data_sandbox_service),
 ):
     """Create a new data source."""
     return await service.create_data_source(data_source)
@@ -32,7 +52,7 @@ async def create_data_source(
 
 @router.get("/sources", response_model=List[DataSourceResponse])
 async def list_data_sources(
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    service: DataSandboxService = Depends(get_data_sandbox_service),
 ):
     """List all data sources."""
     return await service.get_data_sources()
@@ -40,8 +60,7 @@ async def list_data_sources(
 
 @router.get("/sources/{source_id}", response_model=DataSourceResponse)
 async def get_data_source(
-    source_id: str,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    source_id: str, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Get a specific data source."""
     data_source = await service.get_data_source(source_id)
@@ -54,7 +73,7 @@ async def get_data_source(
 async def update_data_source(
     source_id: str,
     updates: DataSourceUpdate,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    service: DataSandboxService = Depends(get_data_sandbox_service),
 ):
     """Update a data source."""
     data_source = await service.update_data_source(source_id, updates)
@@ -65,8 +84,7 @@ async def update_data_source(
 
 @router.delete("/sources/{source_id}")
 async def delete_data_source(
-    source_id: str,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    source_id: str, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Delete a data source."""
     success = await service.delete_data_source(source_id)
@@ -79,54 +97,48 @@ async def delete_data_source(
 async def get_data_preview(
     source_id: str,
     limit: int = 100,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    service: DataSandboxService = Depends(get_data_sandbox_service),
 ):
     """Get a preview of data from a source."""
     data, total_count, execution_time = await service.get_data_preview(source_id, limit)
     data_source = await service.get_data_source(source_id)
-    
+
     return DataQueryResult(
         data=data,
         total_count=total_count,
         schema=data_source.schema if data_source else None,
         execution_time=execution_time,
-        source=data_source
+        source=data_source,
     )
 
 
 # Data Querying
 @router.post("/query", response_model=DataQueryResult)
 async def query_data(
-    query: DataQuery,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    query: DataQuery, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Execute a data query."""
     data, total_count, execution_time = await service.query_data(query)
     data_source = await service.get_data_source(query.source)
-    
+
     return DataQueryResult(
         data=data,
         total_count=total_count,
         schema=data_source.schema if data_source else None,
         execution_time=execution_time,
-        source=data_source
+        source=data_source,
     )
 
 
 @router.post("/sql", response_model=DataQueryResult)
 async def execute_sql(
-    sql_request: dict,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    sql_request: dict, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Execute a SQL query."""
     # This would implement SQL query execution
     # For now, return a placeholder
     return DataQueryResult(
-        data=[],
-        total_count=0,
-        schema=None,
-        execution_time=0.0,
-        source=None
+        data=[], total_count=0, schema=None, execution_time=0.0, source=None
     )
 
 
@@ -138,7 +150,7 @@ async def get_workflow_outputs(
     step_name: Optional[str] = None,
     limit: Optional[int] = None,
     since: Optional[str] = None,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    service: DataSandboxService = Depends(get_data_sandbox_service),
 ):
     """Get workflow outputs."""
     # This would integrate with the workflow service
@@ -148,8 +160,7 @@ async def get_workflow_outputs(
 
 @router.get("/workflow-outputs/{output_id}", response_model=WorkflowOutput)
 async def get_workflow_output(
-    output_id: str,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    output_id: str, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Get a specific workflow output."""
     # This would integrate with the workflow service
@@ -158,16 +169,17 @@ async def get_workflow_output(
 
 @router.post("/sources/from-workflow", response_model=DataSourceResponse)
 async def create_data_source_from_workflow(
-    request: dict,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    request: dict, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Create a data source from workflow outputs."""
     workflow_id = request.get("workflow_id")
     output_name = request.get("output_name")
-    
+
     if not workflow_id or not output_name:
-        raise HTTPException(status_code=400, detail="workflow_id and output_name are required")
-    
+        raise HTTPException(
+            status_code=400, detail="workflow_id and output_name are required"
+        )
+
     return await service.create_data_source_from_workflow(workflow_id, output_name)
 
 
@@ -178,7 +190,7 @@ async def get_mcp_data_streams(
     stream_name: Optional[str] = None,
     limit: Optional[int] = None,
     since: Optional[str] = None,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    service: DataSandboxService = Depends(get_data_sandbox_service),
 ):
     """Get MCP data streams."""
     # This would integrate with the MCP service
@@ -188,8 +200,7 @@ async def get_mcp_data_streams(
 
 @router.get("/mcp-streams/{stream_id}", response_model=MCPDataStream)
 async def get_mcp_data_stream(
-    stream_id: str,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    stream_id: str, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Get a specific MCP data stream."""
     # This would integrate with the MCP service
@@ -198,16 +209,17 @@ async def get_mcp_data_stream(
 
 @router.post("/sources/from-mcp", response_model=DataSourceResponse)
 async def create_data_source_from_mcp(
-    request: dict,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    request: dict, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Create a data source from MCP stream."""
     server_id = request.get("server_id")
     stream_name = request.get("stream_name")
-    
+
     if not server_id or not stream_name:
-        raise HTTPException(status_code=400, detail="server_id and stream_name are required")
-    
+        raise HTTPException(
+            status_code=400, detail="server_id and stream_name are required"
+        )
+
     return await service.create_data_source_from_mcp(server_id, stream_name)
 
 
@@ -219,7 +231,7 @@ async def get_agent_results(
     task_type: Optional[str] = None,
     limit: Optional[int] = None,
     since: Optional[str] = None,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    service: DataSandboxService = Depends(get_data_sandbox_service),
 ):
     """Get agent results."""
     # This would integrate with the agent service
@@ -229,8 +241,7 @@ async def get_agent_results(
 
 @router.get("/agent-results/{result_id}", response_model=AgentResult)
 async def get_agent_result(
-    result_id: str,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    result_id: str, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Get a specific agent result."""
     # This would integrate with the agent service
@@ -239,27 +250,26 @@ async def get_agent_result(
 
 @router.post("/sources/from-agent", response_model=DataSourceResponse)
 async def create_data_source_from_agent(
-    request: dict,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    request: dict, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Create a data source from agent results."""
     agent_id = request.get("agent_id")
     task_type = request.get("task_type")
-    
+
     if not agent_id:
         raise HTTPException(status_code=400, detail="agent_id is required")
-    
+
     # This would create a data source for agent results
     # For now, create a placeholder
     from app.models.data_sandbox import DataSourceCreate, DataSourceType
-    
+
     data_source_create = DataSourceCreate(
         name=f"Agent Results: {agent_id}",
         type=DataSourceType.AGENT,
         description=f"Results from agent {agent_id}",
-        source_metadata={"agent_id": agent_id, "task_type": task_type}
+        source_metadata={"agent_id": agent_id, "task_type": task_type},
     )
-    
+
     return await service.create_data_source(data_source_create)
 
 
@@ -267,11 +277,13 @@ async def create_data_source_from_agent(
 @router.post("/export")
 async def export_data(
     request: DataExportRequest,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    service: DataSandboxService = Depends(get_data_sandbox_service),
 ):
     """Export data in the specified format."""
-    data_bytes = await service.export_data(request.query, request.format, request.filename)
-    
+    data_bytes = await service.export_data(
+        request.query, request.format, request.filename
+    )
+
     # Determine content type and filename
     if request.format == "csv":
         content_type = "text/csv"
@@ -280,31 +292,29 @@ async def export_data(
         content_type = "application/json"
         filename = request.filename or "export.json"
     elif request.format == "xlsx":
-        content_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        content_type = (
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
         filename = request.filename or "export.xlsx"
     else:
         content_type = "application/octet-stream"
         filename = request.filename or "export.dat"
-    
+
     return StreamingResponse(
         io.BytesIO(data_bytes),
         media_type=content_type,
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 
 @router.post("/scheduled-exports")
 async def schedule_export(
-    request: dict,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    request: dict, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Schedule a recurring data export."""
     # This would implement scheduled exports
     # For now, return a placeholder
-    return {
-        "message": "Export scheduled successfully",
-        "schedule_id": "schedule_123"
-    }
+    return {"message": "Export scheduled successfully", "schedule_id": "schedule_123"}
 
 
 # Data Transformation
@@ -312,40 +322,42 @@ async def schedule_export(
 async def transform_data(
     source_id: str,
     request: dict,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    service: DataSandboxService = Depends(get_data_sandbox_service),
 ):
     """Transform data from a source."""
     # This would implement data transformation
     # For now, return the original data
     data, total_count, execution_time = await service.get_data_preview(source_id, 100)
     data_source = await service.get_data_source(source_id)
-    
+
     return DataQueryResult(
         data=data,
         total_count=total_count,
         schema=data_source.schema if data_source else None,
         execution_time=execution_time,
-        source=data_source
+        source=data_source,
     )
 
 
 @router.post("/transformations", response_model=DataSourceResponse)
 async def save_transformation(
-    request: dict,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    request: dict, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Save a data transformation as a new data source."""
     # This would create a new data source with transformed data
     # For now, return a placeholder
     from app.models.data_sandbox import DataSourceCreate, DataSourceType
-    
+
     data_source_create = DataSourceCreate(
         name=request.get("name", "Transformed Data"),
         type=DataSourceType.MANUAL,
         description="Data source created from transformation",
-        source_metadata={"source_id": request.get("source_id"), "transformations": request.get("transformations")}
+        source_metadata={
+            "source_id": request.get("source_id"),
+            "transformations": request.get("transformations"),
+        },
     )
-    
+
     return await service.create_data_source(data_source_create)
 
 
@@ -353,12 +365,13 @@ async def save_transformation(
 @router.post("/visualizations", response_model=DataVisualizationResponse)
 async def save_visualization(
     config: DataVisualizationCreate,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    service: DataSandboxService = Depends(get_data_sandbox_service),
 ):
     """Save a data visualization configuration."""
     # This would save visualization config to database
     # For now, return a mock response
     from datetime import datetime
+
     return DataVisualizationResponse(
         id="viz_123",
         title=config.title,
@@ -367,13 +380,13 @@ async def save_visualization(
         config=config.config,
         created_by="user_123",
         created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
+        updated_at=datetime.utcnow(),
     )
 
 
 @router.get("/visualizations", response_model=List[DataVisualizationResponse])
 async def get_visualizations(
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    service: DataSandboxService = Depends(get_data_sandbox_service),
 ):
     """Get all saved visualizations."""
     # This would get visualizations from database
@@ -383,8 +396,7 @@ async def get_visualizations(
 
 @router.get("/visualizations/{viz_id}", response_model=DataVisualizationResponse)
 async def get_visualization(
-    viz_id: str,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    viz_id: str, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Get a specific visualization."""
     # This would get visualization from database
@@ -393,8 +405,7 @@ async def get_visualization(
 
 @router.delete("/visualizations/{viz_id}")
 async def delete_visualization(
-    viz_id: str,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    viz_id: str, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Delete a visualization."""
     # This would delete visualization from database
@@ -404,19 +415,14 @@ async def delete_visualization(
 # Real-time Data (WebSocket)
 @router.websocket("/sources/{source_id}/ws")
 async def websocket_data_stream(
-    websocket: WebSocket,
-    source_id: str,
-    user_id: Optional[str] = None
+    websocket: WebSocket, source_id: str, user_id: Optional[str] = None
 ):
     """WebSocket endpoint for real-time data updates."""
     await data_stream_service.handle_websocket_connection(websocket, source_id, user_id)
 
 
 @router.websocket("/ws")
-async def websocket_global_stream(
-    websocket: WebSocket,
-    user_id: Optional[str] = None
-):
+async def websocket_global_stream(websocket: WebSocket, user_id: Optional[str] = None):
     """WebSocket endpoint for global real-time updates."""
     await data_stream_service.handle_websocket_connection(websocket, None, user_id)
 
@@ -424,24 +430,25 @@ async def websocket_global_stream(
 # Real-time Data (Server-Sent Events fallback)
 @router.get("/sources/{source_id}/stream")
 async def stream_data_updates(
-    source_id: str,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    source_id: str, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Stream real-time data updates for a source using Server-Sent Events."""
+
     async def event_generator():
         yield "data: Connected to data stream\n\n"
         # This is a fallback for clients that don't support WebSockets
         # In practice, you'd implement actual SSE streaming here
         import asyncio
         from datetime import datetime
+
         try:
             while True:
                 # Send periodic updates
-                yield f"data: {{\"type\": \"heartbeat\", \"timestamp\": \"{datetime.utcnow().isoformat()}\"}}\n\n"
+                yield f'data: {{"type": "heartbeat", "timestamp": "{datetime.utcnow().isoformat()}"}}\n\n'
                 await asyncio.sleep(30)
         except Exception:
             break
-    
+
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
@@ -454,8 +461,7 @@ async def get_websocket_stats():
 # Data Quality
 @router.get("/sources/{source_id}/quality", response_model=DataQualityAnalysis)
 async def analyze_data_quality(
-    source_id: str,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    source_id: str, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Analyze data quality for a source."""
     return await service.analyze_data_quality(source_id)
@@ -464,8 +470,7 @@ async def analyze_data_quality(
 # Data Lineage
 @router.get("/sources/{source_id}/lineage", response_model=DataLineage)
 async def get_data_lineage(
-    source_id: str,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    source_id: str, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Get data lineage for a source."""
     # This would implement data lineage tracking
@@ -476,22 +481,20 @@ async def get_data_lineage(
 # Collaboration
 @router.post("/shared-views")
 async def share_data_view(
-    request: dict,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    request: dict, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Share a data view with others."""
     # This would implement data view sharing
     # For now, return a mock response
     return {
         "share_id": "share_123",
-        "share_url": "https://app.example.com/shared/share_123"
+        "share_url": "https://app.example.com/shared/share_123",
     }
 
 
 @router.get("/shared-views/{share_id}")
 async def get_shared_view(
-    share_id: str,
-    service: DataSandboxService = Depends(get_data_sandbox_service)
+    share_id: str, service: DataSandboxService = Depends(get_data_sandbox_service)
 ):
     """Get a shared data view."""
     # This would get shared view from database

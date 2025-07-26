@@ -2,12 +2,13 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.services.mcp_service import MCPService, get_mcp_service
 
 router = APIRouter()
+
 
 # Request/Response Models
 class MCPServerCreate(BaseModel):
@@ -19,6 +20,7 @@ class MCPServerCreate(BaseModel):
     capabilities: List[str]
     description: Optional[str] = None
 
+
 class MCPServerUpdate(BaseModel):
     name: Optional[str] = None
     base_url: Optional[str] = None
@@ -26,6 +28,7 @@ class MCPServerUpdate(BaseModel):
     capabilities: Optional[List[str]] = None
     description: Optional[str] = None
     enabled: Optional[bool] = None
+
 
 class MCPServerResponse(BaseModel):
     id: str
@@ -43,6 +46,7 @@ class MCPServerResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+
 class MCPServerTestResult(BaseModel):
     server_id: str
     success: bool
@@ -50,6 +54,7 @@ class MCPServerTestResult(BaseModel):
     error_message: Optional[str]
     capabilities_discovered: List[str]
     tested_at: datetime
+
 
 class MCPServerMetrics(BaseModel):
     server_id: str
@@ -60,23 +65,23 @@ class MCPServerMetrics(BaseModel):
     last_24h_requests: int
     uptime_percentage: float
 
+
 @router.get("/", response_model=List[MCPServerResponse])
 async def list_mcp_servers(
     provider_type: Optional[str] = None,
     enabled_only: bool = False,
-    mcp_service: MCPService = Depends(get_mcp_service)
+    mcp_service: MCPService = Depends(get_mcp_service),
 ):
     """List all registered MCP servers."""
     servers = await mcp_service.list_servers(
-        provider_type=provider_type,
-        enabled_only=enabled_only
+        provider_type=provider_type, enabled_only=enabled_only
     )
     return servers
 
+
 @router.post("/", response_model=MCPServerResponse)
 async def create_mcp_server(
-    server_data: MCPServerCreate,
-    mcp_service: MCPService = Depends(get_mcp_service)
+    server_data: MCPServerCreate, mcp_service: MCPService = Depends(get_mcp_service)
 ):
     """Register a new MCP server."""
     try:
@@ -85,10 +90,10 @@ async def create_mcp_server(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.get("/{server_id}", response_model=MCPServerResponse)
 async def get_mcp_server(
-    server_id: str,
-    mcp_service: MCPService = Depends(get_mcp_service)
+    server_id: str, mcp_service: MCPService = Depends(get_mcp_service)
 ):
     """Get details of a specific MCP server."""
     server = await mcp_service.get_server(server_id)
@@ -96,25 +101,28 @@ async def get_mcp_server(
         raise HTTPException(status_code=404, detail="MCP server not found")
     return server
 
+
 @router.put("/{server_id}", response_model=MCPServerResponse)
 async def update_mcp_server(
     server_id: str,
     update_data: MCPServerUpdate,
-    mcp_service: MCPService = Depends(get_mcp_service)
+    mcp_service: MCPService = Depends(get_mcp_service),
 ):
     """Update an MCP server configuration."""
     try:
-        server = await mcp_service.update_server(server_id, update_data.dict(exclude_unset=True))
+        server = await mcp_service.update_server(
+            server_id, update_data.dict(exclude_unset=True)
+        )
         if not server:
             raise HTTPException(status_code=404, detail="MCP server not found")
         return server
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.delete("/{server_id}")
 async def delete_mcp_server(
-    server_id: str,
-    mcp_service: MCPService = Depends(get_mcp_service)
+    server_id: str, mcp_service: MCPService = Depends(get_mcp_service)
 ):
     """Delete an MCP server."""
     success = await mcp_service.delete_server(server_id)
@@ -122,10 +130,10 @@ async def delete_mcp_server(
         raise HTTPException(status_code=404, detail="MCP server not found")
     return {"message": "MCP server deleted successfully"}
 
+
 @router.post("/{server_id}/test", response_model=MCPServerTestResult)
 async def test_mcp_server(
-    server_id: str,
-    mcp_service: MCPService = Depends(get_mcp_service)
+    server_id: str, mcp_service: MCPService = Depends(get_mcp_service)
 ):
     """Test connection to an MCP server."""
     try:
@@ -134,10 +142,10 @@ async def test_mcp_server(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.post("/{server_id}/enable")
 async def enable_mcp_server(
-    server_id: str,
-    mcp_service: MCPService = Depends(get_mcp_service)
+    server_id: str, mcp_service: MCPService = Depends(get_mcp_service)
 ):
     """Enable an MCP server."""
     success = await mcp_service.enable_server(server_id)
@@ -145,10 +153,10 @@ async def enable_mcp_server(
         raise HTTPException(status_code=404, detail="MCP server not found")
     return {"message": "MCP server enabled successfully"}
 
+
 @router.post("/{server_id}/disable")
 async def disable_mcp_server(
-    server_id: str,
-    mcp_service: MCPService = Depends(get_mcp_service)
+    server_id: str, mcp_service: MCPService = Depends(get_mcp_service)
 ):
     """Disable an MCP server."""
     success = await mcp_service.disable_server(server_id)
@@ -156,10 +164,10 @@ async def disable_mcp_server(
         raise HTTPException(status_code=404, detail="MCP server not found")
     return {"message": "MCP server disabled successfully"}
 
+
 @router.get("/{server_id}/capabilities")
 async def get_server_capabilities(
-    server_id: str,
-    mcp_service: MCPService = Depends(get_mcp_service)
+    server_id: str, mcp_service: MCPService = Depends(get_mcp_service)
 ):
     """Get available tools/capabilities from an MCP server."""
     try:
@@ -168,10 +176,10 @@ async def get_server_capabilities(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.get("/{server_id}/metrics", response_model=MCPServerMetrics)
 async def get_server_metrics(
-    server_id: str,
-    mcp_service: MCPService = Depends(get_mcp_service)
+    server_id: str, mcp_service: MCPService = Depends(get_mcp_service)
 ):
     """Get performance metrics for an MCP server."""
     try:
@@ -180,12 +188,13 @@ async def get_server_metrics(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.post("/{server_id}/call")
 async def call_mcp_tool(
     server_id: str,
     tool_name: str,
     parameters: dict,
-    mcp_service: MCPService = Depends(get_mcp_service)
+    mcp_service: MCPService = Depends(get_mcp_service),
 ):
     """Call a specific tool on an MCP server."""
     try:
@@ -194,7 +203,7 @@ async def call_mcp_tool(
             "server_id": server_id,
             "tool_name": tool_name,
             "result": result,
-            "timestamp": datetime.utcnow()
+            "timestamp": datetime.utcnow(),
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
