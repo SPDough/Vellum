@@ -261,7 +261,7 @@ async def search_entities(
         RETURN n, labels(n) as labels
         LIMIT $limit
         """
-        parameters["limit"] = request.limit
+        parameters["limit"] = str(request.limit)
 
         results = await neo4j_service.execute_cypher(query, parameters)
 
