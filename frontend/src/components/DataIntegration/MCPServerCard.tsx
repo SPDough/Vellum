@@ -8,7 +8,6 @@ import {
   Avatar,
   IconButton,
   LinearProgress,
-  Tooltip,
   Menu,
   MenuItem,
 } from '@mui/material';

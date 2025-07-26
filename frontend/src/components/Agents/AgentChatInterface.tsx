@@ -9,7 +9,6 @@ import {
   Paper,
   Avatar,
   Chip,
-  Button,
   Menu,
   MenuItem,
   Divider,
@@ -27,13 +26,8 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 
-import { 
-  agentService,
-  Agent,
-  AgentConversation,
-  AgentMessage,
-  AgentChatRequest,
-} from '@/services/agentService';
+import { agentService } from '@/services/agentService';
+import { Agent, AgentConversation, AgentChatRequest } from '@/types/agent';
 
 interface AgentChatInterfaceProps {
   agent: Agent;

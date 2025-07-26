@@ -152,15 +152,6 @@ const NewConnectionDialog: React.FC<NewConnectionDialogProps> = ({
     }
   };
 
-  const handleReset = () => {
-    setActiveStep(0);
-    setSelectedProvider('');
-    setConnectionName('');
-    setBaseUrl('');
-    setAuthType('API_KEY');
-    setApiKey('');
-    setTestResult(null);
-  };
 
   const selectedProviderData = predefinedProviders.find(p => p.id === selectedProvider);
 

@@ -127,7 +127,7 @@ export const agentService = {
     agentId: string, 
     conversationId: string, 
     request: AgentChatRequest,
-    onChunk: (chunk: string) => void,
+    _onChunk: (chunk: string) => void,
     onComplete: (response: AgentChatResponse) => void,
     onError: (error: any) => void
   ): Promise<void> {
@@ -299,7 +299,8 @@ export const agentService = {
   },
 
   async exportAgent(agentId: string): Promise<Blob> {
-    const response = await fetch(`${api.defaults?.baseURL}/agents/${agentId}/export`, {
+    const baseURL = (api as any).defaults?.baseURL || 'http://localhost:8000/api/v1';
+    const response = await fetch(`${baseURL}/agents/${agentId}/export`, {
       headers: {
         'Authorization': localStorage.getItem('auth_token') ? `Bearer ${localStorage.getItem('auth_token')}` : '',
       },
