@@ -36,6 +36,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { mcpServerService } from '@/services/mcpServerService';
 import { dataSandboxService } from '@/services/dataSandboxService';
 import { MCPDataStream, DataSource } from '@/types/dataSandbox';
+import { ConnectionStatus } from '@/types/data';
 
 interface MCPDataConnectorProps {
   onDataSourceCreated?: (dataSource: DataSource) => void;
@@ -306,7 +307,7 @@ const MCPDataConnector: React.FC<MCPDataConnectorProps> = ({ onDataSourceCreated
                   onChange={(e) => setSelectedServerId(e.target.value)}
                   label="MCP Server"
                 >
-                  {mcpServers?.filter(server => server.status === 'connected').map((server) => (
+                  {mcpServers?.filter(server => server.status === ConnectionStatus.CONNECTED).map((server) => (
                     <MenuItem key={server.id} value={server.id}>
                       {server.name} ({server.provider_type})
                     </MenuItem>

@@ -21,7 +21,6 @@ import {
   ZoomOut as ZoomOutIcon,
   CenterFocusStrong as CenterIcon,
   Refresh as RefreshIcon,
-  Settings as SettingsIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
 import { useQuery } from 'react-query';
@@ -45,9 +44,12 @@ interface D3Node extends GraphNode {
   vy?: number;
 }
 
-interface D3Link extends GraphEdge {
+interface D3Link {
   source: string | D3Node;
   target: string | D3Node;
+  id: string;
+  type: string;
+  properties: Record<string, any>;
 }
 
 const GraphVisualization: React.FC<GraphVisualizationProps> = ({
@@ -55,7 +57,6 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   entityTypes,
   height = 600,
   onNodeClick,
-  onEdgeClick,
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [selectedEntityTypes, setSelectedEntityTypes] = useState<string[]>(entityTypes || []);
@@ -106,8 +107,10 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
       y: Math.random() * height,
     }));
 
-    const links: D3Link[] = graphData.edges.map(edge => ({
-      ...edge,
+    const links: D3Link[] = graphData.edges.map((edge, index) => ({
+      id: edge.source + '-' + edge.target + '-' + index,
+      type: edge.type,
+      properties: edge.properties,
       source: edge.source,
       target: edge.target,
     }));
@@ -216,7 +219,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   if (error) {
     return (
       <Alert severity="error" sx={{ m: 2 }}>
-        Failed to load knowledge graph: {error.message}
+        Failed to load knowledge graph: {(error as Error)?.message || 'Unknown error'}
       </Alert>
     );
   }

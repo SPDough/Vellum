@@ -12,7 +12,6 @@ import {
   Menu,
   MenuItem,
   Chip,
-  Alert,
   Table,
   TableBody,
   TableCell,
@@ -48,17 +47,14 @@ import {
   getSortedRowModel,
   flexRender,
   createColumnHelper,
-  ColumnDef,
   SortingState,
   ColumnFiltersState,
   VisibilityState,
 } from '@tanstack/react-table';
-import { useQuery } from 'react-query';
 
 import WorkflowDataConnector from '@/components/DataSandbox/WorkflowDataConnector';
 import MCPDataConnector from '@/components/DataSandbox/MCPDataConnector';
 import ChartVisualization from '@/components/DataSandbox/ChartVisualization';
-import { dataSandboxService } from '@/services/dataSandboxService';
 import { useSystemWebSocket } from '@/hooks/useWebSocket';
 
 // Sample data structure for demo
@@ -92,10 +88,7 @@ const DataSandbox: React.FC<DataSandboxProps> = () => {
   
   // WebSocket connection for real-time updates
   const { 
-    isConnected, 
-    workflowUpdates, 
-    mcpUpdates, 
-    agentUpdates 
+    isConnected
   } = useSystemWebSocket();
 
   // Sample data - in real app, this would come from workflows/APIs
@@ -141,10 +134,10 @@ const DataSandbox: React.FC<DataSandboxProps> = () => {
 
   const columnHelper = createColumnHelper<DataRecord>();
 
-  const columns = useMemo<ColumnDef<DataRecord>[]>(() => [
+  const columns = useMemo(() => [
     columnHelper.accessor('timestamp', {
       header: 'Timestamp',
-      cell: info => new Date(info.getValue()).toLocaleString(),
+      cell: (info: any) => new Date(info.getValue()).toLocaleString(),
       size: 150,
     }),
     columnHelper.accessor('symbol', {
@@ -251,7 +244,7 @@ const DataSandbox: React.FC<DataSandboxProps> = () => {
     getSortedRowModel: getSortedRowModel(),
   });
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 

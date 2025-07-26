@@ -25,20 +25,16 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormControlLabel,
-  Switch,
   Alert,
   LinearProgress,
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Divider,
 } from '@mui/material';
 import {
   SmartToy as AgentIcon,
   Add as AddIcon,
   Edit as EditIcon,
-  Delete as DeleteIcon,
   PlayArrow as StartIcon,
   Stop as StopIcon,
   Chat as ChatIcon,
@@ -55,7 +51,6 @@ import {
   AgentCreateRequest,
   AgentType,
   AgentStatus,
-  AgentCapability,
 } from '@/services/agentService';
 import AgentMonitoringDashboard from '@/components/Agents/AgentMonitoringDashboard';
 import AgentChatInterface from '@/components/Agents/AgentChatInterface';
@@ -65,7 +60,6 @@ interface AgentsProps {}
 const Agents: React.FC<AgentsProps> = () => {
   const [activeTab, setActiveTab] = useState(0);
   const [createAgentOpen, setCreateAgentOpen] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [chatAgent, setChatAgent] = useState<Agent | null>(null);
   const [agentFormData, setAgentFormData] = useState<Partial<AgentCreateRequest>>({
     name: '',
@@ -138,7 +132,7 @@ const Agents: React.FC<AgentsProps> = () => {
     }
   );
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
@@ -218,7 +212,7 @@ const Agents: React.FC<AgentsProps> = () => {
 
   const activeAgents = agents?.filter(agent => agent.status === AgentStatus.ACTIVE) || [];
   const totalAgents = agents?.length || 0;
-  const avgAccuracy = agents?.reduce((acc, agent) => acc + agent.metrics.accuracy_score, 0) / totalAgents || 0;
+  const avgAccuracy = agents && agents.length > 0 ? agents.reduce((acc, agent) => acc + agent.metrics.accuracy_score, 0) / totalAgents : 0;
 
   return (
     <Box sx={{ p: 3 }}>

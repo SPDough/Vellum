@@ -50,7 +50,7 @@ interface KnowledgeGraphProps {}
 
 const KnowledgeGraph: React.FC<KnowledgeGraphProps> = () => {
   const [activeTab, setActiveTab] = useState(0);
-  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [_selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [createEntityOpen, setCreateEntityOpen] = useState(false);
   const [newEntityType, setNewEntityType] = useState('Account');
   const [entityProperties, setEntityProperties] = useState<Record<string, string>>({});
@@ -58,7 +58,7 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = () => {
   const queryClient = useQueryClient();
 
   // Fetch graph statistics
-  const { data: statistics, isLoading: statsLoading } = useQuery<GraphStatistics>(
+  const { data: statistics, isLoading: _statsLoading } = useQuery<GraphStatistics>(
     'graph-statistics',
     () => knowledgeGraphService.getStatistics(),
     {
@@ -88,7 +88,7 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = () => {
     }
   );
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 

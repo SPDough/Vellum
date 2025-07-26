@@ -39,7 +39,8 @@ const Login: React.FC = () => {
           id: '1',
           name: credentials.email.split('@')[0],
           email: credentials.email,
-          role: 'admin' as const,
+          roles: ['admin'],
+          groups: ['administrators'],
         };
         const mockToken = 'mock-jwt-token';
         

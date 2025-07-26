@@ -4,7 +4,6 @@ import {
   Paper,
   Typography,
   Toolbar,
-  IconButton,
   Button,
   Drawer,
   List,
@@ -20,18 +19,13 @@ import {
   DialogContent,
   DialogActions,
   Fab,
-  Tooltip,
   Chip,
   AppBar,
 } from '@mui/material';
 import {
   Save as SaveIcon,
   PlayArrow as PlayIcon,
-  Add as AddIcon,
   ExpandMore as ExpandMoreIcon,
-  ZoomIn as ZoomInIcon,
-  ZoomOut as ZoomOutIcon,
-  FitScreen as FitScreenIcon,
   Settings as SettingsIcon,
   Storage as StorageIcon,
   Transform as TransformIcon,
@@ -39,11 +33,9 @@ import {
   Notifications as NotificationsIcon,
   AccountTree as AccountTreeIcon,
   Api as ApiIcon,
-  Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import ReactFlow, {
   Node,
-  Edge,
   Controls,
   Background,
   useNodesState,
@@ -56,12 +48,10 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
-import { Workflow, WorkflowNode, WorkflowNodeType } from '@/types/workflow';
-import { MCPServer } from '@/types/data';
+import { WorkflowNodeType } from '@/types/workflow';
 import { workflowService } from '@/services/workflowService';
 import CustomWorkflowNode from '@/components/WorkflowBuilder/CustomWorkflowNode';
 import NodePropertiesPanel from '@/components/WorkflowBuilder/NodePropertiesPanel';
-import WorkflowToolbar from '@/components/WorkflowBuilder/WorkflowToolbar';
 
 const nodeTypes = {
   custom: CustomWorkflowNode,
@@ -191,7 +181,7 @@ const WorkflowBuilder: React.FC = () => {
     [reactFlowInstance, setNodes]
   );
 
-  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+  const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
   }, []);
 

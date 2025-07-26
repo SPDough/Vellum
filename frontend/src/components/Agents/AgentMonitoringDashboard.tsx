@@ -24,7 +24,6 @@ import {
 import {
   MoreVert as MoreVertIcon,
   TrendingUp,
-  TrendingDown,
   Speed,
   CheckCircle,
   Error,
@@ -73,7 +72,7 @@ const AgentMonitoringDashboard: React.FC<AgentMonitoringDashboardProps> = ({ age
     }
   );
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 

@@ -436,7 +436,8 @@ class DataSandboxService:
 
 
 # Singleton service instance
-def get_data_sandbox_service(db: Session = None) -> DataSandboxService:
+def get_data_sandbox_service(db: Optional[Session] = None) -> DataSandboxService:
     if db is None:
-        db = next(get_db())
+        from app.core.database import SessionLocal
+        db = SessionLocal()
     return DataSandboxService(db)

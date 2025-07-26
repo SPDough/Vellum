@@ -139,7 +139,8 @@ export const dataSandboxService = {
 
   // Data Export
   async exportData(request: DataExportRequest): Promise<Blob> {
-    const response = await fetch(`${api.defaults?.baseURL}/data-sandbox/export`, {
+    const baseURL = 'http://localhost:8000/api/v1';
+    const response = await fetch(`${baseURL}/data-sandbox/export`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -201,7 +202,8 @@ export const dataSandboxService = {
   // Real-time Data
   async subscribeToDataUpdates(sourceId: string, callback: (data: DataRecord[]) => void): Promise<() => void> {
     // WebSocket or Server-Sent Events implementation
-    const eventSource = new EventSource(`${api.defaults?.baseURL}/data-sandbox/sources/${sourceId}/stream`);
+    const baseURL = 'http://localhost:8000/api/v1';
+    const eventSource = new EventSource(`${baseURL}/data-sandbox/sources/${sourceId}/stream`);
     
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);

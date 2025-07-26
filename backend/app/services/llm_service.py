@@ -56,7 +56,7 @@ class LLMProvider(ABC):
 class OpenAIProvider(LLMProvider):
     """OpenAI LLM provider."""
     
-    def __init__(self, api_key: str = None, model: str = "gpt-4-turbo-preview"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4-turbo-preview"):
         self.api_key = api_key or settings.openai_api_key
         self.model = model
         self.client = AsyncOpenAI(api_key=self.api_key) if self.api_key else None
@@ -172,7 +172,7 @@ class OpenAIProvider(LLMProvider):
 class AnthropicProvider(LLMProvider):
     """Anthropic Claude LLM provider."""
     
-    def __init__(self, api_key: str = None, model: str = "claude-3-sonnet-20240229"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "claude-3-sonnet-20240229"):
         self.api_key = api_key or settings.anthropic_api_key
         self.model = model
         self.client = AsyncAnthropic(api_key=self.api_key) if self.api_key else None
@@ -301,7 +301,7 @@ class AnthropicProvider(LLMProvider):
 class OllamaProvider(LLMProvider):
     """Ollama local LLM provider."""
     
-    def __init__(self, base_url: str = None, model: str = "llama2"):
+    def __init__(self, base_url: Optional[str] = None, model: str = "llama2"):
         self.base_url = base_url or settings.ollama_base_url
         self.model = model
         self.client = httpx.AsyncClient(base_url=self.base_url, timeout=120.0)
@@ -397,7 +397,7 @@ class OllamaProvider(LLMProvider):
     def _estimate_tokens(self, messages: List[Dict[str, str]], response: str) -> int:
         """Estimate token count (rough approximation)."""
         text = " ".join([msg.get("content", "") for msg in messages]) + response
-        return len(text.split()) * 1.3  # Rough token estimation
+        return int(len(text.split()) * 1.3)  # Rough token estimation
 
 
 class LLMService:
@@ -500,7 +500,8 @@ class LLMService:
         else:
             raise RuntimeError("No LLM providers available")
         
-        async for chunk in chosen_provider.stream_completion(messages, **kwargs):
+        async_gen = await chosen_provider.stream_completion(messages, **kwargs)
+        async for chunk in async_gen:
             yield chunk
     
     def get_available_providers(self) -> List[str]:
