@@ -93,6 +93,44 @@ const DataIntegration: React.FC<DataIntegrationProps> = () => {
     queryClient.invalidateQueries('mcp-servers');
   };
 
+  const renderTabContent = (): React.ReactNode => {
+    switch (activeTab) {
+      case 0:
+        return serversLoading ? (
+          <LinearProgress sx={{ borderRadius: 1 }} />
+        ) : (
+          <Grid container spacing={3}>
+            {mcpServers.map((server) => (
+              <Grid item xs={12} md={6} lg={4} key={server.id}>
+                <MCPServerCard server={server} />
+              </Grid>
+            ))}
+          </Grid>
+        );
+      case 1:
+        return (
+          <Grid container spacing={3}>
+            {dataFlows.map((flow) => (
+              <Grid item xs={12} md={6} key={flow.id}>
+                <DataFlowCard flow={flow} />
+              </Grid>
+            ))}
+          </Grid>
+        );
+      case 2:
+        return <DataStreamMonitor streams={dataStreams} />;
+      case 3:
+        return (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Data quality monitoring dashboard coming soon
+          </Alert>
+        );
+      default:
+        return null;
+    }
+  };
+
+
 
   const connectedServers = mcpServers.filter(s => s.status === 'CONNECTED').length;
   const totalDataVolume = mcpServers.reduce((acc, server) => acc + (server.metrics?.data_volume_mb || 0), 0);
@@ -241,39 +279,7 @@ const DataIntegration: React.FC<DataIntegrationProps> = () => {
 
         <CardContent sx={{ p: 0 }}>
           <Box sx={{ p: 3 }}>
-            {activeTab === 0 && (
-              <>
-                {serversLoading ? (
-                  <LinearProgress sx={{ borderRadius: 1 }} />
-                ) : (
-                  <Grid container spacing={3}>
-                    {mcpServers.map((server) => (
-                      <Grid item xs={12} md={6} lg={4} key={server.id}>
-                        <MCPServerCard server={server} />
-                      </Grid>
-                    ))}
-                  </Grid>
-                )}
-              </>
-            )}
-
-            {activeTab === 1 && (
-              <Grid container spacing={3}>
-                {dataFlows.map((flow) => (
-                  <Grid item xs={12} md={6} key={flow.id}>
-                    <DataFlowCard flow={flow} />
-                  </Grid>
-                ))}
-              </Grid>
-            )}
-
-            {activeTab === 2 && <DataStreamMonitor streams={dataStreams} />}
-
-            {activeTab === 3 && (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                Data quality monitoring dashboard coming soon
-              </Alert>
-            )}
+            {renderTabContent()}
           </Box>
         </CardContent>
       </Card>
