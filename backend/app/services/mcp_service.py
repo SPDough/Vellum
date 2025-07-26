@@ -68,7 +68,7 @@ class MCPClient(ABC):
 class HTTPMCPClient(MCPClient):
     """HTTP-based MCP client implementation."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.base_url = config["base_url"]
         self.auth_type = config.get("auth_type", "none")
         self.api_key = config.get("api_key")
@@ -157,7 +157,7 @@ class HTTPMCPClient(MCPClient):
 class WebSocketMCPClient(MCPClient):
     """WebSocket-based MCP client for real-time data."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any]) -> None:
         self.ws_url = config["ws_url"]
         self.auth_token = config.get("auth_token")
         self.websocket = None
@@ -194,7 +194,7 @@ class WebSocketMCPClient(MCPClient):
             await self.websocket.close()
         self.connected = False
 
-    async def _handle_messages(self):
+    async def _handle_messages(self) -> None:
         """Handle incoming WebSocket messages."""
         try:
             async for message in self.websocket:
@@ -211,7 +211,7 @@ class WebSocketMCPClient(MCPClient):
         except Exception as e:
             logger.error(f"WebSocket message handler error: {e}")
 
-    async def _handle_server_message(self, message: Dict[str, Any]):
+    async def _handle_server_message(self, message: Dict[str, Any]) -> None:
         """Handle server-initiated messages."""
         # Handle real-time data updates, notifications, etc.
         logger.info(f"Received server message: {message.get('type', 'unknown')}")
@@ -257,7 +257,7 @@ class WebSocketMCPClient(MCPClient):
 class MCPServerManager:
     """Manages connections to multiple MCP servers."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.servers: Dict[str, Dict[str, Any]] = {}
         self.clients: Dict[str, MCPClient] = {}
         self.health_check_interval = 60  # seconds
@@ -366,20 +366,20 @@ class MCPServerManager:
 
         return all_tools
 
-    async def start_health_monitoring(self):
+    async def start_health_monitoring(self) -> None:
         """Start periodic health checks of all servers."""
         if self._health_check_task:
             return
 
         self._health_check_task = asyncio.create_task(self._health_check_loop())
 
-    async def stop_health_monitoring(self):
+    async def stop_health_monitoring(self) -> None:
         """Stop health monitoring."""
         if self._health_check_task:
             self._health_check_task.cancel()
             self._health_check_task = None
 
-    async def _health_check_loop(self):
+    async def _health_check_loop(self) -> None:
         """Periodic health check loop."""
         while True:
             try:
@@ -406,7 +406,7 @@ mcp_manager = MCPServerManager()
 class MCPService:
     """Service layer for MCP server management."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.manager = mcp_manager
         # In-memory storage for demo - should be replaced with database
         self.servers_db: Dict[str, Dict[str, Any]] = {}

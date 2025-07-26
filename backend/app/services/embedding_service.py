@@ -38,7 +38,7 @@ class EmbeddingProvider(ABC):
 class OllamaEmbeddingProvider(EmbeddingProvider):
     """Ollama local embedding provider."""
 
-    def __init__(self, base_url: str = None, model: str = "nomic-embed-text"):
+    def __init__(self, base_url: str = None, model: str = "nomic-embed-text") -> None:
         self.base_url = base_url or settings.ollama_base_url
         self.model = model
         self.client = httpx.AsyncClient(base_url=self.base_url, timeout=30.0)
@@ -92,7 +92,7 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
 class OpenAIEmbeddingProvider(EmbeddingProvider):
     """OpenAI embedding provider."""
 
-    def __init__(self, api_key: str = None, model: str = "text-embedding-3-small"):
+    def __init__(self, api_key: str = None, model: str = "text-embedding-3-small") -> None:
         self.api_key = api_key or settings.openai_api_key
         self.model = model
         self.client = AsyncOpenAI(api_key=self.api_key) if self.api_key else None
@@ -170,11 +170,11 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 class SentenceTransformerProvider(EmbeddingProvider):
     """Local sentence transformer provider (fallback)."""
 
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2") -> None:
         self.model_name = model_name
         self.model = None  # Lazy load
 
-    def _load_model(self):
+    def _load_model(self) -> None:
         """Lazy load the model."""
         if self.model is None:
             self.model = SentenceTransformer(self.model_name)
@@ -232,7 +232,7 @@ class SentenceTransformerProvider(EmbeddingProvider):
 class EmbeddingService:
     """Main embedding service with fallback providers."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.providers = self._initialize_providers()
         self.primary_provider = self._get_primary_provider()
 

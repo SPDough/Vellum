@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class ConnectionManager:
     """Manages WebSocket connections for real-time data updates."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Store active connections by data source ID
         self.active_connections: Dict[str, Set[WebSocket]] = {}
         # Store all connections for broadcasting
@@ -53,7 +53,7 @@ class ConnectionManager:
 
         logger.info(f"WebSocket connected - Source: {source_id}, User: {user_id}")
 
-    def disconnect(self, websocket: WebSocket):
+    def disconnect(self, websocket: WebSocket) -> None:
         """Remove a WebSocket connection."""
         # Remove from all connections
         self.all_connections.discard(websocket)
@@ -83,7 +83,7 @@ class ConnectionManager:
             logger.error(f"Error sending personal message: {e}")
             self.disconnect(websocket)
 
-    async def broadcast_to_source(self, source_id: str, message: Dict[str, Any]):
+    async def broadcast_to_source(self, source_id: str, message: Dict[str, Any]) -> None:
         """Broadcast a message to all connections subscribed to a data source."""
         if source_id not in self.active_connections:
             return
@@ -106,7 +106,7 @@ class ConnectionManager:
         for connection in disconnected_connections:
             self.disconnect(connection)
 
-    async def broadcast_to_all(self, message: Dict[str, Any]):
+    async def broadcast_to_all(self, message: Dict[str, Any]) -> None:
         """Broadcast a message to all active connections."""
         message.update({"timestamp": datetime.utcnow().isoformat()})
 
@@ -135,7 +135,7 @@ class ConnectionManager:
         }
         await self.broadcast_to_source(source_id, message)
 
-    async def send_schema_update(self, source_id: str, schema: Dict[str, Any]):
+    async def send_schema_update(self, source_id: str, schema: Dict[str, Any]) -> None:
         """Send a schema update notification to subscribers."""
         message = {"type": "schema_update", "schema": schema, "source_id": source_id}
         await self.broadcast_to_source(source_id, message)
@@ -165,7 +165,7 @@ class ConnectionManager:
         }
         await self.broadcast_to_all(message)
 
-    async def send_mcp_stream_update(self, server_id: str, stream_name: str, data: Any):
+    async def send_mcp_stream_update(self, server_id: str, stream_name: str, data: Any) -> None:
         """Send an MCP data stream update."""
         # Create a pseudo source_id for MCP streams
         source_id = f"mcp:{server_id}:{stream_name}"
@@ -217,7 +217,7 @@ connection_manager = ConnectionManager()
 class DataStreamService:
     """Service for handling real-time data streaming."""
 
-    def __init__(self, connection_manager: ConnectionManager):
+    def __init__(self, connection_manager: ConnectionManager) -> None:
         self.connection_manager = connection_manager
 
     async def handle_websocket_connection(
@@ -300,7 +300,7 @@ class DataStreamService:
                 websocket,
             )
 
-    async def start_heartbeat(self):
+    async def start_heartbeat(self) -> None:
         """Start heartbeat task to keep connections alive."""
         while True:
             try:

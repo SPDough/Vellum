@@ -52,7 +52,7 @@ class LLMProvider(ABC):
 class OpenAIProvider(LLMProvider):
     """OpenAI LLM provider."""
 
-    def __init__(self, api_key: str = None, model: str = "gpt-4-turbo-preview"):
+    def __init__(self, api_key: str = None, model: str = "gpt-4-turbo-preview") -> None:
         self.api_key = api_key or settings.openai_api_key
         self.model = model
         self.client = AsyncOpenAI(api_key=self.api_key) if self.api_key else None
@@ -171,7 +171,7 @@ class OpenAIProvider(LLMProvider):
 class AnthropicProvider(LLMProvider):
     """Anthropic Claude LLM provider."""
 
-    def __init__(self, api_key: str = None, model: str = "claude-3-sonnet-20240229"):
+    def __init__(self, api_key: str = None, model: str = "claude-3-sonnet-20240229") -> None:
         self.api_key = api_key or settings.anthropic_api_key
         self.model = model
         self.client = AsyncAnthropic(api_key=self.api_key) if self.api_key else None
@@ -300,7 +300,7 @@ class AnthropicProvider(LLMProvider):
 class OllamaProvider(LLMProvider):
     """Ollama local LLM provider."""
 
-    def __init__(self, base_url: str = None, model: str = "llama2"):
+    def __init__(self, base_url: str = None, model: str = "llama2") -> None:
         self.base_url = base_url or settings.ollama_base_url
         self.model = model
         self.client = httpx.AsyncClient(base_url=self.base_url, timeout=120.0)
@@ -411,7 +411,7 @@ class OllamaProvider(LLMProvider):
 class LLMService:
     """Main LLM service with multiple providers and fallback."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.providers = self._initialize_providers()
         self.primary_provider = self._get_primary_provider()
 

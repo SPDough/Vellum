@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 class KnowledgeGraphSyncService:
     """Service to synchronize data between operational systems and knowledge graph."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.neo4j_service: Optional[Neo4jService] = None
         self.mcp_service: Optional[MCPService] = None
         self.sync_tasks = {}
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize the sync service with dependencies."""
         self.neo4j_service = await get_neo4j_service()
         self.mcp_service = await get_mcp_service()
@@ -138,7 +138,7 @@ class KnowledgeGraphSyncService:
             logger.error(f"Failed to sync workflows to knowledge graph: {e}")
             return 0
 
-    async def _create_workflow_mcp_relationships(self, workflow: Dict[str, Any]):
+    async def _create_workflow_mcp_relationships(self, workflow: Dict[str, Any]) -> None:
         """Create relationships between workflow and MCP servers it uses."""
         try:
             workflow_id = workflow["id"]
@@ -244,7 +244,7 @@ class KnowledgeGraphSyncService:
             logger.error(f"Failed to sync data streams to knowledge graph: {e}")
             return 0
 
-    async def create_sample_financial_data(self):
+    async def create_sample_financial_data(self) -> None:
         """Create sample financial entities for demonstration."""
         try:
             logger.info("Creating sample financial data in knowledge graph...")
@@ -342,7 +342,7 @@ class KnowledgeGraphSyncService:
         except Exception as e:
             logger.error(f"Failed to create sample financial data: {e}")
 
-    async def sync_all_data(self):
+    async def sync_all_data(self) -> None:
         """Sync all data sources to the knowledge graph."""
         try:
             logger.info("Starting full knowledge graph sync...")

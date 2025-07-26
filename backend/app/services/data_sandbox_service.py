@@ -31,7 +31,7 @@ from app.models.data_sandbox import (
 
 
 class DataSandboxService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session) -> None:
         self.db = db
 
     # Data Source Management
@@ -155,7 +155,7 @@ class DataSandboxService:
         execution_time = time.time() - start_time
         return data, total_count, execution_time
 
-    def _apply_filter(self, db_query, filter_item: DataFilter):
+    def _apply_filter(self, db_query, filter_item: DataFilter) -> Any:
         """Apply a filter to the database query."""
         field_path = f"data->>'{filter_item.field}'"
 
@@ -524,7 +524,7 @@ class DataSandboxService:
 
 
 # Singleton service instance
-def get_data_sandbox_service(db: Session = None) -> DataSandboxService:
+def get_data_sandbox_service(db: Optional[Session] = None) -> DataSandboxService:
     if db is None:
         db = next(get_db())
     return DataSandboxService(db)

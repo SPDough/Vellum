@@ -17,11 +17,11 @@ settings = get_settings()
 class Neo4jService:
     """Service for Neo4j knowledge graph operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.driver = None
         self.connected = False
 
-    async def connect(self):
+    async def connect(self) -> None:
         """Initialize connection to Neo4j database."""
         try:
             logger.info("Connecting to Neo4j...")
@@ -48,14 +48,14 @@ class Neo4jService:
             logger.error(f"Failed to connect to Neo4j: {e}")
             raise
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
         """Close Neo4j driver."""
         if self.driver:
             await self.driver.close()
             self.connected = False
             logger.info("Disconnected from Neo4j")
 
-    async def _verify_connectivity(self):
+    async def _verify_connectivity(self) -> None:
         """Verify that we can connect to Neo4j."""
         async with self.driver.session() as session:
             result = await session.run("RETURN 1 as test")
@@ -63,7 +63,7 @@ class Neo4jService:
             if record["test"] != 1:
                 raise Exception("Neo4j connectivity test failed")
 
-    async def _initialize_schema(self):
+    async def _initialize_schema(self) -> None:
         """Initialize Neo4j schema with constraints and indexes."""
         with tracer.start_as_current_span("neo4j_initialize_schema"):
             try:
