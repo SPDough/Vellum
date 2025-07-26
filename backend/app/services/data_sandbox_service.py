@@ -13,8 +13,8 @@ from app.core.database import get_db
 from app.models.data_sandbox import (
     AgentResultCreate,
     DataFilter,
-    DataQuery,
     DataQualityAnalysis,
+    DataQuery,
     DataRecord,
     DataSort,
     DataSource,
@@ -54,7 +54,9 @@ class DataSandboxService:
 
     async def get_data_sources(self) -> List[DataSource]:
         """Get all data sources."""
-        sources = self.db.query(DataSource).order_by(desc(DataSource.last_updated)).all()
+        sources = (
+            self.db.query(DataSource).order_by(desc(DataSource.last_updated)).all()
+        )
         return list(sources)
 
     async def get_data_source(self, source_id: str) -> Optional[DataSource]:
@@ -517,7 +519,7 @@ class DataSandboxService:
             )
 
         from app.models.data_sandbox import DataQualityAnalysis
-        
+
         return DataQualityAnalysis(
             completeness=completeness,
             accuracy=95.0,  # Placeholder - would need domain-specific rules

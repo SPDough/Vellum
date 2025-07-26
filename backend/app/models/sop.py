@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import JSON, Boolean, Column, DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import DeclarativeBase
 
+
 class Base(DeclarativeBase):
     pass
 

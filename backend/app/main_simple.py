@@ -4,11 +4,11 @@ Simple FastAPI server for local development and testing
 """
 
 import json
+import logging
 import random
 import uuid
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
-import logging
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -246,8 +246,9 @@ def custom_openapi() -> Dict[str, Any]:
     """Custom OpenAPI schema."""
     if app.openapi_schema:
         return dict(app.openapi_schema)
-    
+
     from fastapi.openapi.utils import get_openapi
+
     openapi_schema = get_openapi(
         title="Otomeshon Simple Backend",
         version="1.0.0",
@@ -257,13 +258,16 @@ def custom_openapi() -> Dict[str, Any]:
     app.openapi_schema = openapi_schema
     return dict(openapi_schema)
 
+
 app.openapi = custom_openapi
+
 
 @app.on_event("shutdown")
 async def shutdown_event() -> None:
     """Application shutdown event."""
     logger = logging.getLogger(__name__)
     logger.info("🛑 Vellum API shutting down...")
+
 
 if __name__ == "__main__":
     uvicorn.run(

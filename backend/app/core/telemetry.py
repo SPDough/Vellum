@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+
 from opentelemetry import metrics, trace
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -152,7 +153,9 @@ class BusinessMetrics:
             unit="1",
         )
 
-    def record_trade_processed(self, trade_type: str, status: str, duration: float) -> None:
+    def record_trade_processed(
+        self, trade_type: str, status: str, duration: float
+    ) -> None:
         """Record a trade processing event."""
         self.trade_counter.add(1, {"trade_type": trade_type, "status": status})
         self.trade_processing_time.record(duration, {"trade_type": trade_type})
@@ -178,7 +181,9 @@ class BusinessMetrics:
             1, {"workflow_type": workflow_type, "reason": reason}
         )
 
-    def record_llm_call(self, model: str, provider: str, tokens: int, cost: float) -> None:
+    def record_llm_call(
+        self, model: str, provider: str, tokens: int, cost: float
+    ) -> None:
         """Record an LLM API call."""
         self.llm_calls.add(1, {"model": model, "provider": provider})
         self.llm_tokens.add(tokens, {"model": model, "provider": provider})
@@ -194,7 +199,9 @@ class BusinessMetrics:
             },
         )
 
-    def record_automation_suggestion(self, sop_category: str, confidence: float) -> None:
+    def record_automation_suggestion(
+        self, sop_category: str, confidence: float
+    ) -> None:
         """Record an automation suggestion."""
         self.automation_suggestions.add(
             1,
@@ -211,7 +218,10 @@ class BusinessMetrics:
 
 telemetry_data: List[Dict[str, Any]] = []
 
-def track_event(event_name: str, properties: Optional[dict] = None, user_id: Optional[str] = None) -> None:
+
+def track_event(
+    event_name: str, properties: Optional[dict] = None, user_id: Optional[str] = None
+) -> None:
     """Track a telemetry event."""
     event = {
         "event_name": event_name,
@@ -221,14 +231,20 @@ def track_event(event_name: str, properties: Optional[dict] = None, user_id: Opt
     }
     telemetry_data.append(event)
 
+
 def get_telemetry_summary() -> Dict[str, Any]:
     """Get telemetry summary."""
     return {
         "total_events": len(telemetry_data),
-        "unique_users": len(set(event.get("user_id") for event in telemetry_data if event.get("user_id"))),
+        "unique_users": len(
+            set(
+                event.get("user_id") for event in telemetry_data if event.get("user_id")
+            )
+        ),
         "event_types": list(set(event["event_name"] for event in telemetry_data)),
         "last_event": telemetry_data[-1] if telemetry_data else None,
     }
+
 
 # Global metrics instance
 business_metrics = BusinessMetrics()

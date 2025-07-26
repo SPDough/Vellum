@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import List, Literal, Optional, Union, Dict, Any, cast
+from typing import Any, Dict, List, Literal, Optional, Union, cast
 
 import httpx
 import numpy as np
@@ -38,7 +38,9 @@ class EmbeddingProvider(ABC):
 class OllamaEmbeddingProvider(EmbeddingProvider):
     """Ollama local embedding provider."""
 
-    def __init__(self, base_url: Optional[str] = None, model: str = "nomic-embed-text") -> None:
+    def __init__(
+        self, base_url: Optional[str] = None, model: str = "nomic-embed-text"
+    ) -> None:
         self.base_url = base_url or settings.ollama_base_url
         self.model = model
         self.client = httpx.AsyncClient(base_url=self.base_url, timeout=30.0)
@@ -92,7 +94,9 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
 class OpenAIEmbeddingProvider(EmbeddingProvider):
     """OpenAI embedding provider."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "text-embedding-3-small") -> None:
+    def __init__(
+        self, api_key: Optional[str] = None, model: str = "text-embedding-3-small"
+    ) -> None:
         self.api_key = api_key or settings.openai_api_key
         self.model = model
         self.client = AsyncOpenAI(api_key=self.api_key) if self.api_key else None
@@ -259,7 +263,9 @@ class EmbeddingService:
 
         # Sentence Transformers as fallback
         try:
-            providers["sentence_transformer"] = cast(EmbeddingProvider, SentenceTransformerProvider())
+            providers["sentence_transformer"] = cast(
+                EmbeddingProvider, SentenceTransformerProvider()
+            )
             logger.info("✅ Sentence Transformer embedding provider initialized")
         except Exception as e:
             logger.warning(f"⚠️ Sentence Transformer provider failed: {e}")
@@ -303,7 +309,10 @@ class EmbeddingService:
                 if fallback_provider != chosen_provider:
                     try:
                         logger.info(f"Trying fallback provider: {name}")
-                        return cast(List[List[float]], await fallback_provider.get_embeddings(texts))
+                        return cast(
+                            List[List[float]],
+                            await fallback_provider.get_embeddings(texts),
+                        )
                     except Exception as fallback_error:
                         logger.warning(
                             f"Fallback provider {name} failed: {fallback_error}"
@@ -350,7 +359,9 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
     """Calculate cosine similarity between two vectors."""
     a_np = np.array(a)
     b_np = np.array(b)
-    return cast(float, np.dot(a_np, b_np) / (np.linalg.norm(a_np) * np.linalg.norm(b_np)))
+    return cast(
+        float, np.dot(a_np, b_np) / (np.linalg.norm(a_np) * np.linalg.norm(b_np))
+    )
 
 
 def find_most_similar(

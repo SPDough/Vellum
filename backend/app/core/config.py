@@ -75,6 +75,6 @@ def get_settings() -> Settings:
     """Get cached settings instance."""
     return Settings(
         DATABASE_URL="postgresql://user:password@localhost/vellum",
-        NEO4J_URL="bolt://localhost:7687", 
-        NEO4J_PASSWORD="password"
+        NEO4J_URL="bolt://localhost:7687",
+        NEO4J_PASSWORD="password",
     )

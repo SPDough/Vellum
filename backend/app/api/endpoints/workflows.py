@@ -1,13 +1,11 @@
 from datetime import datetime
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from app.models.workflow import (
-    WorkflowExecution,
-)
+from app.models.workflow import WorkflowExecution
 
 router = APIRouter()
 
@@ -72,7 +70,9 @@ executions_db: dict = {}
 
 
 @router.get("/", response_model=List[WorkflowResponse])
-async def list_workflows(status: Optional[str] = None, enabled_only: bool = False) -> List[WorkflowResponse]:
+async def list_workflows(
+    status: Optional[str] = None, enabled_only: bool = False
+) -> List[WorkflowResponse]:
     """List all workflows."""
     workflows = []
     for workflow_id, workflow_data in workflows_db.items():
@@ -138,7 +138,9 @@ async def get_workflow(workflow_id: str) -> WorkflowResponse:
 
 
 @router.put("/{workflow_id}", response_model=WorkflowResponse)
-async def update_workflow(workflow_id: str, update_data: WorkflowUpdateRequest) -> WorkflowResponse:
+async def update_workflow(
+    workflow_id: str, update_data: WorkflowUpdateRequest
+) -> WorkflowResponse:
     """Update a workflow."""
     if workflow_id not in workflows_db:
         raise HTTPException(status_code=404, detail="Workflow not found")
@@ -266,7 +268,9 @@ async def list_workflow_executions(
 @router.get(
     "/{workflow_id}/executions/{execution_id}", response_model=WorkflowExecutionResponse
 )
-async def get_workflow_execution(workflow_id: str, execution_id: str) -> WorkflowExecutionResponse:
+async def get_workflow_execution(
+    workflow_id: str, execution_id: str
+) -> WorkflowExecutionResponse:
     """Get details of a specific workflow execution."""
     if workflow_id not in workflows_db:
         raise HTTPException(status_code=404, detail="Workflow not found")
@@ -284,7 +288,9 @@ async def get_workflow_execution(workflow_id: str, execution_id: str) -> Workflo
 
 
 @router.post("/{workflow_id}/executions/{execution_id}/cancel")
-async def cancel_workflow_execution(workflow_id: str, execution_id: str) -> Dict[str, Any]:
+async def cancel_workflow_execution(
+    workflow_id: str, execution_id: str
+) -> Dict[str, Any]:
     """Cancel a running workflow execution."""
     if workflow_id not in workflows_db:
         raise HTTPException(status_code=404, detail="Workflow not found")

@@ -52,7 +52,9 @@ class LLMProvider(ABC):
 class OpenAIProvider(LLMProvider):
     """OpenAI LLM provider."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4-turbo-preview") -> None:
+    def __init__(
+        self, api_key: Optional[str] = None, model: str = "gpt-4-turbo-preview"
+    ) -> None:
         self.api_key = api_key or settings.openai_api_key
         self.model = model
         self.client = AsyncOpenAI(api_key=self.api_key) if self.api_key else None
@@ -171,7 +173,9 @@ class OpenAIProvider(LLMProvider):
 class AnthropicProvider(LLMProvider):
     """Anthropic Claude LLM provider."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "claude-3-sonnet-20240229") -> None:
+    def __init__(
+        self, api_key: Optional[str] = None, model: str = "claude-3-sonnet-20240229"
+    ) -> None:
         self.api_key = api_key or settings.anthropic_api_key
         self.model = model
         self.client = AsyncAnthropic(api_key=self.api_key) if self.api_key else None
@@ -378,6 +382,7 @@ class OllamaProvider(LLMProvider):
         self, messages: List[Dict[str, str]], **kwargs: Any
     ) -> AsyncGenerator[str, None]:
         """Stream chat completion from Ollama."""
+
         async def _stream() -> AsyncGenerator[str, None]:
             async with self.client.stream(
                 "POST",
@@ -396,7 +401,7 @@ class OllamaProvider(LLMProvider):
                                 yield data["message"]["content"]
                         except json.JSONDecodeError:
                             continue
-        
+
         return _stream()
 
     def get_model_name(self) -> str:
@@ -463,7 +468,10 @@ class LLMService:
         return None
 
     async def chat_completion(
-        self, messages: List[Dict[str, str]], provider: Optional[str] = None, **kwargs: Any
+        self,
+        messages: List[Dict[str, str]],
+        provider: Optional[str] = None,
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """Get chat completion with automatic fallback."""
         # Choose provider
@@ -498,7 +506,10 @@ class LLMService:
             raise RuntimeError("All LLM providers failed")
 
     def stream_completion(
-        self, messages: List[Dict[str, str]], provider: Optional[str] = None, **kwargs: Any
+        self,
+        messages: List[Dict[str, str]],
+        provider: Optional[str] = None,
+        **kwargs: Any,
     ) -> AsyncGenerator[str, None]:
         """Stream chat completion."""
         # Choose provider

@@ -58,7 +58,9 @@ class EntitySearchRequest(BaseModel):
 
 
 @router.get("/health")
-async def health_check(neo4j_service: Neo4jService = Depends(get_neo4j_service)) -> Dict[str, Any]:
+async def health_check(
+    neo4j_service: Neo4jService = Depends(get_neo4j_service),
+) -> Dict[str, Any]:
     """Check Neo4j connection health."""
     return {
         "status": "healthy" if neo4j_service.is_connected() else "unhealthy",

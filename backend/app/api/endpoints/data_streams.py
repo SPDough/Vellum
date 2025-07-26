@@ -153,7 +153,9 @@ async def get_data_stream(stream_id: str) -> Dict[str, Any]:
 
 
 @router.put("/{stream_id}", response_model=DataStreamResponse)
-async def update_data_stream(stream_id: str, update_data: DataStreamUpdate) -> Dict[str, Any]:
+async def update_data_stream(
+    stream_id: str, update_data: DataStreamUpdate
+) -> Dict[str, Any]:
     """Update a data stream configuration."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
@@ -263,7 +265,9 @@ async def get_stream_metrics(stream_id: str) -> Dict[str, Any]:
 
 
 @router.post("/{stream_id}/subscribe")
-async def subscribe_to_stream(stream_id: str, subscription: StreamSubscription) -> Dict[str, Any]:
+async def subscribe_to_stream(
+    stream_id: str, subscription: StreamSubscription
+) -> Dict[str, Any]:
     """Subscribe to a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
@@ -289,7 +293,9 @@ async def subscribe_to_stream(stream_id: str, subscription: StreamSubscription) 
 
 
 @router.delete("/{stream_id}/subscribe/{subscription_id}")
-async def unsubscribe_from_stream(stream_id: str, subscription_id: str) -> Dict[str, Any]:
+async def unsubscribe_from_stream(
+    stream_id: str, subscription_id: str
+) -> Dict[str, Any]:
     """Unsubscribe from a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")

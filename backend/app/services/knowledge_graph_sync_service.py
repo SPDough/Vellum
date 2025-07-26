@@ -147,7 +147,9 @@ class KnowledgeGraphSyncService:
             logger.error(f"Failed to sync workflows to knowledge graph: {e}")
             return 0
 
-    async def _create_workflow_mcp_relationships(self, workflow: Dict[str, Any]) -> None:
+    async def _create_workflow_mcp_relationships(
+        self, workflow: Dict[str, Any]
+    ) -> None:
         """Create relationships between workflow and MCP servers it uses."""
         try:
             workflow_id = workflow["id"]
@@ -340,18 +342,18 @@ class KnowledgeGraphSyncService:
             for position in positions:
                 if self.neo4j_service:
                     await self.neo4j_service.create_relationship(
-                    from_entity_type=EntityType.ACCOUNT.value,
-                    from_entity_id=str(position["account_id"]),
-                    to_entity_type=EntityType.SECURITY.value,
-                    to_entity_id=str(position["security_id"]),
-                    relationship_type=RelationshipType.HOLDS.value,
-                    properties={
-                        "quantity": position["quantity"],
-                        "market_value": position["market_value"],
-                        "book_cost": position["book_cost"],
-                        "as_of_date": datetime.utcnow().isoformat(),
-                    },
-                )
+                        from_entity_type=EntityType.ACCOUNT.value,
+                        from_entity_id=str(position["account_id"]),
+                        to_entity_type=EntityType.SECURITY.value,
+                        to_entity_id=str(position["security_id"]),
+                        relationship_type=RelationshipType.HOLDS.value,
+                        properties={
+                            "quantity": position["quantity"],
+                            "market_value": position["market_value"],
+                            "book_cost": position["book_cost"],
+                            "as_of_date": datetime.utcnow().isoformat(),
+                        },
+                    )
 
             logger.info("Successfully created sample financial data")
 

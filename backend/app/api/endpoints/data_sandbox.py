@@ -1,6 +1,6 @@
 import io
-from typing import Any, Dict, List, Optional, AsyncGenerator
 from datetime import datetime
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from fastapi import (
     APIRouter,
@@ -419,13 +419,19 @@ async def websocket_data_stream(
     websocket: WebSocket, source_id: str, user_id: Optional[str] = None
 ) -> None:
     """WebSocket endpoint for real-time data updates."""
-    await data_stream_service.handle_websocket_connection(websocket, source_id, user_id or "anonymous")
+    await data_stream_service.handle_websocket_connection(
+        websocket, source_id, user_id or "anonymous"
+    )
 
 
 @router.websocket("/ws")
-async def websocket_global_stream(websocket: WebSocket, user_id: Optional[str] = None) -> None:
+async def websocket_global_stream(
+    websocket: WebSocket, user_id: Optional[str] = None
+) -> None:
     """WebSocket endpoint for global real-time updates."""
-    await data_stream_service.handle_websocket_connection(websocket, "global", user_id or "anonymous")
+    await data_stream_service.handle_websocket_connection(
+        websocket, "global", user_id or "anonymous"
+    )
 
 
 # Real-time Data (Server-Sent Events fallback)

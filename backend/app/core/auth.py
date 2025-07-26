@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Callable
+from typing import Any, Callable, Dict, Optional
 
 import httpx
 import jwt
@@ -194,7 +194,9 @@ def require_clearance_level(min_level: str) -> Callable[[Any], Any]:
     }
 
     def check_clearance(current_user: User = Depends(get_current_user)) -> User:
-        user_level = clearance_hierarchy.get(current_user.clearance_level or "PUBLIC", 0)
+        user_level = clearance_hierarchy.get(
+            current_user.clearance_level or "PUBLIC", 0
+        )
         required_level = clearance_hierarchy.get(min_level, 0)
 
         if user_level < required_level:

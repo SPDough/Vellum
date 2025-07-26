@@ -2,7 +2,6 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional
-import asyncio
 from uuid import uuid4
 
 logger = logging.getLogger(__name__)
@@ -341,7 +340,10 @@ class TemporalService:
             raise
 
     async def schedule_workflow(
-        self, workflow_id: str, schedule: str, input_data: Optional[Dict[str, Any]] = None
+        self,
+        workflow_id: str,
+        schedule: str,
+        input_data: Optional[Dict[str, Any]] = None,
     ) -> str:
         """Schedule a workflow for periodic execution."""
         schedule_id = str(uuid4())
@@ -441,7 +443,9 @@ class TemporalService:
         if workflow_id not in self.workflows:
             return []
 
-        return [dict(execution) for execution in self.workflows[workflow_id]["executions"]]
+        return [
+            dict(execution) for execution in self.workflows[workflow_id]["executions"]
+        ]
 
     def is_healthy(self) -> bool:
         """Check if Temporal service is healthy."""

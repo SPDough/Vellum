@@ -189,7 +189,9 @@ class KafkaService:
 
         return await self.publish_message("position-updates", message, key=account_id)
 
-    async def publish_market_data(self, symbol: str, market_data: Dict[str, Any]) -> bool:
+    async def publish_market_data(
+        self, symbol: str, market_data: Dict[str, Any]
+    ) -> bool:
         """Publish market data update."""
         message = {
             "symbol": symbol,

@@ -1,9 +1,9 @@
 import asyncio
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional, Generator
+from typing import AsyncGenerator, Generator, Optional
 
 import psycopg
-from neo4j import AsyncGraphDatabase, GraphDatabase, AsyncDriver
+from neo4j import AsyncDriver, AsyncGraphDatabase, GraphDatabase
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -271,7 +271,9 @@ class Neo4jService:
             return [dict(record) async for record in result]
 
     @staticmethod
-    async def get_related_sops(sop_id: str, relationship_types: Optional[list] = None) -> list:
+    async def get_related_sops(
+        sop_id: str, relationship_types: Optional[list] = None
+    ) -> list:
         """Get SOPs related to a given SOP."""
         rel_filter = ""
         if relationship_types:

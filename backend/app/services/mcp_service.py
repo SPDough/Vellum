@@ -128,7 +128,11 @@ class HTTPMCPClient(MCPClient):
                     {"mcp.success": True, "mcp.response_size": len(str(result))}
                 )
 
-                return dict(result) if isinstance(result, dict) else {"result": str(result)}
+                return (
+                    dict(result)
+                    if isinstance(result, dict)
+                    else {"result": str(result)}
+                )
 
             except Exception as e:
                 span.set_attribute("mcp.success", False)
@@ -142,7 +146,14 @@ class HTTPMCPClient(MCPClient):
             response = await self.client.get("/mcp/tools")
             response.raise_for_status()
             tools = response.json().get("tools", [])
-            return [dict(tool) if isinstance(tool, dict) else {"tool": tool} for tool in tools] if isinstance(tools, list) else []
+            return (
+                [
+                    dict(tool) if isinstance(tool, dict) else {"tool": tool}
+                    for tool in tools
+                ]
+                if isinstance(tools, list)
+                else []
+            )
         except Exception as e:
             logger.error(f"Failed to list MCP tools: {e}")
             return []
@@ -257,7 +268,14 @@ class WebSocketMCPClient(MCPClient):
         """List available tools via WebSocket."""
         result = await self.call_tool("list_tools", {})
         tools = result.get("tools", []) if isinstance(result, dict) else []
-        return [dict(tool) if isinstance(tool, dict) else {"name": str(tool)} for tool in tools] if isinstance(tools, list) else []
+        return (
+            [
+                dict(tool) if isinstance(tool, dict) else {"name": str(tool)}
+                for tool in tools
+            ]
+            if isinstance(tools, list)
+            else []
+        )
 
     async def get_server_info(self) -> Dict[str, Any]:
         """Get server info via WebSocket."""

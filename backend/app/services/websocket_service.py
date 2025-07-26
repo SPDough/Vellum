@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Set, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from fastapi import WebSocket, WebSocketDisconnect
 
@@ -21,7 +21,10 @@ class ConnectionManager:
         self.connection_metadata: Dict[WebSocket, Dict[str, Any]] = {}
 
     async def connect(
-        self, websocket: WebSocket, source_id: Optional[str] = None, user_id: Optional[str] = None
+        self,
+        websocket: WebSocket,
+        source_id: Optional[str] = None,
+        user_id: Optional[str] = None,
     ) -> None:
         """Accept a new WebSocket connection."""
         await websocket.accept()
@@ -83,7 +86,9 @@ class ConnectionManager:
             logger.error(f"Error sending personal message: {e}")
             self.disconnect(websocket)
 
-    async def broadcast_to_source(self, source_id: str, message: Dict[str, Any]) -> None:
+    async def broadcast_to_source(
+        self, source_id: str, message: Dict[str, Any]
+    ) -> None:
         """Broadcast a message to all connections subscribed to a data source."""
         if source_id not in self.active_connections:
             return
@@ -153,7 +158,11 @@ class ConnectionManager:
         await self.broadcast_to_source(source_id, message)
 
     async def send_workflow_update(
-        self, workflow_id: str, execution_id: str, status: str, output_data: Optional[Any] = None
+        self,
+        workflow_id: str,
+        execution_id: str,
+        status: str,
+        output_data: Optional[Any] = None,
     ) -> None:
         """Send a workflow execution update."""
         message = {
@@ -165,7 +174,9 @@ class ConnectionManager:
         }
         await self.broadcast_to_all(message)
 
-    async def send_mcp_stream_update(self, server_id: str, stream_name: str, data: Any) -> None:
+    async def send_mcp_stream_update(
+        self, server_id: str, stream_name: str, data: Any
+    ) -> None:
         """Send an MCP data stream update."""
         # Create a pseudo source_id for MCP streams
         source_id = f"mcp:{server_id}:{stream_name}"
@@ -221,7 +232,10 @@ class DataStreamService:
         self.connection_manager = connection_manager
 
     async def handle_websocket_connection(
-        self, websocket: WebSocket, source_id: Optional[str] = None, user_id: Optional[str] = None
+        self,
+        websocket: WebSocket,
+        source_id: Optional[str] = None,
+        user_id: Optional[str] = None,
     ) -> None:
         """Handle a new WebSocket connection with message processing."""
         await self.connection_manager.connect(websocket, source_id, user_id)
