@@ -1,33 +1,9 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Grid,
-  Typography,
-  Avatar,
-  Button,
-  LinearProgress,
-  Tabs,
-  Tab,
-  Alert,
-} from '@mui/material';
-import {
-  Storage as StorageIcon,
-  Timeline as TimelineIcon,
-  CloudSync as CloudSyncIcon,
-  CheckCircle as CheckCircleIcon,
-  Add as AddIcon,
-  Refresh as RefreshIcon,
-} from '@mui/icons-material';
 import { useQuery, useQueryClient } from 'react-query';
 
-import { MCPServer, DataFlow, DataStream, DataType, DataFlowStatus } from '@/types/data';
+import { MCPServer, DataStream } from '@/types/data';
 import { mcpServerService } from '@/services/mcpServerService';
 import { dataStreamService } from '@/services/dataStreamService';
-import MCPServerCard from '@/components/DataIntegration/MCPServerCard';
-import DataFlowCard from '@/components/DataIntegration/DataFlowCard';
-import DataStreamMonitor from '@/components/DataIntegration/DataStreamMonitor';
 import NewConnectionDialog from '@/components/DataIntegration/NewConnectionDialog';
 
 interface DataIntegrationProps {}
@@ -38,7 +14,7 @@ const DataIntegration: React.FC<DataIntegrationProps> = () => {
   const queryClient = useQueryClient();
 
   // Fetch MCP servers from API
-  const { data: mcpServers = [], isLoading: serversLoading, error: serversError } = useQuery<MCPServer[]>(
+  const { data: mcpServers = [], error: serversError } = useQuery<MCPServer[]>(
     'mcp-servers',
     () => mcpServerService.listServers(),
     {
@@ -57,31 +33,6 @@ const DataIntegration: React.FC<DataIntegrationProps> = () => {
     }
   );
 
-  // Mock data flows - TODO: Replace with actual API when available
-  const dataFlows: DataFlow[] = [
-    {
-      id: 'daily-positions-sync',
-      name: 'Daily Position Reconciliation',
-      description: 'Synchronizes position data from all custodians',
-      source_servers: ['state-street-001', 'bny-mellon-cust'],
-      target_systems: ['risk-system', 'reporting-db'],
-      data_types: [DataType.POSITIONS, DataType.CASH_FLOWS],
-      schedule: { type: 'CRON', cron_expression: '0 18 * * 1-5' },
-      status: DataFlowStatus.ACTIVE,
-      last_run: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-      next_run: new Date(Date.now() + 1000 * 60 * 60 * 14).toISOString(),
-      transformations: [],
-      quality_rules: [],
-      metrics: {
-        records_processed: 125000,
-        records_success: 124850,
-        records_failed: 150,
-        processing_time_ms: 45000,
-        data_quality_score: 99.2,
-        errors: []
-      }
-    }
-  ];
 
   const handleRefresh = () => {
     queryClient.invalidateQueries('mcp-servers');
@@ -93,41 +44,8 @@ const DataIntegration: React.FC<DataIntegrationProps> = () => {
     queryClient.invalidateQueries('mcp-servers');
   };
 
-  const renderTabContent = (): React.ReactNode => {
-    switch (activeTab) {
-      case 0:
-        return serversLoading ? (
-          <LinearProgress sx={{ borderRadius: 1 }} />
-        ) : (
-          <Grid container spacing={3}>
-            {mcpServers.map((server) => (
-              <Grid item xs={12} md={6} lg={4} key={server.id}>
-                <MCPServerCard server={server} />
-              </Grid>
-            ))}
-          </Grid>
-        );
-      case 1:
-        return (
-          <Grid container spacing={3}>
-            {dataFlows.map((flow) => (
-              <Grid item xs={12} md={6} key={flow.id}>
-                <DataFlowCard flow={flow} />
-              </Grid>
-            ))}
-          </Grid>
-        );
-      case 2:
-        return <DataStreamMonitor streams={dataStreams} />;
-      case 3:
-        return (
-          <Alert severity="info" sx={{ mb: 2 }}>
-            Data quality monitoring dashboard coming soon
-          </Alert>
-        );
-      default:
-        return null;
-    }
+  const renderTabContent = () => {
+    return <div>Simple test content</div>;
   };
 
 
@@ -139,150 +57,100 @@ const DataIntegration: React.FC<DataIntegrationProps> = () => {
     : 0;
 
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Box>
-          <Typography variant="h4" sx={{ fontWeight: 600, color: 'text.primary' }}>
-            Data Integration
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Monitor and manage connections to custodians and market data providers
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={handleRefresh}
-            sx={{ borderRadius: 2 }}
+    <>
+      <div style={{ padding: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div>
+            <h1 style={{ fontWeight: 600, margin: 0, marginBottom: '8px' }}>
+              Data Integration
+            </h1>
+            <p style={{ color: '#666', margin: 0 }}>
+              Monitor and manage connections to custodians and market data providers
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={handleRefresh} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #ccc', background: 'white', cursor: 'pointer' }}>
+              Refresh
+            </button>
+            <button onClick={() => setShowNewConnectionDialog(true)} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#1976d2', color: 'white', cursor: 'pointer' }}>
+              New Connection
+            </button>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '24px', marginBottom: '32px', flexWrap: 'wrap' }}>
+          <div style={{ flex: '1', minWidth: '250px' }}>
+            <div>Connected Servers: {connectedServers}</div>
+          </div>
+          <div style={{ flex: '1', minWidth: '250px' }}>
+            <div>Data Volume: {totalDataVolume.toFixed(1)}GB</div>
+          </div>
+          <div style={{ flex: '1', minWidth: '250px' }}>
+            <div>Uptime: {avgUptime.toFixed(1)}%</div>
+          </div>
+          <div style={{ flex: '1', minWidth: '250px' }}>
+            <div>Streams: {dataStreams.length}</div>
+          </div>
+        </div>
+
+        {Boolean(serversError || streamsError) ? (
+          <div style={{ padding: '16px', backgroundColor: '#ffebee', border: '1px solid #f44336', borderRadius: '4px', marginBottom: '16px' }}>
+            Failed to load data. Please check your connection and try again.
+          </div>
+        ) : null}
+      </div>
+
+      <div style={{ border: '1px solid #e0e0e0', borderRadius: '12px', marginBottom: '24px', margin: '24px' }}>
+        <div style={{ borderBottom: '1px solid #e0e0e0', padding: '0' }}>
+          <button 
+            onClick={() => setActiveTab(0)}
+            style={{ 
+              padding: '12px 24px', 
+              border: 'none', 
+              background: activeTab === 0 ? '#f5f5f5' : 'transparent',
+              cursor: 'pointer'
+            }}
           >
-            Refresh
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setShowNewConnectionDialog(true)}
-            sx={{ borderRadius: 2 }}
+            MCP Servers
+          </button>
+          <button 
+            onClick={() => setActiveTab(1)}
+            style={{ 
+              padding: '12px 24px', 
+              border: 'none', 
+              background: activeTab === 1 ? '#f5f5f5' : 'transparent',
+              cursor: 'pointer'
+            }}
           >
-            New Connection
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Overview Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
-            background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
-            color: 'white',
-            borderRadius: 3
-          }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-                    {connectedServers}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                    Connected Servers
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 56, height: 56 }}>
-                  <CloudSyncIcon sx={{ fontSize: 28 }} />
-                </Avatar>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: 'primary.main' }}>
-                    {totalDataVolume.toFixed(1)}GB
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Data Volume Today
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.dark' }}>
-                  <StorageIcon />
-                </Avatar>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: 'success.main' }}>
-                    {avgUptime.toFixed(1)}%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Average Uptime
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'success.light', color: 'success.dark' }}>
-                  <CheckCircleIcon />
-                </Avatar>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ borderRadius: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: 'primary.main' }}>
-                    {dataStreams.length}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Active Streams
-                  </Typography>
-                </Box>
-                <Avatar sx={{ bgcolor: 'info.light', color: 'info.dark' }}>
-                  <TimelineIcon />
-                </Avatar>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      <Card sx={{ borderRadius: 3, mb: 3 }}>
-        <Tabs
-          value={activeTab}
-          onChange={(_, newValue: number) => setActiveTab(newValue)}
-          sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            '& .MuiTab-root': {
-              textTransform: 'none',
-              fontWeight: 500,
-              px: 3
-            }
-          }}
-        >
-          <Tab label="MCP Servers" />
-          <Tab label="Data Flows" />
-          <Tab label="Real-time Streams" />
-          <Tab label="Data Quality" />
-        </Tabs>
-
-        <CardContent sx={{ p: 0 }}>
-          <Box sx={{ p: 3 }}>
-            {renderTabContent()}
-          </Box>
-        </CardContent>
-      </Card>
+            Data Flows
+          </button>
+          <button 
+            onClick={() => setActiveTab(2)}
+            style={{ 
+              padding: '12px 24px', 
+              border: 'none', 
+              background: activeTab === 2 ? '#f5f5f5' : 'transparent',
+              cursor: 'pointer'
+            }}
+          >
+            Real-time Streams
+          </button>
+          <button 
+            onClick={() => setActiveTab(3)}
+            style={{ 
+              padding: '12px 24px', 
+              border: 'none', 
+              background: activeTab === 3 ? '#f5f5f5' : 'transparent',
+              cursor: 'pointer'
+            }}
+          >
+            Data Quality
+          </button>
+        </div>
+        <div style={{ padding: '24px' }}>
+          {renderTabContent()}
+        </div>
+      </div>
 
       {/* New Connection Dialog */}
       <NewConnectionDialog
@@ -290,14 +158,7 @@ const DataIntegration: React.FC<DataIntegrationProps> = () => {
         onClose={() => setShowNewConnectionDialog(false)}
         onSuccess={handleNewConnectionSuccess}
       />
-
-      {/* Error Display */}
-      {(serversError || streamsError) && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          Failed to load data. Please check your connection and try again.
-        </Alert>
-      )}
-    </Box>
+    </>
   );
 };
 
