@@ -90,7 +90,7 @@ async def list_data_streams(
     data_type: Optional[str] = None,
     status: Optional[str] = None,
     enabled_only: bool = False,
-):
+) -> List[Dict[str, Any]]:
     """List all data streams."""
     streams = []
     for stream_id, stream_data in streams_db.items():
@@ -149,7 +149,7 @@ async def get_data_stream(stream_id: str) -> Dict[str, Any]:
     stream_data.update(metrics)
     stream_data["last_update"] = datetime.utcnow()
 
-    return stream_data
+    return dict(stream_data)
 
 
 @router.put("/{stream_id}", response_model=DataStreamResponse)
@@ -177,7 +177,7 @@ async def update_data_stream(stream_id: str, update_data: DataStreamUpdate) -> D
 
     stream["updated_at"] = datetime.utcnow()
 
-    return stream
+    return dict(stream)
 
 
 @router.delete("/{stream_id}")
@@ -339,7 +339,7 @@ async def get_stream_data(
     offset: int = 0,
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None,
-):
+) -> Dict[str, Any]:
     """Get recent data from a stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
