@@ -1,6 +1,6 @@
 import asyncio
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
 import psycopg
 from neo4j import AsyncGraphDatabase, GraphDatabase
@@ -39,7 +39,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 class DatabaseManager:
     """Manages database connections and operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.neo4j_driver = None
         self.postgres_engine = engine
 
@@ -161,7 +161,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 # Dependency for getting sync database session
-def get_sync_db() -> Session:
+def get_sync_db() -> AsyncGenerator[Session, None]:
     """Get sync database session."""
     db = SessionLocal()
     try:
@@ -172,7 +172,7 @@ def get_sync_db() -> Session:
 
 # Dependency for getting Neo4j session
 @asynccontextmanager
-async def get_neo4j_session():
+async def get_neo4j_session() -> AsyncGenerator:
     """Get Neo4j async session."""
     if not db_manager.neo4j_driver:
         raise RuntimeError("Neo4j driver not initialized")
@@ -271,7 +271,7 @@ class Neo4jService:
             return [dict(record) async for record in result]
 
     @staticmethod
-    async def get_related_sops(sop_id: str, relationship_types: list = None) -> list:
+    async def get_related_sops(sop_id: str, relationship_types: Optional[list] = None) -> list:
         """Get SOPs related to a given SOP."""
         rel_filter = ""
         if relationship_types:

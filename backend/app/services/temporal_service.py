@@ -2,6 +2,7 @@ import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional
+import asyncio
 from uuid import uuid4
 
 logger = logging.getLogger(__name__)
@@ -10,14 +11,14 @@ logger = logging.getLogger(__name__)
 class TemporalService:
     """Temporal service for workflow orchestration and scheduling."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.workflows: Dict[str, Dict[str, Any]] = {}
         self.activities: Dict[str, Callable] = {}
         self.scheduled_workflows: Dict[str, Dict[str, Any]] = {}
         self.running = False
-        self._scheduler_task = None
+        self._scheduler_task: Optional[asyncio.Task] = None
 
-    async def start(self):
+    async def start(self) -> None:
         """Start Temporal service."""
         try:
             logger.info("Starting Temporal service...")
@@ -35,7 +36,7 @@ class TemporalService:
             logger.error(f"Failed to start Temporal service: {e}")
             raise
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop Temporal service."""
         try:
             logger.info("Stopping Temporal service...")
@@ -53,7 +54,7 @@ class TemporalService:
         except Exception as e:
             logger.error(f"Error stopping Temporal service: {e}")
 
-    async def _register_default_activities(self):
+    async def _register_default_activities(self) -> None:
         """Register default workflow activities."""
         self.activities.update(
             {
@@ -87,7 +88,7 @@ class TemporalService:
             return False
 
     async def execute_workflow(
-        self, workflow_id: str, input_data: Dict[str, Any] = None
+        self, workflow_id: str, input_data: Optional[Dict[str, Any]] = None
     ) -> str:
         """Execute a workflow and return execution ID."""
         try:
@@ -119,7 +120,7 @@ class TemporalService:
             logger.error(f"Failed to execute workflow {workflow_id}: {e}")
             raise
 
-    async def _execute_workflow_steps(self, execution: Dict[str, Any]):
+    async def _execute_workflow_steps(self, execution: Dict[str, Any]) -> None:
         """Execute workflow steps."""
         try:
             workflow_id = execution["workflow_id"]
@@ -340,8 +341,8 @@ class TemporalService:
             raise
 
     async def schedule_workflow(
-        self, workflow_id: str, schedule: str, input_data: Dict[str, Any] = None
-    ):
+        self, workflow_id: str, schedule: str, input_data: Optional[Dict[str, Any]] = None
+    ) -> str:
         """Schedule a workflow for periodic execution."""
         schedule_id = str(uuid4())
 
@@ -379,7 +380,7 @@ class TemporalService:
         # Default to 1 hour
         return now + timedelta(hours=1)
 
-    async def _scheduler_loop(self):
+    async def _scheduler_loop(self) -> None:
         """Background scheduler loop."""
         while self.running:
             try:
@@ -431,7 +432,7 @@ class TemporalService:
 
         for execution in self.workflows[workflow_id]["executions"]:
             if execution["id"] == execution_id:
-                return execution
+                return dict(execution)
 
         return None
 
@@ -440,7 +441,7 @@ class TemporalService:
         if workflow_id not in self.workflows:
             return []
 
-        return self.workflows[workflow_id]["executions"]
+        return [dict(execution) for execution in self.workflows[workflow_id]["executions"]]
 
     def is_healthy(self) -> bool:
         """Check if Temporal service is healthy."""

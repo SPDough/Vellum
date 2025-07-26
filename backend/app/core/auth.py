@@ -39,7 +39,7 @@ class User(BaseModel):
 class KeycloakAuth:
     """Keycloak authentication service with SSO support."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.keycloak_url = settings.keycloak_url
         self.realm = "otomeshon"
         self.client_id = "otomeshon-client"
@@ -181,7 +181,7 @@ async def get_current_trader_user(
     return current_user
 
 
-def require_clearance_level(min_level: str):
+def require_clearance_level(min_level: str) -> callable:
     """Decorator to require minimum clearance level."""
     clearance_hierarchy = {
         "PUBLIC": 0,

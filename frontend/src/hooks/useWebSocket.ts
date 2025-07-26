@@ -105,7 +105,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
         }
       };
 
-      ws.onclose = (event) => {
+      ws.onclose = (_event) => {
         setIsConnected(false);
         setConnectionStats(prev => ({
           ...prev,

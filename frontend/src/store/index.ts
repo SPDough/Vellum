@@ -77,7 +77,7 @@ interface WorkspaceState {
 
 export const useWorkspaceStore = create<WorkspaceState>()(
   devtools(
-    (set, get) => ({
+    (set, _get) => ({
       currentWorkspace: null,
       workspaces: [],
       currentPage: null,
