@@ -26,14 +26,14 @@ class LLMProvider(ABC):
 
     @abstractmethod
     async def chat_completion(
-        self, messages: List[Dict[str, str]], **kwargs
+        self, messages: List[Dict[str, str]], **kwargs: Any
     ) -> Dict[str, Any]:
         """Get chat completion from the LLM."""
         pass
 
     @abstractmethod
-    async def stream_completion(
-        self, messages: List[Dict[str, str]], **kwargs
+    def stream_completion(
+        self, messages: List[Dict[str, str]], **kwargs: Any
     ) -> AsyncGenerator[str, None]:
         """Stream chat completion from the LLM."""
         pass
@@ -52,7 +52,7 @@ class LLMProvider(ABC):
 class OpenAIProvider(LLMProvider):
     """OpenAI LLM provider."""
 
-    def __init__(self, api_key: str = None, model: str = "gpt-4-turbo-preview") -> None:
+    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4-turbo-preview") -> None:
         self.api_key = api_key or settings.openai_api_key
         self.model = model
         self.client = AsyncOpenAI(api_key=self.api_key) if self.api_key else None
@@ -67,7 +67,7 @@ class OpenAIProvider(LLMProvider):
         }
 
     async def chat_completion(
-        self, messages: List[Dict[str, str]], **kwargs
+        self, messages: List[Dict[str, str]], **kwargs: Any
     ) -> Dict[str, Any]:
         """Get chat completion from OpenAI."""
         if not self.client:
@@ -136,7 +136,7 @@ class OpenAIProvider(LLMProvider):
                 raise
 
     async def stream_completion(
-        self, messages: List[Dict[str, str]], **kwargs
+        self, messages: List[Dict[str, str]], **kwargs: Any
     ) -> AsyncGenerator[str, None]:
         """Stream chat completion from OpenAI."""
         if not self.client:
@@ -171,7 +171,7 @@ class OpenAIProvider(LLMProvider):
 class AnthropicProvider(LLMProvider):
     """Anthropic Claude LLM provider."""
 
-    def __init__(self, api_key: str = None, model: str = "claude-3-sonnet-20240229") -> None:
+    def __init__(self, api_key: Optional[str] = None, model: str = "claude-3-sonnet-20240229") -> None:
         self.api_key = api_key or settings.anthropic_api_key
         self.model = model
         self.client = AsyncAnthropic(api_key=self.api_key) if self.api_key else None
@@ -185,7 +185,7 @@ class AnthropicProvider(LLMProvider):
         }
 
     async def chat_completion(
-        self, messages: List[Dict[str, str]], **kwargs
+        self, messages: List[Dict[str, str]], **kwargs: Any
     ) -> Dict[str, Any]:
         """Get chat completion from Anthropic."""
         if not self.client:
@@ -253,7 +253,7 @@ class AnthropicProvider(LLMProvider):
                 raise
 
     async def stream_completion(
-        self, messages: List[Dict[str, str]], **kwargs
+        self, messages: List[Dict[str, str]], **kwargs: Any
     ) -> AsyncGenerator[str, None]:
         """Stream chat completion from Anthropic."""
         if not self.client:
@@ -300,13 +300,13 @@ class AnthropicProvider(LLMProvider):
 class OllamaProvider(LLMProvider):
     """Ollama local LLM provider."""
 
-    def __init__(self, base_url: str = None, model: str = "llama2") -> None:
+    def __init__(self, base_url: Optional[str] = None, model: str = "llama2") -> None:
         self.base_url = base_url or settings.ollama_base_url
         self.model = model
         self.client = httpx.AsyncClient(base_url=self.base_url, timeout=120.0)
 
     async def chat_completion(
-        self, messages: List[Dict[str, str]], **kwargs
+        self, messages: List[Dict[str, str]], **kwargs: Any
     ) -> Dict[str, Any]:
         """Get chat completion from Ollama."""
         with tracer.start_as_current_span("ollama_chat_completion") as span:
@@ -374,27 +374,30 @@ class OllamaProvider(LLMProvider):
                 logger.error(f"Ollama completion failed: {e}")
                 raise
 
-    async def stream_completion(
-        self, messages: List[Dict[str, str]], **kwargs
+    def stream_completion(
+        self, messages: List[Dict[str, str]], **kwargs: Any
     ) -> AsyncGenerator[str, None]:
         """Stream chat completion from Ollama."""
-        async with self.client.stream(
-            "POST",
-            "/api/chat",
-            json={
-                "model": self.model,
-                "messages": messages,
-                "stream": True,
-            },
-        ) as response:
-            async for line in response.aiter_lines():
-                if line:
-                    try:
-                        data = json.loads(line)
-                        if "message" in data and "content" in data["message"]:
-                            yield data["message"]["content"]
-                    except json.JSONDecodeError:
-                        continue
+        async def _stream() -> AsyncGenerator[str, None]:
+            async with self.client.stream(
+                "POST",
+                "/api/chat",
+                json={
+                    "model": self.model,
+                    "messages": messages,
+                    "stream": True,
+                },
+            ) as response:
+                async for line in response.aiter_lines():
+                    if line:
+                        try:
+                            data = json.loads(line)
+                            if "message" in data and "content" in data["message"]:
+                                yield data["message"]["content"]
+                        except json.JSONDecodeError:
+                            continue
+        
+        return _stream()
 
     def get_model_name(self) -> str:
         return self.model
@@ -405,7 +408,7 @@ class OllamaProvider(LLMProvider):
     def _estimate_tokens(self, messages: List[Dict[str, str]], response: str) -> int:
         """Estimate token count (rough approximation)."""
         text = " ".join([msg.get("content", "") for msg in messages]) + response
-        return len(text.split()) * 1.3  # Rough token estimation
+        return int(len(text.split()) * 1.3)  # Rough token estimation
 
 
 class LLMService:
@@ -417,7 +420,7 @@ class LLMService:
 
     def _initialize_providers(self) -> Dict[str, LLMProvider]:
         """Initialize all available LLM providers."""
-        providers = {}
+        providers: Dict[str, LLMProvider] = {}
 
         # OpenAI provider
         if settings.openai_api_key:
@@ -460,7 +463,7 @@ class LLMService:
         return None
 
     async def chat_completion(
-        self, messages: List[Dict[str, str]], provider: Optional[str] = None, **kwargs
+        self, messages: List[Dict[str, str]], provider: Optional[str] = None, **kwargs: Any
     ) -> Dict[str, Any]:
         """Get chat completion with automatic fallback."""
         # Choose provider
@@ -494,8 +497,8 @@ class LLMService:
             # If all providers fail
             raise RuntimeError("All LLM providers failed")
 
-    async def stream_completion(
-        self, messages: List[Dict[str, str]], provider: Optional[str] = None, **kwargs
+    def stream_completion(
+        self, messages: List[Dict[str, str]], provider: Optional[str] = None, **kwargs: Any
     ) -> AsyncGenerator[str, None]:
         """Stream chat completion."""
         # Choose provider
@@ -506,8 +509,7 @@ class LLMService:
         else:
             raise RuntimeError("No LLM providers available")
 
-        async for chunk in chosen_provider.stream_completion(messages, **kwargs):
-            yield chunk
+        return chosen_provider.stream_completion(messages, **kwargs)
 
     def get_available_providers(self) -> List[str]:
         """Get list of available providers."""

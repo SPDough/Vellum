@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Callable
 
 import httpx
 import jwt
@@ -46,8 +46,8 @@ class KeycloakAuth:
         self.client_secret = None  # Will be configured in Keycloak
 
         # Cache for Keycloak public key
-        self._public_key_cache = None
-        self._public_key_expires = None
+        self._public_key_cache: Optional[str] = None
+        self._public_key_expires: Optional[datetime] = None
 
     async def get_public_key(self) -> str:
         """Get Keycloak public key for JWT validation."""
@@ -59,7 +59,7 @@ class KeycloakAuth:
             and self._public_key_expires
             and now < self._public_key_expires
         ):
-            return self._public_key_cache
+            return str(self._public_key_cache)
 
         # Fetch new public key
         async with httpx.AsyncClient() as client:
@@ -72,9 +72,10 @@ class KeycloakAuth:
             # Extract the public key (simplified - in production, handle multiple keys)
             if certs.get("keys"):
                 key_data = certs["keys"][0]
-                self._public_key_cache = jwt.algorithms.RSAAlgorithm.from_jwk(key_data)
+                public_key = jwt.algorithms.RSAAlgorithm.from_jwk(key_data)
+                self._public_key_cache = str(public_key)
                 self._public_key_expires = now + timedelta(hours=1)
-                return self._public_key_cache
+                return str(public_key)
 
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -140,7 +141,8 @@ class KeycloakAuth:
                 headers={"Authorization": f"Bearer {token}"},
             )
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            return dict(result) if result else {}
 
 
 # Global auth instance
@@ -181,7 +183,7 @@ async def get_current_trader_user(
     return current_user
 
 
-def require_clearance_level(min_level: str) -> callable:
+def require_clearance_level(min_level: str) -> Callable[[Any], Any]:
     """Decorator to require minimum clearance level."""
     clearance_hierarchy = {
         "PUBLIC": 0,
@@ -192,7 +194,7 @@ def require_clearance_level(min_level: str) -> callable:
     }
 
     def check_clearance(current_user: User = Depends(get_current_user)) -> User:
-        user_level = clearance_hierarchy.get(current_user.clearance_level, 0)
+        user_level = clearance_hierarchy.get(current_user.clearance_level or "PUBLIC", 0)
         required_level = clearance_hierarchy.get(min_level, 0)
 
         if user_level < required_level:

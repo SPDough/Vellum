@@ -128,7 +128,7 @@ class HTTPMCPClient(MCPClient):
                     {"mcp.success": True, "mcp.response_size": len(str(result))}
                 )
 
-                return result
+                return dict(result) if isinstance(result, dict) else {"result": str(result)}
 
             except Exception as e:
                 span.set_attribute("mcp.success", False)
@@ -141,7 +141,8 @@ class HTTPMCPClient(MCPClient):
         try:
             response = await self.client.get("/mcp/tools")
             response.raise_for_status()
-            return response.json().get("tools", [])
+            tools = response.json().get("tools", [])
+            return [dict(tool) if isinstance(tool, dict) else {"tool": tool} for tool in tools] if isinstance(tools, list) else []
         except Exception as e:
             logger.error(f"Failed to list MCP tools: {e}")
             return []
@@ -151,7 +152,8 @@ class HTTPMCPClient(MCPClient):
         try:
             response = await self.client.get("/mcp/info")
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            return dict(result) if isinstance(result, dict) else {"result": result}
         except Exception as e:
             logger.error(f"Failed to get MCP server info: {e}")
             return {}
@@ -254,11 +256,13 @@ class WebSocketMCPClient(MCPClient):
     async def list_tools(self) -> List[Dict[str, Any]]:
         """List available tools via WebSocket."""
         result = await self.call_tool("list_tools", {})
-        return result.get("tools", [])
+        tools = result.get("tools", []) if isinstance(result, dict) else []
+        return [dict(tool) if isinstance(tool, dict) else {"name": str(tool)} for tool in tools] if isinstance(tools, list) else []
 
     async def get_server_info(self) -> Dict[str, Any]:
         """Get server info via WebSocket."""
-        return await self.call_tool("get_info", {})
+        result = await self.call_tool("get_info", {})
+        return dict(result) if isinstance(result, dict) else {}
 
 
 class MCPServerManager:
@@ -268,7 +272,7 @@ class MCPServerManager:
         self.servers: Dict[str, Dict[str, Any]] = {}
         self.clients: Dict[str, MCPClient] = {}
         self.health_check_interval = 60  # seconds
-        self._health_check_task = None
+        self._health_check_task: Optional[asyncio.Task[None]] = None
 
     async def register_server(self, server_config: Dict[str, Any]) -> bool:
         """Register a new MCP server."""

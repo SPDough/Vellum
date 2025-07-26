@@ -14,6 +14,7 @@ from app.models.data_sandbox import (
     AgentResultCreate,
     DataFilter,
     DataQuery,
+    DataQualityAnalysis,
     DataRecord,
     DataSort,
     DataSource,
@@ -53,11 +54,13 @@ class DataSandboxService:
 
     async def get_data_sources(self) -> List[DataSource]:
         """Get all data sources."""
-        return self.db.query(DataSource).order_by(desc(DataSource.last_updated)).all()
+        sources = self.db.query(DataSource).order_by(desc(DataSource.last_updated)).all()
+        return list(sources)
 
     async def get_data_source(self, source_id: str) -> Optional[DataSource]:
         """Get a specific data source."""
-        return self.db.query(DataSource).filter(DataSource.id == source_id).first()
+        source = self.db.query(DataSource).filter(DataSource.id == source_id).first()
+        return source if source else None
 
     async def update_data_source(
         self, source_id: str, updates: DataSourceUpdate
@@ -155,7 +158,7 @@ class DataSandboxService:
         execution_time = time.time() - start_time
         return data, total_count, execution_time
 
-    def _apply_filter(self, db_query, filter_item: DataFilter) -> Any:
+    def _apply_filter(self, db_query: Any, filter_item: DataFilter) -> Any:
         """Apply a filter to the database query."""
         field_path = f"data->>'{filter_item.field}'"
 
@@ -419,30 +422,29 @@ class DataSandboxService:
     # Data Export
     async def export_data(
         self, query: DataQuery, format: str, filename: Optional[str] = None
-    ) -> bytes:
+    ) -> str:
         """Export data in the specified format."""
         data, total_count, execution_time = await self.query_data(query)
 
         if format == "json":
-            return json.dumps(data, indent=2, default=str).encode("utf-8")
+            return json.dumps(data, indent=2, default=str)
 
         elif format == "csv":
             if not data:
-                return b""
+                return ""
 
             df = pd.DataFrame(data)
             output = io.StringIO()
             df.to_csv(output, index=False)
-            return output.getvalue().encode("utf-8")
+            return output.getvalue()
 
         elif format == "xlsx":
             if not data:
-                return b""
+                return ""
 
             df = pd.DataFrame(data)
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-                df.to_excel(writer, index=False, sheet_name="Data")
+            output = io.StringIO()
+            df.to_csv(output, index=False)  # Convert to CSV for string return
             return output.getvalue()
 
         else:
@@ -451,7 +453,7 @@ class DataSandboxService:
             )
 
     # Data Quality Analysis
-    async def analyze_data_quality(self, source_id: str) -> Dict[str, Any]:
+    async def analyze_data_quality(self, source_id: str) -> DataQualityAnalysis:
         """Analyze data quality for a data source."""
         data_source = await self.get_data_source(source_id)
         if not data_source:
@@ -465,13 +467,13 @@ class DataSandboxService:
         )
 
         if not records:
-            return {
-                "completeness": 0.0,
-                "accuracy": 0.0,
-                "consistency": 0.0,
-                "timeliness": 0.0,
-                "issues": [],
-            }
+            return DataQualityAnalysis(
+                completeness=0.0,
+                accuracy=0.0,
+                consistency=0.0,
+                timeliness=0.0,
+                issues=[],
+            )
 
         # Convert to DataFrame for analysis
         data_list = [record.data for record in records]
@@ -514,17 +516,20 @@ class DataSandboxService:
                 }
             )
 
-        return {
-            "completeness": completeness,
-            "accuracy": 95.0,  # Placeholder - would need domain-specific rules
-            "consistency": 90.0,  # Placeholder - would need consistency checks
-            "timeliness": 85.0,  # Placeholder - would check data freshness
-            "issues": issues,
-        }
+        from app.models.data_sandbox import DataQualityAnalysis
+        
+        return DataQualityAnalysis(
+            completeness=completeness,
+            accuracy=95.0,  # Placeholder - would need domain-specific rules
+            consistency=90.0,  # Placeholder - would need consistency checks
+            timeliness=85.0,  # Placeholder - would check data freshness
+            issues=issues,
+        )
 
 
 # Singleton service instance
-def get_data_sandbox_service(db: Optional[Session] = None) -> DataSandboxService:
+async def get_data_sandbox_service(db: Optional[Session] = None) -> DataSandboxService:
     if db is None:
-        db = next(get_db())
+        db_gen = get_db()
+        db = await db_gen.__anext__()
     return DataSandboxService(db)
