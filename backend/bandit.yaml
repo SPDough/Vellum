@@ -1,0 +1,163 @@
+# Bandit security configuration for Otomeshon Banking Platform
+# Banking-specific security scanning rules
+
+# Test selection
+tests:
+  - B101  # assert_used
+  - B102  # exec_used
+  - B103  # set_bad_file_permissions
+  - B104  # hardcoded_bind_all_interfaces
+  - B105  # hardcoded_password_string
+  - B106  # hardcoded_password_funcarg
+  - B107  # hardcoded_password_default
+  - B108  # hardcoded_tmp_directory
+  - B110  # try_except_pass
+  - B112  # try_except_continue
+  - B201  # flask_debug_true
+  - B301  # pickle
+  - B302  # marshal
+  - B303  # md5
+  - B304  # des
+  - B305  # cipher
+  - B306  # mktemp_q
+  - B307  # eval
+  - B308  # mark_safe
+  - B309  # httpsconnection
+  - B310  # urllib_urlopen
+  - B311  # random
+  - B312  # telnetlib
+  - B313  # xml_bad_cElementTree
+  - B314  # xml_bad_ElementTree
+  - B315  # xml_bad_expatreader
+  - B316  # xml_bad_expatbuilder
+  - B317  # xml_bad_sax
+  - B318  # xml_bad_minidom
+  - B319  # xml_bad_pulldom
+  - B320  # xml_bad_etree
+  - B321  # ftplib
+  - B322  # input
+  - B323  # unverified_context
+  - B324  # hashlib_new_insecure_functions
+  - B325  # tempnam
+  - B401  # import_telnetlib
+  - B402  # import_ftplib
+  - B403  # import_pickle
+  - B404  # import_subprocess
+  - B405  # import_xml_etree
+  - B406  # import_xml_sax
+  - B407  # import_xml_expat
+  - B408  # import_xml_minidom
+  - B409  # import_xml_pulldom
+  - B410  # import_lxml
+  - B411  # import_xmlrpclib
+  - B412  # import_httpoxy
+  - B413  # import_pycrypto
+  - B501  # request_with_no_cert_validation
+  - B502  # ssl_with_bad_version
+  - B503  # ssl_with_bad_defaults
+  - B504  # ssl_with_no_version
+  - B505  # weak_cryptographic_key
+  - B506  # yaml_load
+  - B507  # ssh_no_host_key_verification
+  - B601  # paramiko_calls
+  - B602  # subprocess_popen_with_shell_equals_true
+  - B603  # subprocess_without_shell_equals_true
+  - B604  # any_other_function_with_shell_equals_true
+  - B605  # start_process_with_a_shell
+  - B606  # start_process_with_no_shell
+  - B607  # start_process_with_partial_path
+  - B608  # hardcoded_sql_expressions
+  - B609  # linux_commands_wildcard_injection
+  - B610  # django_extra_used
+  - B611  # django_rawsql_used
+  - B701  # jinja2_autoescape_false
+  - B702  # use_of_mako_templates
+  - B703  # django_mark_safe
+
+# Skips - tests we don't want to run
+skips:
+  - B101  # Allow assert statements in tests
+  - B404  # Allow subprocess imports (needed for some operations)
+
+# Banking-specific severity overrides
+severity:
+  # Critical for banking operations
+  - rule: B105  # hardcoded_password_string
+    level: HIGH
+  - rule: B106  # hardcoded_password_funcarg  
+    level: HIGH
+  - rule: B107  # hardcoded_password_default
+    level: HIGH
+  - rule: B311  # random (use secrets module for crypto)
+    level: HIGH
+  - rule: B324  # hashlib_new_insecure_functions
+    level: HIGH
+  - rule: B501  # request_with_no_cert_validation
+    level: HIGH
+  - rule: B505  # weak_cryptographic_key
+    level: HIGH
+  - rule: B608  # hardcoded_sql_expressions
+    level: HIGH
+
+# Exclude paths
+exclude_dirs:
+  - tests
+  - migrations
+  - venv
+  - __pycache__
+  - .git
+
+# Banking compliance configuration
+banking_rules:
+  # Require strong encryption
+  require_tls_1_2_minimum: true
+  
+  # Password policy enforcement
+  password_complexity_required: true
+  
+  # Audit trail requirements
+  audit_logging_mandatory: true
+  
+  # Data protection
+  pii_data_encryption_required: true
+  
+  # Session management
+  secure_session_handling: true
+
+# Custom patterns for banking security
+patterns:
+  - pattern: "password\s*=\s*['\"][^'\"]+['\"]"
+    message: "Hardcoded password detected - use environment variables or secure vault"
+    severity: HIGH
+    
+  - pattern: "api_key\s*=\s*['\"][^'\"]+['\"]"
+    message: "Hardcoded API key detected - use secure configuration"
+    severity: HIGH
+    
+  - pattern: "secret\s*=\s*['\"][^'\"]+['\"]"
+    message: "Hardcoded secret detected - use secure storage"
+    severity: HIGH
+    
+  - pattern: "token\s*=\s*['\"][^'\"]+['\"]"
+    message: "Hardcoded token detected - use secure configuration"
+    severity: HIGH
+    
+  - pattern: "md5\(|sha1\("
+    message: "Weak hash function detected - use SHA-256 or stronger"
+    severity: MEDIUM
+    
+  - pattern: "random\.random\(|random\.randint\("
+    message: "Insecure random function for crypto - use secrets module"
+    severity: HIGH
+    
+  - pattern: "ssl_verify\s*=\s*False"
+    message: "SSL verification disabled - required for banking compliance"
+    severity: HIGH
+    
+  - pattern: "DEBUG\s*=\s*True"
+    message: "Debug mode enabled - disable in production"
+    severity: MEDIUM
+
+# Report configuration
+report_format: json
+confidence_level: medium

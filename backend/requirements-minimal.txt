@@ -1,0 +1,23 @@
+# Minimal Dependencies - Absolute minimum for basic API functionality
+# Perfect for development, testing, and simple deployments
+
+# Core Framework
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+pydantic>=2.7.4
+pydantic-settings>=2.4.0
+
+# Basic Security
+bcrypt==4.1.2
+
+# Configuration
+python-dotenv==1.0.1
+
+# HTTP Client for external APIs
+httpx==0.27.0
+
+# File uploads (FastAPI requirement)
+python-multipart==0.0.9
+
+# Utilities
+python-dateutil==2.9.0

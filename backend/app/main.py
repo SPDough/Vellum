@@ -12,6 +12,12 @@ from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.database import init_db
 from app.core.telemetry import setup_telemetry
+from app.core.middleware import (
+    ErrorHandlingMiddleware,
+    SecurityHeadersMiddleware,
+    RequestLoggingMiddleware,
+    RateLimitingMiddleware
+)
 from app.services.kafka_service import kafka_service
 from app.services.knowledge_graph_sync_service import kg_sync_service
 from app.services.neo4j_service import neo4j_service
@@ -59,7 +65,25 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# Configure CORS
+# Add middleware in correct order (last added = first executed)
+# 1. Error handling (catch all errors)
+app.add_middleware(ErrorHandlingMiddleware)
+
+# 2. Security headers
+app.add_middleware(SecurityHeadersMiddleware)
+
+# 3. Request logging and rate limiting
+settings = get_settings()
+if settings.environment == "production":
+    app.add_middleware(RateLimitingMiddleware, requests_per_minute=100)
+
+app.add_middleware(
+    RequestLoggingMiddleware,
+    log_requests=True,
+    log_responses=settings.environment == "development"
+)
+
+# 4. CORS (should be last)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://frontend:3000"],
