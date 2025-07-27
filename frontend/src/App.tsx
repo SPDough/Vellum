@@ -1,16 +1,40 @@
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+
+import Layout from './components/Layout';
+import Positions from './pages/Positions';
+import Transactions from './pages/Transactions';
+import Reconciliation from './pages/Reconciliation';
+
+const theme = createTheme({
+  palette: {
+    mode: 'light',
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#dc004e',
+    },
+  },
+});
 
 const App: React.FC = () => {
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>🎉 Otomeshon is Working!</h1>
-      <p>This is a simple test to verify React is mounting correctly.</p>
-      <div style={{ background: '#f0f0f0', padding: '10px', borderRadius: '5px', marginTop: '20px' }}>
-        <h3>Backend Status:</h3>
-        <p>Backend API: <a href="http://localhost:8000/health" target="_blank">http://localhost:8000/health</a></p>
-        <p>Data Sandbox API: <a href="http://localhost:8000/api/v1/data-sandbox/stats" target="_blank">http://localhost:8000/api/v1/data-sandbox/stats</a></p>
-      </div>
-    </div>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Router>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<div>Dashboard Placeholder</div>} />
+            <Route path="positions" element={<Positions />} />
+            <Route path="transactions" element={<Transactions />} />
+            <Route path="reconciliation" element={<Reconciliation />} />
+          </Route>
+        </Routes>
+      </Router>
+    </ThemeProvider>
   );
 };
 

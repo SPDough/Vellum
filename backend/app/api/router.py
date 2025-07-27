@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.endpoints import (
     data_sandbox,
     data_streams,
+    fibo,
     knowledge_graph,
     mcp_servers,
     workflows,
@@ -28,3 +29,5 @@ api_router.include_router(
 api_router.include_router(
     data_sandbox.router, prefix="/data-sandbox", tags=["Data Sandbox"]
 )
+
+api_router.include_router(fibo.router, prefix="/fibo", tags=["FIBO Ontology"])

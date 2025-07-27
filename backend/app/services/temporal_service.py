@@ -183,7 +183,9 @@ class TemporalService:
         node_type = node.get("type", "unknown")
         node_config = node.get("config", {})
 
-        if node_type == "MCP_CALL":
+        if node_type == "FIBO_MAPPING":
+            return await self._fibo_mapping_activity(node_config, input_data)
+        elif node_type == "MCP_CALL":
             return await self._mcp_call_activity(node_config, input_data)
         elif node_type == "TRANSFORM":
             return await self._data_transform_activity(node_config, input_data)
@@ -338,6 +340,38 @@ class TemporalService:
         except Exception as e:
             logger.error(f"Wait for condition activity failed: {e}")
             raise
+
+    async def _fibo_mapping_activity(
+        self, config: Dict[str, Any], input_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """FIBO ontology mapping activity."""
+        try:
+            from app.services.langgraph_service import get_langgraph_service
+            
+            langgraph_service = await get_langgraph_service()
+            
+            workflow_id = await langgraph_service.create_fibo_mapping_workflow()
+            result = await langgraph_service.execute_workflow(workflow_id, input_data)
+            
+            fibo_result = {
+                "fibo_mapping_completed": True,
+                "workflow_id": workflow_id,
+                "mapped_positions": result.get("data", {}).get("fibo_positions", []),
+                "mapping_results": result.get("data", {}).get("mapping_results", []),
+                "messages": result.get("messages", []),
+                "errors": result.get("errors", []),
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+            
+            return fibo_result
+
+        except Exception as e:
+            logger.error(f"FIBO mapping activity failed: {e}")
+            return {
+                "fibo_mapping_completed": False,
+                "error": str(e),
+                "timestamp": datetime.utcnow().isoformat(),
+            }
 
     async def schedule_workflow(
         self,
