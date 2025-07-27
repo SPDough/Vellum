@@ -13,8 +13,10 @@ from typing import Any, Dict, List, Optional
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 
+from pydantic import BaseModel, EmailStr
+import uvicorn
+import os
 
 # Simple data models
 class DataRecord(BaseModel):
@@ -32,6 +34,32 @@ class FilterRequest(BaseModel):
     page: int = 1
     page_size: int = 50
 
+
+# Simple authentication models
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class LoginResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str
+    expires_in: int
+    user: Dict[str, Any]
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    username: str
+    full_name: str
+    role: str
+    department: Optional[str] = None
+
+class AuthConfigResponse(BaseModel):
+    current_provider: str
+    available_providers: List[str]
+    keycloak_available: bool
+    endpoints: Dict[str, str]
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -51,6 +79,29 @@ app.add_middleware(
 
 # In-memory storage
 sample_data: List[DataRecord] = []
+
+
+# Simple in-memory user storage for demo
+demo_users = {
+    "admin@otomeshon.ai": {
+        "id": 1,
+        "email": "admin@otomeshon.ai", 
+        "username": "admin",
+        "password": "admin123",  # In production, this would be hashed
+        "full_name": "System Administrator",
+        "role": "admin",
+        "department": "IT"
+    },
+    "analyst@otomeshon.ai": {
+        "id": 2,
+        "email": "analyst@otomeshon.ai",
+        "username": "analyst", 
+        "password": "analyst123",
+        "full_name": "Data Analyst",
+        "role": "analyst",
+        "department": "Analytics"
+    }
+}
 
 
 def generate_sample_data() -> None:
@@ -84,6 +135,21 @@ def generate_sample_data() -> None:
         sample_data.append(record)
 
 
+# Root endpoint
+@app.get("/")
+async def root():
+    return {
+        "message": "Otomeshon.ai Banking Platform API", 
+        "version": "1.0.0",
+        "status": "running",
+        "endpoints": {
+            "health": "/health",
+            "docs": "/docs",
+            "auth": "/api/auth/*",
+            "data_sandbox": "/api/v1/data-sandbox/*"
+        }
+    }
+
 # Health check endpoint
 @app.get("/health")
 async def health_check() -> Dict[str, Any]:
@@ -93,6 +159,106 @@ async def health_check() -> Dict[str, Any]:
         "service": "otomeshon-simple",
     }
 
+
+# Simple Authentication endpoints
+@app.post("/api/auth/login", response_model=LoginResponse)
+async def login(login_data: LoginRequest):
+    """Simple authentication for demo purposes"""
+    
+    user = demo_users.get(login_data.email)
+    if not user or user["password"] != login_data.password:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Generate simple tokens (in production, use proper JWT)
+    access_token = f"access_{uuid.uuid4()}"
+    refresh_token = f"refresh_{uuid.uuid4()}"
+    
+    return LoginResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        expires_in=3600,
+        user={
+            "id": user["id"],
+            "email": user["email"],
+            "full_name": user["full_name"],
+            "role": user["role"],
+            "department": user["department"]
+        }
+    )
+
+@app.post("/api/auth/logout")
+async def logout():
+    """Simple logout endpoint"""
+    return {"message": "Successfully logged out"}
+
+@app.get("/api/auth/me", response_model=UserResponse)
+async def get_current_user():
+    """Get current user info - simplified for demo"""
+    # In a real app, you'd extract user from JWT token
+    # For demo, return admin user
+    user = demo_users["admin@otomeshon.ai"]
+    return UserResponse(
+        id=user["id"],
+        email=user["email"],
+        username=user["username"],
+        full_name=user["full_name"],
+        role=user["role"],
+        department=user["department"]
+    )
+
+@app.get("/api/auth/config", response_model=AuthConfigResponse)
+async def get_auth_config():
+    """Get authentication configuration"""
+    
+    # Check if running in Docker (Keycloak available)
+    auth_provider = os.getenv("AUTH_PROVIDER", "simple")
+    keycloak_available = os.getenv("KEYCLOAK_URL") is not None
+    
+    return AuthConfigResponse(
+        current_provider=auth_provider,
+        available_providers=["simple", "keycloak"],
+        keycloak_available=keycloak_available,
+        endpoints={
+            "login": "/api/auth/login",
+            "logout": "/api/auth/logout", 
+            "me": "/api/auth/me",
+            "config": "/api/auth/config"
+        }
+    )
+
+@app.get("/api/auth/providers")
+async def get_auth_providers():
+    """Get available authentication providers"""
+    
+    auth_provider = os.getenv("AUTH_PROVIDER", "simple")
+    keycloak_available = os.getenv("KEYCLOAK_URL") is not None
+    
+    return {
+        "providers": ["simple", "keycloak"],
+        "current": auth_provider,
+        "keycloak_available": keycloak_available,
+        "simple": {
+            "name": "Simple JWT Authentication",
+            "description": "Basic email/password with JWT tokens",
+            "demo_accounts": [
+                {"email": "admin@otomeshon.ai", "password": "admin123", "role": "admin"},
+                {"email": "analyst@otomeshon.ai", "password": "analyst123", "role": "analyst"}
+            ]
+        },
+        "keycloak": {
+            "name": "Keycloak OIDC",
+            "description": "Enterprise authentication via Keycloak",
+            "available": keycloak_available,
+            "realm_url": os.getenv("KEYCLOAK_URL", "http://localhost:8080") + "/realms/oto",
+            "client_id": "Otomeshon-CustodianPortal",
+            "demo_accounts": [
+                {"email": "admin@otomeshon.ai", "password": "admin123", "role": "admin"},
+                {"email": "manager@otomeshon.ai", "password": "manager123", "role": "manager"},
+                {"email": "analyst@otomeshon.ai", "password": "analyst123", "role": "analyst"}
+            ]
+        }
+    }
 
 # Data Sandbox API endpoints
 @app.get("/api/v1/data-sandbox/records")

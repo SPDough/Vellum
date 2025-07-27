@@ -1,5 +1,7 @@
 from fastapi import APIRouter
 
+
+=======
 from app.api.endpoints import (
     data_sandbox,
     data_streams,
@@ -9,7 +11,32 @@ from app.api.endpoints import (
     workflows,
 )
 
+
 api_router = APIRouter()
+
+# Include authentication router
+api_router.include_router(
+    auth_unified.router,
+    tags=["Authentication"]
+)
+
+# Include rules engine router
+api_router.include_router(
+    rules.router,
+    tags=["Rules Engine"]
+)
+
+# Include workflow execution router
+api_router.include_router(
+    workflow_execution.router,
+    tags=["Workflow Execution"]
+)
+
+# Include SOP management router
+api_router.include_router(
+    sop_management.router,
+    tags=["SOP Management"]
+)
 
 # Include all endpoint routers
 api_router.include_router(
