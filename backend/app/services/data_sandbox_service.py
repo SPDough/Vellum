@@ -20,6 +20,7 @@ from app.models.data_sandbox import (
     DataSort,
     DataSource,
     DataSourceCreate,
+    DataSourceResponse,
     DataSourceStatus,
     DataSourceType,
     DataSourceUpdate,
@@ -30,7 +31,6 @@ from app.models.data_sandbox import (
     SharedDataView,
     WorkflowOutputCreate,
 )
-
 
 
 class DataSandboxService:
@@ -44,7 +44,7 @@ class DataSandboxService:
             name=data_source.name,
             type=data_source.type.value,
             description=data_source.description,
-            schema=data_source.schema.dict() if data_source.schema else None,
+            schema=data_source.data_schema.dict() if data_source.data_schema else None,
             source_metadata=data_source.source_metadata or {},
             config=data_source.config or {},
         )
@@ -54,12 +54,12 @@ class DataSandboxService:
         self.db.refresh(db_data_source)
         return db_data_source
 
-    async def get_data_sources(self) -> List[DataSource]:
+    async def get_data_sources(self) -> List[DataSourceResponse]:
         """Get all data sources."""
         sources = (
             self.db.query(DataSource).order_by(desc(DataSource.last_updated)).all()
         )
-        return list(sources)
+        return [DataSourceResponse.from_orm(source) for source in sources]
 
     async def get_data_source(self, source_id: str) -> Optional[DataSource]:
         """Get a specific data source."""
@@ -76,8 +76,10 @@ class DataSandboxService:
 
         update_data = updates.dict(exclude_unset=True)
         for field, value in update_data.items():
-            if field == "schema" and value:
-                setattr(db_data_source, field, value.dict())
+            if field == "data_schema" and value:
+                setattr(db_data_source, "schema", value.dict())
+            elif field == "data_schema":
+                setattr(db_data_source, "schema", value)
             else:
                 setattr(db_data_source, field, value)
 
@@ -143,19 +145,20 @@ class DataSandboxService:
         records = db_query.all()
 
         # Transform records to dict format
-        data = []
+        data: List[Dict[str, Any]] = []
         for record in records:
-            record_data = record.data.copy()
+            record_data: Dict[str, Any] = record.data.copy() if record.data else {}
             record_data["_id"] = record.id
             record_data["_timestamp"] = record.timestamp.isoformat()
 
             # Apply field selection if specified
             if query.fields:
-                record_data = {
+                filtered_data: Dict[str, Any] = {
                     k: v
                     for k, v in record_data.items()
                     if k in query.fields or k.startswith("_")
                 }
+                record_data = filtered_data
 
             data.append(record_data)
 
@@ -168,33 +171,33 @@ class DataSandboxService:
 
         if filter_item.operator == FilterOperator.EQ:
             return db_query.filter(
-                text(f"{field_path} = :value").bindparam(value=str(filter_item.value))
+                text(f"{field_path} = :value").bindparams(value=str(filter_item.value))
             )
         elif filter_item.operator == FilterOperator.NE:
             return db_query.filter(
-                text(f"{field_path} != :value").bindparam(value=str(filter_item.value))
+                text(f"{field_path} != :value").bindparams(value=str(filter_item.value))
             )
         elif filter_item.operator == FilterOperator.GT:
             return db_query.filter(
-                text(f"CAST({field_path} AS NUMERIC) > :value").bindparam(
+                text(f"CAST({field_path} AS NUMERIC) > :value").bindparams(
                     value=filter_item.value
                 )
             )
         elif filter_item.operator == FilterOperator.GTE:
             return db_query.filter(
-                text(f"CAST({field_path} AS NUMERIC) >= :value").bindparam(
+                text(f"CAST({field_path} AS NUMERIC) >= :value").bindparams(
                     value=filter_item.value
                 )
             )
         elif filter_item.operator == FilterOperator.LT:
             return db_query.filter(
-                text(f"CAST({field_path} AS NUMERIC) < :value").bindparam(
+                text(f"CAST({field_path} AS NUMERIC) < :value").bindparams(
                     value=filter_item.value
                 )
             )
         elif filter_item.operator == FilterOperator.LTE:
             return db_query.filter(
-                text(f"CAST({field_path} AS NUMERIC) <= :value").bindparam(
+                text(f"CAST({field_path} AS NUMERIC) <= :value").bindparams(
                     value=filter_item.value
                 )
             )
@@ -204,13 +207,13 @@ class DataSandboxService:
                 return db_query.filter(text(f"{field_path} IN ({placeholders})"))
         elif filter_item.operator == FilterOperator.LIKE:
             return db_query.filter(
-                text(f"{field_path} ILIKE :value").bindparam(
+                text(f"{field_path} ILIKE :value").bindparams(
                     value=f"%{filter_item.value}%"
                 )
             )
         elif filter_item.operator == FilterOperator.REGEX:
             return db_query.filter(
-                text(f"{field_path} ~ :value").bindparam(value=filter_item.value)
+                text(f"{field_path} ~ :value").bindparams(value=filter_item.value)
             )
 
         return db_query
@@ -249,7 +252,7 @@ class DataSandboxService:
                     "workflow_id": output.workflow_id,
                     "workflow_name": output.workflow_name,
                 },
-                schema=output.schema.dict() if output.schema else None,
+                schema=output.data_schema.dict() if output.data_schema else None,
             )
             self.db.add(data_source)
             self.db.flush()
@@ -267,7 +270,6 @@ class DataSandboxService:
 
         self.db.add(data_record)
 
-
         # Update data source record count
         data_source.record_count = (
             self.db.query(DataRecord)
@@ -275,7 +277,6 @@ class DataSandboxService:
             .count()
             + 1
         )
-
 
         # Update data source record count efficiently
         data_source.record_count = (data_source.record_count or 0) + 1
@@ -332,7 +333,7 @@ class DataSandboxService:
                     "server_name": stream.server_name,
                     "stream_name": stream.stream_name,
                 },
-                schema=stream.schema.dict() if stream.schema else None,
+                schema=stream.data_schema.dict() if stream.data_schema else None,
             )
             self.db.add(data_source)
             self.db.flush()
@@ -344,7 +345,6 @@ class DataSandboxService:
 
         self.db.add(data_record)
 
-
         # Update data source record count
         data_source.record_count = (
             self.db.query(DataRecord)
@@ -353,10 +353,8 @@ class DataSandboxService:
             + 1
         )
 
-
         # Update data source record count efficiently
         data_source.record_count = (data_source.record_count or 0) + 1
-
 
         data_source.last_updated = datetime.utcnow()
 
@@ -405,7 +403,7 @@ class DataSandboxService:
                     "agent_id": result.agent_id,
                     "agent_name": result.agent_name,
                 },
-                schema=result.schema.dict() if result.schema else None,
+                schema=result.data_schema.dict() if result.data_schema else None,
             )
             self.db.add(data_source)
             self.db.flush()
@@ -423,7 +421,6 @@ class DataSandboxService:
 
         self.db.add(data_record)
 
-
         # Update data source record count
         data_source.record_count = (
             self.db.query(DataRecord)
@@ -432,10 +429,8 @@ class DataSandboxService:
             + 1
         )
 
-
         # Update data source record count efficiently
         data_source.record_count = (data_source.record_count or 0) + 1
-
 
         data_source.last_updated = datetime.utcnow()
 
@@ -446,21 +441,11 @@ class DataSandboxService:
     # Data Export
     async def export_data(
         self, query: DataQuery, format: str, filename: Optional[str] = None
-
-    ) -> str:
-
     ) -> bytes:
-
         """Export data in the specified format."""
         data, total_count, execution_time = await self.query_data(query)
 
         if format == "json":
-
-            return json.dumps(data, indent=2, default=str)
-
-        elif format == "csv":
-            if not data:
-                return ""
             return json.dumps(data, indent=2, default=str).encode("utf-8")
 
         elif format == "csv":
@@ -470,15 +455,6 @@ class DataSandboxService:
             df = pd.DataFrame(data)
             output = io.StringIO()
             df.to_csv(output, index=False)
-            return output.getvalue()
-
-        elif format == "xlsx":
-            if not data:
-                return ""
-
-            df = pd.DataFrame(data)
-            output = io.StringIO()
-            df.to_csv(output, index=False)  # Convert to CSV for string return
             return output.getvalue().encode("utf-8")
 
         elif format == "xlsx":
@@ -561,9 +537,6 @@ class DataSandboxService:
                 }
             )
 
-
-        from app.models.data_sandbox import DataQualityAnalysis
-
         return DataQualityAnalysis(
             completeness=completeness,
             accuracy=95.0,  # Placeholder - would need domain-specific rules
@@ -575,10 +548,11 @@ class DataSandboxService:
 
 # Singleton service instance
 
-async def get_data_sandbox_service(db: Optional[Session] = None) -> DataSandboxService:
+
+def get_data_sandbox_service(db: Optional[Session] = None) -> DataSandboxService:
+    """Get singleton instance of DataSandboxService."""
     if db is None:
-        db_gen = get_db()
-        db = await db_gen.__anext__()
+        from app.core.database import SessionLocal
 
-
+        db = SessionLocal()
     return DataSandboxService(db)

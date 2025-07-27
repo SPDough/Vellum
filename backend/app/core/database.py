@@ -43,7 +43,6 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 class DatabaseManager:
     """Manages database connections and operations."""
 
-
     def __init__(self) -> None:
         self.neo4j_driver: Optional[AsyncDriver] = None
         self.postgres_engine = engine
@@ -61,7 +60,6 @@ class DatabaseManager:
                 await conn.run_sync(SOPBase.metadata.create_all)
                 await conn.run_sync(WorkflowBase.metadata.create_all)
 
-
             print("✅ PostgreSQL initialized successfully")
 
         except Exception as e:
@@ -76,17 +74,18 @@ class DatabaseManager:
             )
 
             # Test connection
-            await self.neo4j_driver.verify_connectivity()
+            if self.neo4j_driver:
+                await self.neo4j_driver.verify_connectivity()
 
-            # Create constraints and indexes
-            async with self.neo4j_driver.session() as session:
-                # SOP Document constraints
-                await session.run(
-                    """
+                # Create constraints and indexes
+                async with self.neo4j_driver.session() as session:
+                    # SOP Document constraints
+                    await session.run(
+                        """
                     CREATE CONSTRAINT sop_document_id IF NOT EXISTS
                     FOR (s:SOPDocument) REQUIRE s.id IS UNIQUE
                 """
-                )
+                    )
 
                 await session.run(
                     """
