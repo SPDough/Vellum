@@ -116,9 +116,9 @@ async def get_data_preview(
     return DataQueryResult(
         data=data,
         total_count=total_count,
-        schema=data_source.schema if data_source else None,
+        schema=None,  # TODO: Fix schema type conversion
         execution_time=execution_time,
-        source=data_source,
+        source=DataSourceResponse.from_orm(data_source) if data_source else None,
     )
 
 
@@ -134,9 +134,9 @@ async def query_data(
     return DataQueryResult(
         data=data,
         total_count=total_count,
-        schema=data_source.schema if data_source else None,
+        schema=None,  # TODO: Fix schema type conversion
         execution_time=execution_time,
-        source=data_source,
+        source=DataSourceResponse.from_orm(data_source) if data_source else None,
     )
 
 
@@ -346,9 +346,9 @@ async def transform_data(
     return DataQueryResult(
         data=data,
         total_count=total_count,
-        schema=data_source.schema if data_source else None,
+        schema=None,  # TODO: Fix schema type conversion
         execution_time=execution_time,
-        source=data_source,
+        source=DataSourceResponse.from_orm(data_source) if data_source else None,
     )
 
 
