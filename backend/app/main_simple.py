@@ -77,31 +77,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add enhanced error handling middleware
+app.add_middleware(EnhancedErrorHandler)
+
 # In-memory storage
 sample_data: List[DataRecord] = []
 
 
-# Simple in-memory user storage for demo
-demo_users = {
-    "admin@otomeshon.ai": {
-        "id": 1,
-        "email": "admin@otomeshon.ai", 
-        "username": "admin",
-        "password": "admin123",  # In production, this would be hashed
-        "full_name": "System Administrator",
-        "role": "admin",
-        "department": "IT"
-    },
-    "analyst@otomeshon.ai": {
-        "id": 2,
-        "email": "analyst@otomeshon.ai",
-        "username": "analyst", 
-        "password": "analyst123",
-        "full_name": "Data Analyst",
-        "role": "analyst",
-        "department": "Analytics"
-    }
-}
+# Import secure authentication and validation
+from app.core.auth_config import auth_config
+from app.core.validation import InputValidator, ValidationError
+from app.core.error_handling import EnhancedErrorHandler, setup_secure_logging
+
+# Configure secure logging
+loggers = setup_secure_logging()
+logger = logging.getLogger(__name__)
+security_logger = loggers['security']
+banking_logger = loggers['banking']
 
 
 def generate_sample_data() -> None:
@@ -163,15 +155,21 @@ async def health_check() -> Dict[str, Any]:
 # Simple Authentication endpoints
 @app.post("/api/auth/login", response_model=LoginResponse)
 async def login(login_data: LoginRequest):
-    """Simple authentication for demo purposes"""
+    """Secure authentication for demo purposes"""
     
-    user = demo_users.get(login_data.email)
-    if not user or user["password"] != login_data.password:
+    # Log authentication attempt
+    security_logger.info(f"Authentication attempt for {login_data.email}")
+    
+    user = auth_config.verify_password(login_data.email, login_data.password)
+    if not user:
+        security_logger.warning(f"Failed authentication attempt for {login_data.email}")
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
     # Generate simple tokens (in production, use proper JWT)
     access_token = f"access_{uuid.uuid4()}"
     refresh_token = f"refresh_{uuid.uuid4()}"
+    
+    security_logger.info(f"Successful authentication for {login_data.email}")
     
     return LoginResponse(
         access_token=access_token,
@@ -179,11 +177,11 @@ async def login(login_data: LoginRequest):
         token_type="bearer",
         expires_in=3600,
         user={
-            "id": user["id"],
-            "email": user["email"],
-            "full_name": user["full_name"],
-            "role": user["role"],
-            "department": user["department"]
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "role": user.role,
+            "department": user.department
         }
     )
 
@@ -197,14 +195,17 @@ async def get_current_user():
     """Get current user info - simplified for demo"""
     # In a real app, you'd extract user from JWT token
     # For demo, return admin user
-    user = demo_users["admin@otomeshon.ai"]
+    user = auth_config.get_user_by_email("admin@otomeshon.ai")
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
     return UserResponse(
-        id=user["id"],
-        email=user["email"],
-        username=user["username"],
-        full_name=user["full_name"],
-        role=user["role"],
-        department=user["department"]
+        id=user.id,
+        email=user.email,
+        username=user.username,
+        full_name=user.full_name,
+        role=user.role,
+        department=user.department
     )
 
 @app.get("/api/auth/config", response_model=AuthConfigResponse)
@@ -242,8 +243,8 @@ async def get_auth_providers():
             "name": "Simple JWT Authentication",
             "description": "Basic email/password with JWT tokens",
             "demo_accounts": [
-                {"email": "admin@otomeshon.ai", "password": "admin123", "role": "admin"},
-                {"email": "analyst@otomeshon.ai", "password": "analyst123", "role": "analyst"}
+                {"email": "admin@otomeshon.ai", "role": "admin", "note": "Use environment DEMO_ADMIN_PASSWORD"},
+                {"email": "analyst@otomeshon.ai", "role": "analyst", "note": "Use environment DEMO_ANALYST_PASSWORD"}
             ]
         },
         "keycloak": {
@@ -253,9 +254,9 @@ async def get_auth_providers():
             "realm_url": os.getenv("KEYCLOAK_URL", "http://localhost:8080") + "/realms/oto",
             "client_id": "Otomeshon-CustodianPortal",
             "demo_accounts": [
-                {"email": "admin@otomeshon.ai", "password": "admin123", "role": "admin"},
-                {"email": "manager@otomeshon.ai", "password": "manager123", "role": "manager"},
-                {"email": "analyst@otomeshon.ai", "password": "analyst123", "role": "analyst"}
+                {"email": "admin@otomeshon.ai", "role": "admin"},
+                {"email": "manager@otomeshon.ai", "role": "manager"},
+                {"email": "analyst@otomeshon.ai", "role": "analyst"}
             ]
         }
     }
@@ -269,75 +270,106 @@ async def get_records(
     data_type: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Get paginated data records with optional filtering"""
+    
+    try:
+        # Validate pagination parameters
+        page, page_size = InputValidator.validate_pagination(page, page_size)
+        
+        # Validate filter parameters
+        if source:
+            source = InputValidator.sanitize_string(source, 50)
+        if data_type:
+            data_type = InputValidator.sanitize_string(data_type, 50)
+    
+        # Filter data
+        filtered_data = sample_data
+        if source:
+            filtered_data = [r for r in filtered_data if r.source == source]
+        if data_type:
+            filtered_data = [r for r in filtered_data if r.data.get("type") == data_type]
 
-    # Filter data
-    filtered_data = sample_data
-    if source:
-        filtered_data = [r for r in filtered_data if r.source == source]
-    if data_type:
-        filtered_data = [r for r in filtered_data if r.data.get("type") == data_type]
+        # Pagination
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        page_data = filtered_data[start_idx:end_idx]
 
-    # Pagination
-    start_idx = (page - 1) * page_size
-    end_idx = start_idx + page_size
-    page_data = filtered_data[start_idx:end_idx]
-
-    return {
-        "data": [r.dict() for r in page_data],
-        "total": len(filtered_data),
-        "page": page,
-        "page_size": page_size,
-        "total_pages": (len(filtered_data) + page_size - 1) // page_size,
-    }
+        return {
+            "data": [r.dict() for r in page_data],
+            "total": len(filtered_data),
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (len(filtered_data) + page_size - 1) // page_size,
+        }
+        
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in get_records: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.post("/api/v1/data-sandbox/filter")
 async def filter_records(request: FilterRequest) -> Dict[str, Any]:
-    """Advanced filtering of data records"""
+    """Advanced filtering of data records with input validation"""
+    
+    try:
+        # Validate pagination parameters
+        page, page_size = InputValidator.validate_pagination(request.page, request.page_size)
+        
+        filtered_data = sample_data
 
-    filtered_data = sample_data
+        # Apply filters if provided
+        if request.filters:
+            # Validate all filters
+            validated_filters = InputValidator.validate_filter_request(request.filters)
+            
+            for key, value in validated_filters.items():
+                if key == "source":
+                    filtered_data = [r for r in filtered_data if r.source == value]
+                elif key == "date_from":
+                    try:
+                        date_from = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                        filtered_data = [
+                            r for r in filtered_data if r.timestamp >= date_from
+                        ]
+                    except Exception as e:
+                        logger.warning(f"Date filtering error: {e}")
+                elif key == "date_to":
+                    try:
+                        date_to = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                        filtered_data = [r for r in filtered_data if r.timestamp <= date_to]
+                    except Exception as e:
+                        logger.warning(f"Date filtering error: {e}")
 
-    # Apply filters if provided
-    if request.filters:
-        for key, value in request.filters.items():
-            if key == "source":
-                filtered_data = [r for r in filtered_data if r.source == value]
-            elif key == "date_from":
-                try:
-                    date_from = datetime.fromisoformat(value.replace("Z", "+00:00"))
-                    filtered_data = [
-                        r for r in filtered_data if r.timestamp >= date_from
-                    ]
-                except:
-                    pass
-            elif key == "date_to":
-                try:
-                    date_to = datetime.fromisoformat(value.replace("Z", "+00:00"))
-                    filtered_data = [r for r in filtered_data if r.timestamp <= date_to]
-                except:
-                    pass
+        # Sort data
+        if request.sort_by:
+            sort_by = InputValidator.sanitize_string(request.sort_by, 50)
+            sort_order = InputValidator.sanitize_string(request.sort_order or "asc", 10)
+            
+            reverse = sort_order == "desc"
+            if sort_by == "timestamp":
+                filtered_data.sort(key=lambda x: x.timestamp, reverse=reverse)
+            elif sort_by == "source":
+                filtered_data.sort(key=lambda x: x.source, reverse=reverse)
 
-    # Sort data
-    if request.sort_by:
-        reverse = request.sort_order == "desc"
-        if request.sort_by == "timestamp":
-            filtered_data.sort(key=lambda x: x.timestamp, reverse=reverse)
-        elif request.sort_by == "source":
-            filtered_data.sort(key=lambda x: x.source, reverse=reverse)
+        # Pagination
+        start_idx = (page - 1) * page_size
+        end_idx = start_idx + page_size
+        page_data = filtered_data[start_idx:end_idx]
 
-    # Pagination
-    start_idx = (request.page - 1) * request.page_size
-    end_idx = start_idx + request.page_size
-    page_data = filtered_data[start_idx:end_idx]
-
-    return {
-        "data": [r.dict() for r in page_data],
-        "total": len(filtered_data),
-        "page": request.page,
-        "page_size": request.page_size,
-        "total_pages": (len(filtered_data) + request.page_size - 1)
-        // request.page_size,
-    }
+        return {
+            "data": [r.dict() for r in page_data],
+            "total": len(filtered_data),
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (len(filtered_data) + page_size - 1) // page_size,
+        }
+        
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in filter_records: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/api/v1/data-sandbox/sources")

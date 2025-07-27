@@ -1,16 +1,38 @@
-# Environment files
+# Security sensitive files
 .env
 .env.local
 .env.production
 .env.staging
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+credentials/
+.secret
+.credentials
 
-# Logs
+# Authentication files
+*.jwt
+*.token
+auth_keys/
+
+# Backup files that might contain sensitive data
+*.bak
+*.backup
+*.sql.gz
+dump.sql
+
+# Logs that might contain sensitive information
 logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
+access.log
+error.log
+security.log
 
 # Runtime data
 pids
