@@ -2,12 +2,12 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from app.models.fibo_ontology import (
-    FIBOOntologyMapping,
-    FIBOQuery,
-    FIBOLegalEntity,
     FIBOEquityInstrument,
     FIBOFinancialAccount,
+    FIBOLegalEntity,
+    FIBOOntologyMapping,
     FIBOPositionHolding,
+    FIBOQuery,
     FIBOTradeTransaction,
 )
 from app.services.neo4j_service import Neo4jService, get_neo4j_service
@@ -26,7 +26,9 @@ class FIBOService:
     ) -> Optional[Dict[str, Any]]:
         """Map an existing knowledge graph entity to FIBO ontology."""
         try:
-            original_entity = await self.neo4j_service.get_entity(entity_type, entity_id)
+            original_entity = await self.neo4j_service.get_entity(
+                entity_type, entity_id
+            )
             if not original_entity:
                 logger.warning(f"Entity {entity_type}:{entity_id} not found")
                 return None
@@ -178,12 +180,13 @@ class FIBOService:
             fibo_type,
             fibo_id,
             "MAPPED_TO_FIBO",
-            {"mapping_date": mapping.created_at, "confidence": mapping.mapping_confidence},
+            {
+                "mapping_date": mapping.created_at,
+                "confidence": mapping.mapping_confidence,
+            },
         )
 
-    async def query_fibo_entities(
-        self, query: FIBOQuery
-    ) -> List[Dict[str, Any]]:
+    async def query_fibo_entities(self, query: FIBOQuery) -> List[Dict[str, Any]]:
         """Query FIBO entities with flexible criteria."""
         try:
             cypher_parts = []

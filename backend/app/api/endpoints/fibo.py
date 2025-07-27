@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.models.fibo_ontology import FIBOQuery
-from app.services.fibo_service import get_fibo_service, FIBOService
+from app.services.fibo_service import FIBOService, get_fibo_service
 
 router = APIRouter()
 
@@ -11,7 +11,9 @@ router = APIRouter()
 @router.get("/entities", response_model=List[Dict[str, Any]])
 async def list_fibo_entities(
     entity_type: Optional[str] = Query(None, description="Filter by FIBO entity type"),
-    limit: Optional[int] = Query(100, description="Maximum number of entities to return"),
+    limit: Optional[int] = Query(
+        100, description="Maximum number of entities to return"
+    ),
     fibo_service: FIBOService = Depends(get_fibo_service),
 ) -> List[Dict[str, Any]]:
     """List FIBO ontology entities."""
@@ -20,7 +22,7 @@ async def list_fibo_entities(
             entity_types=[entity_type] if entity_type else None,
             limit=limit,
         )
-        
+
         entities = await fibo_service.query_fibo_entities(query)
         return entities
 
@@ -33,7 +35,9 @@ async def list_fibo_entities(
 
 @router.get("/mappings", response_model=List[Dict[str, Any]])
 async def get_entity_mappings(
-    original_type: Optional[str] = Query(None, description="Filter by original entity type"),
+    original_type: Optional[str] = Query(
+        None, description="Filter by original entity type"
+    ),
     fibo_type: Optional[str] = Query(None, description="Filter by FIBO entity type"),
     fibo_service: FIBOService = Depends(get_fibo_service),
 ) -> List[Dict[str, Any]]:
@@ -43,12 +47,12 @@ async def get_entity_mappings(
             entity_types=["FIBOEntityMapping"],
             property_filters={},
         )
-        
+
         if original_type:
             query.property_filters["original_entity_type"] = original_type
         if fibo_type:
             query.property_filters["fibo_entity_type"] = fibo_type
-        
+
         mappings = await fibo_service.query_fibo_entities(query)
         return mappings
 
@@ -68,14 +72,16 @@ async def create_entity_mapping(
 ) -> Dict[str, Any]:
     """Create a mapping between an existing entity and FIBO ontology."""
     try:
-        result = await fibo_service.map_entity_to_fibo(entity_type, entity_id, fibo_type)
-        
+        result = await fibo_service.map_entity_to_fibo(
+            entity_type, entity_id, fibo_type
+        )
+
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Entity {entity_type}:{entity_id} not found or mapping failed",
             )
-        
+
         return result
 
     except HTTPException:

@@ -347,12 +347,12 @@ class TemporalService:
         """FIBO ontology mapping activity."""
         try:
             from app.services.langgraph_service import get_langgraph_service
-            
+
             langgraph_service = await get_langgraph_service()
-            
+
             workflow_id = await langgraph_service.create_fibo_mapping_workflow()
             result = await langgraph_service.execute_workflow(workflow_id, input_data)
-            
+
             fibo_result = {
                 "fibo_mapping_completed": True,
                 "workflow_id": workflow_id,
@@ -362,7 +362,7 @@ class TemporalService:
                 "errors": result.get("errors", []),
                 "timestamp": datetime.utcnow().isoformat(),
             }
-            
+
             return fibo_result
 
         except Exception as e:

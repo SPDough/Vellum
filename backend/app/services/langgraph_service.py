@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class LangGraphState(BaseModel):
     """State model for LangGraph workflows."""
-    
+
     messages: List[Dict[str, Any]] = []
     data: Dict[str, Any] = {}
     context: Dict[str, Any] = {}
@@ -36,7 +36,7 @@ class FIBOPositionMappingNode:
         """Execute the FIBO position mapping logic."""
         try:
             logger.info(f"Executing FIBO mapping node: {self.node_id}")
-            
+
             position_data = state.get("data", {}).get("positions", [])
             if not position_data:
                 logger.warning("No position data found in state")
@@ -56,31 +56,37 @@ class FIBOPositionMappingNode:
                     fibo_position = await self._map_position_to_fibo(
                         position, fibo_service, neo4j_service
                     )
-                    
+
                     if fibo_position:
                         mapped_positions.append(fibo_position)
-                        mapping_results.append({
-                            "original_id": position.get("id"),
-                            "fibo_id": fibo_position.get("id"),
-                            "status": "SUCCESS",
-                            "timestamp": datetime.utcnow().isoformat(),
-                        })
+                        mapping_results.append(
+                            {
+                                "original_id": position.get("id"),
+                                "fibo_id": fibo_position.get("id"),
+                                "status": "SUCCESS",
+                                "timestamp": datetime.utcnow().isoformat(),
+                            }
+                        )
                     else:
-                        mapping_results.append({
-                            "original_id": position.get("id"),
-                            "status": "FAILED",
-                            "error": "Failed to create FIBO mapping",
-                            "timestamp": datetime.utcnow().isoformat(),
-                        })
+                        mapping_results.append(
+                            {
+                                "original_id": position.get("id"),
+                                "status": "FAILED",
+                                "error": "Failed to create FIBO mapping",
+                                "timestamp": datetime.utcnow().isoformat(),
+                            }
+                        )
 
                 except Exception as e:
                     logger.error(f"Failed to map position {position.get('id')}: {e}")
-                    mapping_results.append({
-                        "original_id": position.get("id"),
-                        "status": "ERROR",
-                        "error": str(e),
-                        "timestamp": datetime.utcnow().isoformat(),
-                    })
+                    mapping_results.append(
+                        {
+                            "original_id": position.get("id"),
+                            "status": "ERROR",
+                            "error": str(e),
+                            "timestamp": datetime.utcnow().isoformat(),
+                        }
+                    )
 
             new_state = {
                 **state,
@@ -89,7 +95,8 @@ class FIBOPositionMappingNode:
                     "fibo_positions": mapped_positions,
                     "mapping_results": mapping_results,
                 },
-                "messages": state.get("messages", []) + [
+                "messages": state.get("messages", [])
+                + [
                     {
                         "role": "system",
                         "content": f"Mapped {len(mapped_positions)} positions to FIBO ontology",
@@ -99,7 +106,9 @@ class FIBOPositionMappingNode:
                 ],
             }
 
-            logger.info(f"FIBO mapping completed: {len(mapped_positions)} positions mapped")
+            logger.info(
+                f"FIBO mapping completed: {len(mapped_positions)} positions mapped"
+            )
             return new_state
 
         except Exception as e:
@@ -107,7 +116,8 @@ class FIBOPositionMappingNode:
             return {
                 **state,
                 "errors": state.get("errors", []) + [f"FIBO mapping failed: {str(e)}"],
-                "messages": state.get("messages", []) + [
+                "messages": state.get("messages", [])
+                + [
                     {
                         "role": "system",
                         "content": f"FIBO mapping failed: {str(e)}",
@@ -124,9 +134,9 @@ class FIBOPositionMappingNode:
         """Map a single position to FIBO ontology."""
         try:
             position_id = position.get("id", str(uuid4()))
-            
+
             existing_position = await neo4j_service.get_entity("Position", position_id)
-            
+
             if not existing_position:
                 position_entity = {
                     "id": position_id,
@@ -136,12 +146,14 @@ class FIBOPositionMappingNode:
                     "quantity": position.get("quantity", 0),
                     "market_value": position.get("market_value", 0),
                     "currency": position.get("currency", "USD"),
-                    "valuation_date": position.get("valuation_date", datetime.utcnow().isoformat()),
+                    "valuation_date": position.get(
+                        "valuation_date", datetime.utcnow().isoformat()
+                    ),
                     "position_type": position.get("position_type", "LONG"),
                     "created_at": datetime.utcnow().isoformat(),
                     "updated_at": datetime.utcnow().isoformat(),
                 }
-                
+
                 await neo4j_service.create_entity("Position", position_entity)
 
             fibo_position = await fibo_service.map_entity_to_fibo(
@@ -174,20 +186,20 @@ class LangGraphService:
         """Create a simple FIBO mapping workflow."""
         try:
             workflow_id = str(uuid4())
-            
+
             workflow = StateGraph(dict)
-            
+
             # Add nodes
             fibo_node = FIBOPositionMappingNode()
             workflow.add_node("fibo_mapping", fibo_node)
-            
+
             workflow.set_entry_point("fibo_mapping")
             workflow.set_finish_point("fibo_mapping")
-            
+
             compiled_graph = workflow.compile()
-            
+
             self.graphs[workflow_id] = compiled_graph
-            
+
             logger.info(f"Created FIBO mapping workflow: {workflow_id}")
             return workflow_id
 
@@ -204,7 +216,7 @@ class LangGraphService:
                 raise ValueError(f"Workflow {workflow_id} not found")
 
             graph = self.graphs[workflow_id]
-            
+
             initial_state = {
                 "data": input_data,
                 "messages": [
@@ -223,17 +235,24 @@ class LangGraphService:
             }
 
             logger.info(f"Executing LangGraph workflow: {workflow_id}")
-            
+
             result = await graph.ainvoke(initial_state)
-            
+
             if not isinstance(result, dict):
-                result_dict: Dict[str, Any] = {"data": result, "context": {}, "messages": [], "errors": []}
+                result_dict: Dict[str, Any] = {
+                    "data": result,
+                    "context": {},
+                    "messages": [],
+                    "errors": [],
+                }
             else:
                 result_dict = dict(result)
-            
+
             result_dict["context"]["end_time"] = datetime.utcnow().isoformat()
-            result_dict["context"]["status"] = "COMPLETED" if not result_dict.get("errors") else "FAILED"
-            
+            result_dict["context"]["status"] = (
+                "COMPLETED" if not result_dict.get("errors") else "FAILED"
+            )
+
             logger.info(f"Workflow execution completed: {workflow_id}")
             return result_dict
 
@@ -286,7 +305,9 @@ class LangGraphService:
             {
                 "node_type": node_type,
                 "class_name": node_class.__name__,
-                "description": getattr(node_class, "__doc__", "No description available"),
+                "description": getattr(
+                    node_class, "__doc__", "No description available"
+                ),
             }
             for node_type, node_class in self.node_registry.items()
         ]
