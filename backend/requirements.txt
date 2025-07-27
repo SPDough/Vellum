@@ -29,7 +29,6 @@ aiokafka==0.10.0
 
 # Configuration & Environment
 python-dotenv==1.0.1
-pydantic-settings>=2.4.0
 
 # LLM Providers
 openai>=1.54.0
