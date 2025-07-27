@@ -306,7 +306,7 @@ const MCPDataConnector: React.FC<MCPDataConnectorProps> = ({ onDataSourceCreated
                   onChange={(e) => setSelectedServerId(e.target.value)}
                   label="MCP Server"
                 >
-                  {mcpServers?.filter(server => server.status === 'connected').map((server) => (
+                  {mcpServers?.filter(server => server.status === 'CONNECTED').map((server) => (
                     <MenuItem key={server.id} value={server.id}>
                       {server.name} ({server.provider_type})
                     </MenuItem>

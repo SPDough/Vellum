@@ -29,7 +29,6 @@ import {
 import {
   Add as AddIcon,
   ExpandMore as ExpandMoreIcon,
-  PlayArrow as PlayIcon,
   Visibility as ViewIcon,
   Download as ExportIcon,
 } from '@mui/icons-material';

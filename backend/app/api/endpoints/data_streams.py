@@ -1,12 +1,13 @@
-from datetime import datetime, timedelta
-from typing import List, Optional
-from uuid import uuid4
 import random
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 router = APIRouter()
+
 
 # Request/Response Models
 class DataStreamCreate(BaseModel):
@@ -18,6 +19,7 @@ class DataStreamCreate(BaseModel):
     batch_size: int = 100
     polling_interval_seconds: int = 30
 
+
 class DataStreamUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
@@ -25,6 +27,7 @@ class DataStreamUpdate(BaseModel):
     batch_size: Optional[int] = None
     polling_interval_seconds: Optional[int] = None
     enabled: Optional[bool] = None
+
 
 class DataStreamResponse(BaseModel):
     id: str
@@ -44,6 +47,7 @@ class DataStreamResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+
 class DataStreamMetrics(BaseModel):
     stream_id: str
     total_records_processed: int
@@ -57,15 +61,18 @@ class DataStreamMetrics(BaseModel):
     last_error: Optional[str] = None
     last_error_time: Optional[datetime] = None
 
+
 class StreamSubscription(BaseModel):
     subscriber_id: str
     callback_url: Optional[str] = None
     webhook_secret: Optional[str] = None
     filters: dict = {}
 
+
 # Mock storage
 streams_db: dict = {}
 subscriptions_db: dict = {}
+
 
 def generate_mock_metrics() -> dict:
     """Generate realistic mock metrics for data streams."""
@@ -74,15 +81,16 @@ def generate_mock_metrics() -> dict:
         "latency_ms": random.randint(50, 300),
         "subscribers": [
             f"workflow-{random.randint(1, 10)}" for _ in range(random.randint(1, 4))
-        ]
+        ],
     }
+
 
 @router.get("/", response_model=List[DataStreamResponse])
 async def list_data_streams(
     data_type: Optional[str] = None,
     status: Optional[str] = None,
-    enabled_only: bool = False
-):
+    enabled_only: bool = False,
+) -> List[Dict[str, Any]]:
     """List all data streams."""
     streams = []
     for stream_id, stream_data in streams_db.items():
@@ -92,21 +100,22 @@ async def list_data_streams(
             continue
         if enabled_only and not stream_data.get("enabled", True):
             continue
-        
+
         # Add real-time metrics
         metrics = generate_mock_metrics()
         stream_data.update(metrics)
         stream_data["last_update"] = datetime.utcnow()
-        
+
         streams.append(stream_data)
-    
+
     return streams
 
+
 @router.post("/", response_model=DataStreamResponse)
-async def create_data_stream(stream_data: DataStreamCreate):
+async def create_data_stream(stream_data: DataStreamCreate) -> Dict[str, Any]:
     """Create a new data stream."""
     stream_id = str(uuid4())
-    
+
     stream = {
         "id": stream_id,
         "name": stream_data.name,
@@ -120,35 +129,39 @@ async def create_data_stream(stream_data: DataStreamCreate):
         "enabled": True,
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow(),
-        **generate_mock_metrics()
+        **generate_mock_metrics(),
     }
-    
+
     streams_db[stream_id] = stream
     return stream
 
+
 @router.get("/{stream_id}", response_model=DataStreamResponse)
-async def get_data_stream(stream_id: str):
+async def get_data_stream(stream_id: str) -> Dict[str, Any]:
     """Get details of a specific data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
-    
+
     stream_data = streams_db[stream_id].copy()
-    
+
     # Add real-time metrics
     metrics = generate_mock_metrics()
     stream_data.update(metrics)
     stream_data["last_update"] = datetime.utcnow()
-    
-    return stream_data
+
+    return dict(stream_data)
+
 
 @router.put("/{stream_id}", response_model=DataStreamResponse)
-async def update_data_stream(stream_id: str, update_data: DataStreamUpdate):
+async def update_data_stream(
+    stream_id: str, update_data: DataStreamUpdate
+) -> Dict[str, Any]:
     """Update a data stream configuration."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
-    
+
     stream = streams_db[stream_id]
-    
+
     # Update fields if provided
     if update_data.name is not None:
         stream["name"] = update_data.name
@@ -163,67 +176,72 @@ async def update_data_stream(stream_id: str, update_data: DataStreamUpdate):
     if update_data.enabled is not None:
         stream["enabled"] = update_data.enabled
         stream["status"] = "ACTIVE" if update_data.enabled else "PAUSED"
-    
+
     stream["updated_at"] = datetime.utcnow()
-    
-    return stream
+
+    return dict(stream)
+
 
 @router.delete("/{stream_id}")
-async def delete_data_stream(stream_id: str):
+async def delete_data_stream(stream_id: str) -> Dict[str, Any]:
     """Delete a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
-    
+
     del streams_db[stream_id]
     return {"message": "Data stream deleted successfully"}
 
+
 @router.post("/{stream_id}/start")
-async def start_data_stream(stream_id: str):
+async def start_data_stream(stream_id: str) -> Dict[str, Any]:
     """Start a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
-    
+
     stream = streams_db[stream_id]
     stream["status"] = "ACTIVE"
     stream["enabled"] = True
     stream["updated_at"] = datetime.utcnow()
-    
+
     return {"message": "Data stream started successfully"}
 
+
 @router.post("/{stream_id}/pause")
-async def pause_data_stream(stream_id: str):
+async def pause_data_stream(stream_id: str) -> Dict[str, Any]:
     """Pause a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
-    
+
     stream = streams_db[stream_id]
     stream["status"] = "PAUSED"
     stream["updated_at"] = datetime.utcnow()
-    
+
     return {"message": "Data stream paused successfully"}
 
+
 @router.post("/{stream_id}/stop")
-async def stop_data_stream(stream_id: str):
+async def stop_data_stream(stream_id: str) -> Dict[str, Any]:
     """Stop a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
-    
+
     stream = streams_db[stream_id]
     stream["status"] = "STOPPED"
     stream["enabled"] = False
     stream["updated_at"] = datetime.utcnow()
-    
+
     return {"message": "Data stream stopped successfully"}
 
+
 @router.get("/{stream_id}/metrics", response_model=DataStreamMetrics)
-async def get_stream_metrics(stream_id: str):
+async def get_stream_metrics(stream_id: str) -> Dict[str, Any]:
     """Get detailed metrics for a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
-    
+
     # Generate realistic metrics
     now = datetime.utcnow()
-    
+
     metrics = {
         "stream_id": stream_id,
         "total_records_processed": random.randint(50000, 1000000),
@@ -235,22 +253,25 @@ async def get_stream_metrics(stream_id: str):
         "current_buffer_usage": random.randint(10, 800),
         "peak_throughput_rps": round(random.uniform(100, 1000), 1),
         "last_error": None,
-        "last_error_time": None
+        "last_error_time": None,
     }
-    
+
     # Occasionally add an error
     if random.random() < 0.3:
         metrics["last_error"] = "Connection timeout to source MCP server"
         metrics["last_error_time"] = now - timedelta(minutes=random.randint(5, 120))
-    
+
     return metrics
 
+
 @router.post("/{stream_id}/subscribe")
-async def subscribe_to_stream(stream_id: str, subscription: StreamSubscription):
+async def subscribe_to_stream(
+    stream_id: str, subscription: StreamSubscription
+) -> Dict[str, Any]:
     """Subscribe to a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
-    
+
     subscription_id = str(uuid4())
     subscription_data = {
         "id": subscription_id,
@@ -260,51 +281,62 @@ async def subscribe_to_stream(stream_id: str, subscription: StreamSubscription):
         "webhook_secret": subscription.webhook_secret,
         "filters": subscription.filters,
         "created_at": datetime.utcnow(),
-        "active": True
-    }
-    
-    subscriptions_db[subscription_id] = subscription_data
-    
-    return {
-        "subscription_id": subscription_id,
-        "message": "Successfully subscribed to data stream"
+        "active": True,
     }
 
+    subscriptions_db[subscription_id] = subscription_data
+
+    return {
+        "subscription_id": subscription_id,
+        "message": "Successfully subscribed to data stream",
+    }
+
+
 @router.delete("/{stream_id}/subscribe/{subscription_id}")
-async def unsubscribe_from_stream(stream_id: str, subscription_id: str):
+async def unsubscribe_from_stream(
+    stream_id: str, subscription_id: str
+) -> Dict[str, Any]:
     """Unsubscribe from a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
-    
+
     if subscription_id not in subscriptions_db:
         raise HTTPException(status_code=404, detail="Subscription not found")
-    
+
     subscription = subscriptions_db[subscription_id]
     if subscription["stream_id"] != stream_id:
-        raise HTTPException(status_code=404, detail="Subscription not found for this stream")
-    
+        raise HTTPException(
+            status_code=404, detail="Subscription not found for this stream"
+        )
+
     del subscriptions_db[subscription_id]
-    
+
     return {"message": "Successfully unsubscribed from data stream"}
 
+
 @router.get("/{stream_id}/subscribers")
-async def list_stream_subscribers(stream_id: str):
+async def list_stream_subscribers(stream_id: str) -> Dict[str, Any]:
     """List all subscribers for a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
-    
+
     subscribers = []
     for subscription_id, subscription_data in subscriptions_db.items():
-        if subscription_data["stream_id"] == stream_id and subscription_data.get("active", True):
-            subscribers.append({
-                "subscription_id": subscription_id,
-                "subscriber_id": subscription_data["subscriber_id"],
-                "callback_url": subscription_data.get("callback_url"),
-                "filters": subscription_data.get("filters", {}),
-                "created_at": subscription_data["created_at"]
-            })
-    
+        if subscription_data["stream_id"] == stream_id and subscription_data.get(
+            "active", True
+        ):
+            subscribers.append(
+                {
+                    "subscription_id": subscription_id,
+                    "subscriber_id": subscription_data["subscriber_id"],
+                    "callback_url": subscription_data.get("callback_url"),
+                    "filters": subscription_data.get("filters", {}),
+                    "created_at": subscription_data["created_at"],
+                }
+            )
+
     return {"stream_id": stream_id, "subscribers": subscribers}
+
 
 @router.get("/{stream_id}/data")
 async def get_stream_data(
@@ -312,28 +344,28 @@ async def get_stream_data(
     limit: int = 100,
     offset: int = 0,
     start_time: Optional[datetime] = None,
-    end_time: Optional[datetime] = None
-):
+    end_time: Optional[datetime] = None,
+) -> Dict[str, Any]:
     """Get recent data from a stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
-    
+
     # Generate mock data records
     now = datetime.utcnow()
     mock_records = []
-    
+
     for i in range(min(limit, 50)):  # Limit to 50 for demo
         record_time = now - timedelta(seconds=i * 30)
-        
+
         if start_time and record_time < start_time:
             continue
         if end_time and record_time > end_time:
             continue
-        
+
         # Generate mock record based on data type
         stream_data = streams_db[stream_id]
         data_type = stream_data["data_type"]
-        
+
         if data_type == "TRADES":
             record = {
                 "id": str(uuid4()),
@@ -341,7 +373,7 @@ async def get_stream_data(
                 "quantity": random.randint(100, 10000),
                 "price": round(random.uniform(100, 300), 2),
                 "side": random.choice(["BUY", "SELL"]),
-                "timestamp": record_time
+                "timestamp": record_time,
             }
         elif data_type == "POSITIONS":
             record = {
@@ -350,7 +382,7 @@ async def get_stream_data(
                 "symbol": random.choice(["AAPL", "GOOGL", "MSFT", "TSLA", "AMZN"]),
                 "quantity": random.randint(-5000, 10000),
                 "market_value": round(random.uniform(10000, 500000), 2),
-                "timestamp": record_time
+                "timestamp": record_time,
             }
         elif data_type == "MARKET_DATA":
             record = {
@@ -360,22 +392,22 @@ async def get_stream_data(
                 "ask": round(random.uniform(100, 300), 2),
                 "last": round(random.uniform(100, 300), 2),
                 "volume": random.randint(1000, 100000),
-                "timestamp": record_time
+                "timestamp": record_time,
             }
         else:
             record = {
                 "id": str(uuid4()),
                 "type": data_type,
                 "data": {"value": random.randint(1, 1000)},
-                "timestamp": record_time
+                "timestamp": record_time,
             }
-        
+
         mock_records.append(record)
-    
+
     return {
         "stream_id": stream_id,
         "total_records": len(mock_records),
         "offset": offset,
         "limit": limit,
-        "records": mock_records[offset:offset + limit]
+        "records": mock_records[offset : offset + limit],
     }

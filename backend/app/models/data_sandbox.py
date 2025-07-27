@@ -1,13 +1,27 @@
-from typing import List, Optional, Dict, Any, Union
+import uuid
 from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel, Field
-from sqlalchemy import Column, String, DateTime, JSON, Integer, Text, Float, Boolean, ForeignKey
-from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
-import uuid
+from typing import Any, Dict, List, Optional, Union
 
-from app.core.database import Base
+from pydantic import BaseModel, Field
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+
+
+from app.models.workflow import Base
 
 
 class DataSourceType(str, Enum):
@@ -58,16 +72,20 @@ class DataSource(Base):
     record_count = Column(Integer, default=0)
     last_updated = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Source-specific metadata
     source_metadata = Column(JSON)  # workflow_id, mcp_server_id, etc.
-    
+
     # Configuration
     config = Column(JSON)  # refresh_interval, retention_policy, etc.
-    
+
     # Relationships
-    data_records = relationship("DataRecord", back_populates="data_source", cascade="all, delete-orphan")
-    transformations = relationship("DataTransformation", back_populates="source_data_source")
+    data_records = relationship(
+        "DataRecord", back_populates="data_source", cascade="all, delete-orphan"
+    )
+    transformations = relationship(
+        "DataTransformation", back_populates="source_data_source"
+    )
 
 
 class DataRecord(Base):
@@ -78,7 +96,7 @@ class DataRecord(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
     data = Column(JSON, nullable=False)
     metadata = Column(JSON)  # execution_id, step_name, etc.
-    
+
     # Relationships
     data_source = relationship("DataSource", back_populates="data_records")
 
@@ -89,10 +107,12 @@ class DataTransformation(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String, nullable=False)
     description = Column(Text)
-    source_data_source_id = Column(String, ForeignKey("data_sources.id"), nullable=False)
+    source_data_source_id = Column(
+        String, ForeignKey("data_sources.id"), nullable=False
+    )
     transformations = Column(JSON, nullable=False)  # Array of transformation steps
     created_at = Column(DateTime, default=datetime.utcnow)
-    
+
     # Relationships
     source_data_source = relationship("DataSource")
 
@@ -114,7 +134,9 @@ class SharedDataView(Base):
     __tablename__ = "shared_data_views"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    share_id = Column(String, unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
+    share_id = Column(
+        String, unique=True, nullable=False, default=lambda: str(uuid.uuid4())
+    )
     query = Column(JSON, nullable=False)
     visualization = Column(JSON)
     permissions = Column(JSON, nullable=False)
@@ -144,7 +166,7 @@ class DataFilter(BaseModel):
 
 class DataSort(BaseModel):
     field: str
-    direction: str = Field(..., regex="^(asc|desc)$")
+    direction: str = Field(..., pattern="^(asc|desc)$")
 
 
 class DataQuery(BaseModel):
@@ -160,7 +182,7 @@ class DataSourceCreate(BaseModel):
     name: str
     type: DataSourceType
     description: Optional[str] = None
-    schema: Optional[DataSchema] = None
+    data_schema: Optional[DataSchema] = Field(None, alias="schema")
     source_metadata: Optional[Dict[str, Any]] = None
     config: Optional[Dict[str, Any]] = None
 
@@ -169,7 +191,7 @@ class DataSourceUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     status: Optional[DataSourceStatus] = None
-    schema: Optional[DataSchema] = None
+    data_schema: Optional[DataSchema] = Field(None, alias="schema")
     config: Optional[Dict[str, Any]] = None
 
 
@@ -178,7 +200,7 @@ class DataSourceResponse(BaseModel):
     name: str
     type: DataSourceType
     description: Optional[str]
-    schema: Optional[DataSchema]
+    data_schema: Optional[DataSchema] = Field(None, alias="schema")
     status: DataSourceStatus
     record_count: int
     last_updated: datetime
@@ -193,7 +215,7 @@ class DataSourceResponse(BaseModel):
 class DataQueryResult(BaseModel):
     data: List[Dict[str, Any]]
     total_count: int
-    schema: Optional[DataSchema]
+    data_schema: Optional[DataSchema] = Field(None, alias="schema")
     execution_time: float
     source: DataSourceResponse
 
@@ -204,7 +226,7 @@ class WorkflowOutputCreate(BaseModel):
     execution_id: str
     step_name: str
     data: Any
-    schema: Optional[DataSchema] = None
+    data_schema: Optional[DataSchema] = Field(None, alias="schema")
     metadata: Dict[str, Any]
 
 
@@ -215,7 +237,7 @@ class WorkflowOutput(BaseModel):
     execution_id: str
     step_name: str
     data: Any
-    schema: Optional[DataSchema]
+    data_schema: Optional[DataSchema] = Field(None, alias="schema")
     timestamp: datetime
     metadata: Dict[str, Any]
 
@@ -228,7 +250,7 @@ class MCPDataStreamCreate(BaseModel):
     server_name: str
     stream_name: str
     data: Any
-    schema: Optional[DataSchema] = None
+    data_schema: Optional[DataSchema] = Field(None, alias="schema")
     metadata: Dict[str, Any]
 
 
@@ -238,7 +260,7 @@ class MCPDataStream(BaseModel):
     server_name: str
     stream_name: str
     data: Any
-    schema: Optional[DataSchema]
+    data_schema: Optional[DataSchema] = Field(None, alias="schema")
     timestamp: datetime
     metadata: Dict[str, Any]
 
@@ -252,7 +274,7 @@ class AgentResultCreate(BaseModel):
     execution_id: str
     task_type: str
     result: Any
-    schema: Optional[DataSchema] = None
+    data_schema: Optional[DataSchema] = Field(None, alias="schema")
     metadata: Dict[str, Any]
 
 
@@ -263,7 +285,7 @@ class AgentResult(BaseModel):
     execution_id: str
     task_type: str
     result: Any
-    schema: Optional[DataSchema]
+    data_schema: Optional[DataSchema] = Field(None, alias="schema")
     timestamp: datetime
     metadata: Dict[str, Any]
 
@@ -273,12 +295,12 @@ class AgentResult(BaseModel):
 
 class DataExportRequest(BaseModel):
     query: DataQuery
-    format: str = Field(..., regex="^(csv|json|xlsx|parquet)$")
+    format: str = Field(..., pattern="^(csv|json|xlsx|parquet)$")
     filename: Optional[str] = None
 
 
 class DataVisualizationConfig(BaseModel):
-    type: str = Field(..., regex="^(table|chart|graph|map)$")
+    type: str = Field(..., pattern="^(table|chart|graph|map)$")
     title: str
     description: Optional[str] = None
     config: Dict[str, Any]
@@ -287,7 +309,7 @@ class DataVisualizationConfig(BaseModel):
 class DataVisualizationCreate(BaseModel):
     title: str
     description: Optional[str] = None
-    type: str = Field(..., regex="^(table|chart|graph|map)$")
+    type: str = Field(..., pattern="^(table|chart|graph|map)$")
     config: Dict[str, Any]
 
 

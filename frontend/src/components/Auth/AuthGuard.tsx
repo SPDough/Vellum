@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store';
 
 interface AuthGuardProps {
@@ -8,7 +7,6 @@ interface AuthGuardProps {
 
 const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
   const { isAuthenticated, checkAuth, login } = useAuthStore();
-  const location = useLocation();
 
   useEffect(() => {
     checkAuth();
@@ -20,6 +18,8 @@ const AuthGuard: React.FC<AuthGuardProps> = ({ children }) => {
         email: 'demo@otomeshon.com',
         name: 'Demo User',
         role: 'admin',
+        roles: ['admin'],
+        groups: ['administrators'],
         avatar: '',
         preferences: {},
         created_at: new Date().toISOString(),

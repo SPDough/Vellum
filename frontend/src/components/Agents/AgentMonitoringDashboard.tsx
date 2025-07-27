@@ -24,7 +24,6 @@ import {
 import {
   MoreVert as MoreVertIcon,
   TrendingUp,
-  TrendingDown,
   Speed,
   CheckCircle,
   Error,
@@ -33,7 +32,8 @@ import {
 } from '@mui/icons-material';
 import { useQuery } from 'react-query';
 
-import { agentService, Agent, AgentStatus } from '@/services/agentService';
+import { agentService } from '@/services/agentService';
+import { Agent, AgentStatus } from '@/types/agent';
 
 interface AgentMonitoringDashboardProps {
   agentId?: string;
@@ -73,7 +73,7 @@ const AgentMonitoringDashboard: React.FC<AgentMonitoringDashboardProps> = ({ age
     }
   );
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
