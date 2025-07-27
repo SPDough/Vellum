@@ -23,6 +23,7 @@ from sqlalchemy.orm import relationship
 
 from app.models.workflow import Base
 
+
 class DataSourceType(str, Enum):
     WORKFLOW = "workflow"
     MCP = "mcp"

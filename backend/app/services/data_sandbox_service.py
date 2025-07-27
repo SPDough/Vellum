@@ -33,7 +33,6 @@ from app.models.data_sandbox import (
 )
 
 
-
 class DataSandboxService:
     def __init__(self, db: Session) -> None:
         self.db = db
@@ -268,7 +267,6 @@ class DataSandboxService:
 
         self.db.add(data_record)
 
-
         # Update data source record count
         data_source.record_count = (
             self.db.query(DataRecord)
@@ -276,7 +274,6 @@ class DataSandboxService:
             .count()
             + 1
         )
-
 
         # Update data source record count efficiently
         data_source.record_count = (data_source.record_count or 0) + 1
@@ -345,7 +342,6 @@ class DataSandboxService:
 
         self.db.add(data_record)
 
-
         # Update data source record count
         data_source.record_count = (
             self.db.query(DataRecord)
@@ -354,10 +350,8 @@ class DataSandboxService:
             + 1
         )
 
-
         # Update data source record count efficiently
         data_source.record_count = (data_source.record_count or 0) + 1
-
 
         data_source.last_updated = datetime.utcnow()
 
@@ -424,7 +418,6 @@ class DataSandboxService:
 
         self.db.add(data_record)
 
-
         # Update data source record count
         data_source.record_count = (
             self.db.query(DataRecord)
@@ -433,10 +426,8 @@ class DataSandboxService:
             + 1
         )
 
-
         # Update data source record count efficiently
         data_source.record_count = (data_source.record_count or 0) + 1
-
 
         data_source.last_updated = datetime.utcnow()
 
@@ -543,7 +534,6 @@ class DataSandboxService:
                 }
             )
 
-
         return DataQualityAnalysis(
             completeness=completeness,
             accuracy=95.0,  # Placeholder - would need domain-specific rules
@@ -555,9 +545,11 @@ class DataSandboxService:
 
 # Singleton service instance
 
+
 def get_data_sandbox_service(db: Optional[Session] = None) -> DataSandboxService:
     """Get singleton instance of DataSandboxService."""
     if db is None:
         from app.core.database import SessionLocal
+
         db = SessionLocal()
     return DataSandboxService(db)
