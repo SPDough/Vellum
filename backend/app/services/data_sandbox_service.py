@@ -250,7 +250,7 @@ class DataSandboxService:
                     "workflow_id": output.workflow_id,
                     "workflow_name": output.workflow_name,
                 },
-                schema=output.schema.dict() if output.schema else None,
+                schema=output.data_schema.dict() if output.data_schema else None,
             )
             self.db.add(data_source)
             self.db.flush()
@@ -331,7 +331,7 @@ class DataSandboxService:
                     "server_name": stream.server_name,
                     "stream_name": stream.stream_name,
                 },
-                schema=stream.schema.dict() if stream.schema else None,
+                schema=stream.data_schema.dict() if stream.data_schema else None,
             )
             self.db.add(data_source)
             self.db.flush()
@@ -401,7 +401,7 @@ class DataSandboxService:
                     "agent_id": result.agent_id,
                     "agent_name": result.agent_name,
                 },
-                schema=result.schema.dict() if result.schema else None,
+                schema=result.data_schema.dict() if result.data_schema else None,
             )
             self.db.add(data_source)
             self.db.flush()
