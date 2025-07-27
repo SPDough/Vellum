@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
+
 from sqlalchemy import (
     JSON,
     Boolean,
@@ -15,10 +16,11 @@ from sqlalchemy import (
     String,
     Text,
 )
+
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from app.core.database import Base
+from app.core.base import Base
 
 
 class DataSourceType(str, Enum):

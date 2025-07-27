@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
+
 from fastapi import HTTPException
 from sqlalchemy import and_, asc, desc, func, or_, text
 from sqlalchemy.orm import Session
@@ -28,6 +29,7 @@ from app.models.data_sandbox import (
     SharedDataView,
     WorkflowOutputCreate,
 )
+
 
 
 class DataSandboxService:
@@ -260,6 +262,7 @@ class DataSandboxService:
 
         self.db.add(data_record)
 
+
         # Update data source record count
         data_source.record_count = (
             self.db.query(DataRecord)
@@ -267,6 +270,7 @@ class DataSandboxService:
             .count()
             + 1
         )
+
         data_source.last_updated = datetime.utcnow()
 
         self.db.commit()
@@ -331,6 +335,7 @@ class DataSandboxService:
 
         self.db.add(data_record)
 
+
         # Update data source record count
         data_source.record_count = (
             self.db.query(DataRecord)
@@ -338,6 +343,7 @@ class DataSandboxService:
             .count()
             + 1
         )
+
         data_source.last_updated = datetime.utcnow()
 
         self.db.commit()
@@ -403,6 +409,7 @@ class DataSandboxService:
 
         self.db.add(data_record)
 
+
         # Update data source record count
         data_source.record_count = (
             self.db.query(DataRecord)
@@ -410,6 +417,7 @@ class DataSandboxService:
             .count()
             + 1
         )
+
         data_source.last_updated = datetime.utcnow()
 
         self.db.commit()
@@ -524,7 +532,9 @@ class DataSandboxService:
 
 
 # Singleton service instance
+
 def get_data_sandbox_service(db: Session = None) -> DataSandboxService:
     if db is None:
         db = next(get_db())
+
     return DataSandboxService(db)
