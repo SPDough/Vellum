@@ -33,6 +33,7 @@ import {
   AccountBalance as AccountBalanceIcon,
   SwapHoriz as SwapHorizIcon,
   CompareArrows as CompareArrowsIcon,
+  Rule as RuleIcon,
 } from '@mui/icons-material';
 
 import { useAuthStore } from '@/store';
@@ -51,6 +52,7 @@ const Layout: React.FC = () => {
     { label: 'Dashboard', path: '/', icon: <DashboardIcon /> },
     { label: 'Data Integration', path: '/data', icon: <DataIcon /> },
     { label: 'Workflows', path: '/workflows', icon: <WorkflowIcon /> },
+    { label: 'Rules Catalog', path: '/rules', icon: <RuleIcon /> },
     { label: 'AI Agents', path: '/agents', icon: <AgentIcon /> },
     { label: 'Knowledge Graph', path: '/knowledge-graph', icon: <KnowledgeGraphIcon /> },
     { label: 'Data Sandbox', path: '/data-sandbox', icon: <DataSandboxIcon /> },

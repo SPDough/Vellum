@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.models.workflow import WorkflowExecution
+from app.services.langgraph_service import get_langgraph_service, LangGraphService
+from app.services.langchain_service import get_langchain_service, LangchainService
 
 router = APIRouter()
 
@@ -355,4 +357,182 @@ async def validate_workflow(workflow_id: str) -> Dict[str, Any]:
         "errors": validation_errors,
         "warnings": [],
         "workflow_id": workflow_id,
+    }
+
+
+# Langchain and Langgraph specific endpoints
+@router.get("/langchain/list", response_model=List[Dict[str, Any]])
+async def list_langchain_workflows(
+    langchain_service: LangchainService = Depends(get_langchain_service)
+) -> List[Dict[str, Any]]:
+    """List all Langchain workflows."""
+    return langchain_service.list_workflows()
+
+
+@router.get("/langgraph/list", response_model=List[Dict[str, Any]])
+async def list_langgraph_workflows(
+    langgraph_service: LangGraphService = Depends(get_langgraph_service)
+) -> List[Dict[str, Any]]:
+    """List all Langgraph workflows."""
+    return langgraph_service.list_workflows()
+
+
+@router.post("/langchain/create/{template_type}")
+async def create_langchain_workflow(
+    template_type: str,
+    langchain_service: LangchainService = Depends(get_langchain_service)
+) -> Dict[str, Any]:
+    """Create a new Langchain workflow from template."""
+    try:
+        if template_type == "position_analysis":
+            workflow_id = await langchain_service.create_position_analysis_workflow()
+        elif template_type == "trade_validation":
+            workflow_id = await langchain_service.create_trade_validation_workflow()
+        else:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Unknown template type: {template_type}"
+            )
+        
+        return {
+            "workflow_id": workflow_id,
+            "workflow_type": "LANGCHAIN",
+            "template_type": template_type,
+            "status": "CREATED"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/langgraph/create/{template_type}")
+async def create_langgraph_workflow(
+    template_type: str,
+    langgraph_service: LangGraphService = Depends(get_langgraph_service)
+) -> Dict[str, Any]:
+    """Create a new Langgraph workflow from template."""
+    try:
+        if template_type == "fibo_mapping":
+            workflow_id = await langgraph_service.create_fibo_mapping_workflow()
+        elif template_type == "trade_validation":
+            workflow_id = await langgraph_service.create_trade_validation_workflow()
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown template type: {template_type}"
+            )
+        
+        return {
+            "workflow_id": workflow_id,
+            "workflow_type": "LANGGRAPH", 
+            "template_type": template_type,
+            "status": "CREATED"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/langchain/{workflow_id}/execute")
+async def execute_langchain_workflow(
+    workflow_id: str,
+    execution_request: WorkflowExecutionRequest,
+    langchain_service: LangchainService = Depends(get_langchain_service)
+) -> Dict[str, Any]:
+    """Execute a Langchain workflow."""
+    try:
+        result = await langchain_service.execute_workflow(
+            workflow_id, execution_request.input_data
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/langgraph/{workflow_id}/execute") 
+async def execute_langgraph_workflow(
+    workflow_id: str,
+    execution_request: WorkflowExecutionRequest,
+    langgraph_service: LangGraphService = Depends(get_langgraph_service)
+) -> Dict[str, Any]:
+    """Execute a Langgraph workflow."""
+    try:
+        result = await langgraph_service.execute_workflow(
+            workflow_id, execution_request.input_data
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/langchain/{workflow_id}/info")
+async def get_langchain_workflow_info(
+    workflow_id: str,
+    langchain_service: LangchainService = Depends(get_langchain_service)
+) -> Dict[str, Any]:
+    """Get information about a Langchain workflow."""
+    workflow_info = await langchain_service.get_workflow_info(workflow_id)
+    if not workflow_info:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    return workflow_info
+
+
+@router.get("/langgraph/{workflow_id}/info")
+async def get_langgraph_workflow_info(
+    workflow_id: str,
+    langgraph_service: LangGraphService = Depends(get_langgraph_service)
+) -> Dict[str, Any]:
+    """Get information about a Langgraph workflow."""
+    workflow_info = await langgraph_service.get_workflow_info(workflow_id)
+    if not workflow_info:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    return workflow_info
+
+
+@router.get("/templates/langchain")
+async def get_langchain_templates(
+    langchain_service: LangchainService = Depends(get_langchain_service)
+) -> List[Dict[str, Any]]:
+    """Get available Langchain workflow templates."""
+    return langchain_service.get_available_templates()
+
+
+@router.get("/templates/langgraph")
+async def get_langgraph_templates(
+    langgraph_service: LangGraphService = Depends(get_langgraph_service)
+) -> List[Dict[str, Any]]:
+    """Get available Langgraph workflow templates."""
+    return langgraph_service.get_available_nodes()
+
+
+@router.get("/all/summary")
+async def get_all_workflows_summary(
+    langchain_service: LangchainService = Depends(get_langchain_service),
+    langgraph_service: LangGraphService = Depends(get_langgraph_service)
+) -> Dict[str, Any]:
+    """Get summary of all workflow types."""
+    langchain_workflows = langchain_service.list_workflows()
+    langgraph_workflows = langgraph_service.list_workflows()
+    standard_workflows = list(workflows_db.values())
+    
+    return {
+        "summary": {
+            "total_workflows": len(langchain_workflows) + len(langgraph_workflows) + len(standard_workflows),
+            "langchain_count": len(langchain_workflows),
+            "langgraph_count": len(langgraph_workflows),
+            "standard_count": len(standard_workflows)
+        },
+        "langchain_workflows": langchain_workflows,
+        "langgraph_workflows": langgraph_workflows,
+        "standard_workflows": [
+            {
+                "workflow_id": w["id"],
+                "name": w["name"],
+                "status": w["status"],
+                "workflow_type": "STANDARD"
+            }
+            for w in standard_workflows
+        ],
+        "templates": {
+            "langchain": langchain_service.get_available_templates(),
+            "langgraph": langgraph_service.get_available_nodes()
+        }
     }

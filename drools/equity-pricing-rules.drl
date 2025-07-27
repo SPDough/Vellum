@@ -1,0 +1,351 @@
+package com.otomeshon.pricing.rules
+
+import java.math.BigDecimal
+import java.math.RoundingMode
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.Map
+
+// Fact objects for equity pricing
+declare EquityPricingRequest
+    requestId: String
+    symbol: String
+    marketDataPrice: BigDecimal
+    currency: String
+    exchange: String
+    requestTime: LocalDateTime
+    pricingMethod: String  // MARKET, FAIR_VALUE, MODEL_BASED
+    adjustments: Map       // Additional pricing adjustments
+    calculatedPrice: BigDecimal
+    pricingStatus: String  // PENDING, CALCULATED, FAILED
+    validationErrors: java.util.List
+end
+
+declare MarketData
+    symbol: String
+    lastPrice: BigDecimal
+    bidPrice: BigDecimal
+    askPrice: BigDecimal
+    volume: Long
+    timestamp: LocalDateTime
+    exchange: String
+    currency: String
+    volatility: BigDecimal
+end
+
+declare PricingAdjustment
+    symbol: String
+    adjustmentType: String  // LIQUIDITY, CREDIT, SIZE, MARKET_IMPACT
+    adjustmentFactor: BigDecimal
+    adjustmentAmount: BigDecimal
+    reason: String
+end
+
+declare CalculatedPrice
+    requestId: String
+    symbol: String
+    basePrice: BigDecimal
+    adjustedPrice: BigDecimal
+    pricingMethod: String
+    confidence: BigDecimal
+    calculationTime: LocalDateTime
+    priceComponents: Map
+end
+
+declare PricingAlert
+    alertType: String
+    message: String
+    requestId: String
+    severity: String
+    timestamp: LocalDateTime
+end
+
+// =============================================================================
+// EQUITY PRICE CALCULATION RULES
+// =============================================================================
+
+rule "Calculate Market Price Based Equity Price"
+    salience 100
+    when
+        $request : EquityPricingRequest(pricingMethod == "MARKET", 
+                                       pricingStatus == "PENDING",
+                                       marketDataPrice != null)
+        $marketData : MarketData(symbol == $request.symbol, 
+                                lastPrice != null,
+                                timestamp.isAfter(LocalDateTime.now().minusMinutes(5)))
+    then
+        // Use mid-price between bid and ask, or last price if bid/ask not available
+        BigDecimal basePrice = $marketData.getLastPrice();
+        
+        if ($marketData.getBidPrice() != null && $marketData.getAskPrice() != null) {
+            basePrice = $marketData.getBidPrice()
+                       .add($marketData.getAskPrice())
+                       .divide(new BigDecimal("2"), 4, RoundingMode.HALF_UP);
+        }
+        
+        $request.setCalculatedPrice(basePrice);
+        $request.setPricingStatus("CALCULATED");
+        
+        insert(new CalculatedPrice($request.getRequestId(),
+                                  $request.getSymbol(),
+                                  basePrice,
+                                  basePrice,
+                                  "MARKET",
+                                  new BigDecimal("0.95"), // High confidence for market pricing
+                                  LocalDateTime.now(),
+                                  java.util.Map.of("basePrice", basePrice,
+                                                   "bidPrice", $marketData.getBidPrice(),
+                                                   "askPrice", $marketData.getAskPrice(),
+                                                   "lastPrice", $marketData.getLastPrice())));
+        
+        System.out.println("RULE FIRED: Market Price Calculated for " + $request.getSymbol() + 
+                          " = $" + basePrice);
+end
+
+rule "Apply Liquidity Adjustment"
+    salience 90
+    when
+        $request : EquityPricingRequest(pricingStatus == "CALCULATED")
+        $marketData : MarketData(symbol == $request.symbol, volume < 10000)
+        $calculatedPrice : CalculatedPrice(requestId == $request.requestId)
+    then
+        // Apply liquidity discount for low volume stocks
+        BigDecimal liquidityDiscount = new BigDecimal("0.02"); // 2% discount
+        BigDecimal adjustedPrice = $calculatedPrice.getAdjustedPrice()
+                                  .multiply(BigDecimal.ONE.subtract(liquidityDiscount))
+                                  .setScale(4, RoundingMode.HALF_UP);
+        
+        $calculatedPrice.setAdjustedPrice(adjustedPrice);
+        $calculatedPrice.getConfidence().subtract(new BigDecimal("0.10")); // Reduce confidence
+        
+        insert(new PricingAdjustment($request.getSymbol(),
+                                   "LIQUIDITY",
+                                   liquidityDiscount,
+                                   $calculatedPrice.getBasePrice().subtract(adjustedPrice),
+                                   "Low volume liquidity adjustment"));
+        
+        insert(new PricingAlert("LIQUIDITY_ADJUSTMENT",
+                              "Liquidity adjustment applied due to low volume: " + $marketData.getVolume(),
+                              $request.getRequestId(),
+                              "MEDIUM",
+                              LocalDateTime.now()));
+        
+        System.out.println("RULE FIRED: Liquidity Adjustment for " + $request.getSymbol() + 
+                          " - Adjusted Price: $" + adjustedPrice);
+end
+
+rule "Apply Volatility Adjustment"
+    salience 85
+    when
+        $request : EquityPricingRequest(pricingStatus == "CALCULATED")
+        $marketData : MarketData(symbol == $request.symbol, volatility.compareTo(new BigDecimal("0.30")) > 0)
+        $calculatedPrice : CalculatedPrice(requestId == $request.requestId)
+    then
+        // Apply volatility discount for highly volatile stocks
+        BigDecimal volatilityDiscount = $marketData.getVolatility()
+                                       .multiply(new BigDecimal("0.05")) // 5% of volatility as discount
+                                       .min(new BigDecimal("0.10")); // Max 10% discount
+        
+        BigDecimal adjustedPrice = $calculatedPrice.getAdjustedPrice()
+                                  .multiply(BigDecimal.ONE.subtract(volatilityDiscount))
+                                  .setScale(4, RoundingMode.HALF_UP);
+        
+        $calculatedPrice.setAdjustedPrice(adjustedPrice);
+        
+        insert(new PricingAdjustment($request.getSymbol(),
+                                   "VOLATILITY",
+                                   volatilityDiscount,
+                                   $calculatedPrice.getBasePrice().subtract(adjustedPrice),
+                                   "High volatility risk adjustment"));
+        
+        insert(new PricingAlert("VOLATILITY_ADJUSTMENT",
+                              "Volatility adjustment applied. Volatility: " + 
+                              $marketData.getVolatility().multiply(new BigDecimal("100")) + "%",
+                              $request.getRequestId(),
+                              "MEDIUM",
+                              LocalDateTime.now()));
+        
+        System.out.println("RULE FIRED: Volatility Adjustment for " + $request.getSymbol() + 
+                          " - Volatility: " + $marketData.getVolatility());
+end
+
+rule "Fair Value Price Calculation"
+    salience 95
+    when
+        $request : EquityPricingRequest(pricingMethod == "FAIR_VALUE", 
+                                       pricingStatus == "PENDING")
+        $marketData : MarketData(symbol == $request.symbol)
+    then
+        // Simple fair value model based on adjusted market price
+        BigDecimal fairValuePrice = $marketData.getLastPrice();
+        
+        // Apply fair value adjustments based on market conditions
+        if ($marketData.getVolume() > 100000) {
+            // High volume - increase confidence, slight premium
+            fairValuePrice = fairValuePrice.multiply(new BigDecimal("1.01"));
+        }
+        
+        // Time-based adjustment - older data gets discount
+        long minutesOld = java.time.Duration.between($marketData.getTimestamp(), 
+                                                    LocalDateTime.now()).toMinutes();
+        if (minutesOld > 15) {
+            BigDecimal timeDiscount = new BigDecimal(Math.min(minutesOld * 0.001, 0.05));
+            fairValuePrice = fairValuePrice.multiply(BigDecimal.ONE.subtract(timeDiscount));
+        }
+        
+        fairValuePrice = fairValuePrice.setScale(4, RoundingMode.HALF_UP);
+        
+        $request.setCalculatedPrice(fairValuePrice);
+        $request.setPricingStatus("CALCULATED");
+        
+        insert(new CalculatedPrice($request.getRequestId(),
+                                  $request.getSymbol(),
+                                  $marketData.getLastPrice(),
+                                  fairValuePrice,
+                                  "FAIR_VALUE",
+                                  new BigDecimal("0.85"), // Moderate confidence for fair value
+                                  LocalDateTime.now(),
+                                  java.util.Map.of("marketPrice", $marketData.getLastPrice(),
+                                                   "fairValuePrice", fairValuePrice,
+                                                   "dataAge", minutesOld)));
+        
+        System.out.println("RULE FIRED: Fair Value Price Calculated for " + $request.getSymbol() + 
+                          " = $" + fairValuePrice);
+end
+
+// =============================================================================
+// PRICE VALIDATION RULES
+// =============================================================================
+
+rule "Price Variance Check"
+    salience 80
+    when
+        $request : EquityPricingRequest(pricingStatus == "CALCULATED")
+        $calculatedPrice : CalculatedPrice(requestId == $request.requestId)
+        $marketData : MarketData(symbol == $request.symbol)
+        eval(Math.abs($calculatedPrice.getAdjustedPrice().doubleValue() - 
+                     $marketData.getLastPrice().doubleValue()) / 
+             $marketData.getLastPrice().doubleValue() > 0.05) // 5% variance threshold
+    then
+        BigDecimal variance = $calculatedPrice.getAdjustedPrice()
+                             .subtract($marketData.getLastPrice())
+                             .divide($marketData.getLastPrice(), 4, RoundingMode.HALF_UP)
+                             .abs();
+        
+        insert(new PricingAlert("PRICE_VARIANCE",
+                              "Calculated price variance exceeds 5% threshold. Variance: " + 
+                              variance.multiply(new BigDecimal("100")) + "%",
+                              $request.getRequestId(),
+                              "HIGH",
+                              LocalDateTime.now()));
+        
+        // Reduce confidence due to high variance
+        $calculatedPrice.setConfidence($calculatedPrice.getConfidence().subtract(new BigDecimal("0.20")));
+        
+        System.out.println("RULE FIRED: High Price Variance for " + $request.getSymbol() + 
+                          " - Variance: " + variance.multiply(new BigDecimal("100")) + "%");
+end
+
+rule "Stale Market Data Warning"
+    salience 75
+    when
+        $request : EquityPricingRequest(pricingStatus == "CALCULATED")
+        $marketData : MarketData(symbol == $request.symbol)
+        eval(java.time.Duration.between($marketData.getTimestamp(), 
+                                       LocalDateTime.now()).toMinutes() > 30)
+    then
+        long minutesOld = java.time.Duration.between($marketData.getTimestamp(), 
+                                                    LocalDateTime.now()).toMinutes();
+        
+        insert(new PricingAlert("STALE_DATA",
+                              "Market data is " + minutesOld + " minutes old - pricing may be unreliable",
+                              $request.getRequestId(),
+                              "MEDIUM",
+                              LocalDateTime.now()));
+        
+        System.out.println("RULE FIRED: Stale Market Data Warning for " + $request.getSymbol() + 
+                          " - Data age: " + minutesOld + " minutes");
+end
+
+rule "Zero or Negative Price Validation"
+    salience 100
+    when
+        $request : EquityPricingRequest(calculatedPrice != null, 
+                                       calculatedPrice.compareTo(BigDecimal.ZERO) <= 0)
+    then
+        $request.setPricingStatus("FAILED");
+        $request.getValidationErrors().add("Calculated price is zero or negative");
+        
+        insert(new PricingAlert("INVALID_PRICE",
+                              "Calculated price is invalid: $" + $request.getCalculatedPrice(),
+                              $request.getRequestId(),
+                              "CRITICAL",
+                              LocalDateTime.now()));
+        
+        System.out.println("RULE FIRED: Invalid Price for " + $request.getSymbol() + 
+                          " - Price: $" + $request.getCalculatedPrice());
+end
+
+// =============================================================================
+// FINAL PRICE ASSIGNMENT RULE
+// =============================================================================
+
+rule "Finalize Equity Price"
+    salience 10
+    when
+        $request : EquityPricingRequest(pricingStatus == "CALCULATED")
+        $calculatedPrice : CalculatedPrice(requestId == $request.requestId,
+                                          confidence.compareTo(new BigDecimal("0.50")) >= 0)
+        not PricingAlert(requestId == $request.requestId, severity == "CRITICAL")
+    then
+        // Final price is the adjusted price from calculations
+        $request.setCalculatedPrice($calculatedPrice.getAdjustedPrice());
+        
+        insert(new PricingAlert("PRICING_COMPLETE",
+                              "Equity pricing completed successfully. Final price: $" + 
+                              $calculatedPrice.getAdjustedPrice() + 
+                              " (Confidence: " + $calculatedPrice.getConfidence().multiply(new BigDecimal("100")) + "%)",
+                              $request.getRequestId(),
+                              "INFO",
+                              LocalDateTime.now()));
+        
+        System.out.println("RULE FIRED: Equity Pricing Finalized for " + $request.getSymbol() + 
+                          " - Final Price: $" + $calculatedPrice.getAdjustedPrice() + 
+                          " (Confidence: " + $calculatedPrice.getConfidence() + ")");
+end
+
+rule "Low Confidence Price Warning"
+    salience 15
+    when
+        $request : EquityPricingRequest(pricingStatus == "CALCULATED")
+        $calculatedPrice : CalculatedPrice(requestId == $request.requestId,
+                                          confidence.compareTo(new BigDecimal("0.50")) < 0)
+    then
+        insert(new PricingAlert("LOW_CONFIDENCE",
+                              "Pricing completed with low confidence: " + 
+                              $calculatedPrice.getConfidence().multiply(new BigDecimal("100")) + 
+                              "% - Manual review recommended",
+                              $request.getRequestId(),
+                              "HIGH",
+                              LocalDateTime.now()));
+        
+        System.out.println("RULE FIRED: Low Confidence Price Warning for " + $request.getSymbol() + 
+                          " - Confidence: " + $calculatedPrice.getConfidence());
+end
+
+// =============================================================================
+// HELPER FUNCTIONS (would be implemented in Java helper class)
+// =============================================================================
+
+function boolean isMarketHours(String exchange) {
+    // Check if market is open for the given exchange
+    // For demo purposes, check if it's business hours
+    int hour = LocalDateTime.now().getHour();
+    return hour >= 9 && hour <= 16;
+}
+
+function BigDecimal calculateImpliedVolatility(BigDecimal price, BigDecimal strike, BigDecimal timeToExpiry) {
+    // Simplified implied volatility calculation
+    // In practice, this would use Black-Scholes or other option pricing models
+    return new BigDecimal("0.20"); // 20% default volatility
+}

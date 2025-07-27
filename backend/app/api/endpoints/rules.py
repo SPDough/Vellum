@@ -539,3 +539,342 @@ end
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get rule templates: {str(e)}"
         )
+
+
+@router.get("/catalog")
+async def get_rules_catalog(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get catalog of all available Drools rules
+    
+    Returns:
+        Dict: Complete catalog of rules organized by category
+    """
+    try:
+        catalog = {
+            "trade_validation": {
+                "category": "Trade Validation",
+                "description": "Rules for validating trade data and ensuring data integrity",
+                "rules": [
+                    {
+                        "name": "Large Trade Alert",
+                        "description": "Flags trades exceeding $1M for approval",
+                        "salience": 100,
+                        "trigger_condition": "tradeValue > $1,000,000",
+                        "actions": ["Set requires approval", "Set priority to HIGH", "Create alert"],
+                        "file": "custodian-banking-rules.drl",
+                        "line_range": "93-106"
+                    },
+                    {
+                        "name": "Settlement Date Validation", 
+                        "description": "Ensures settlement date is not before trade date",
+                        "salience": 90,
+                        "trigger_condition": "settlementDate < tradeDate",
+                        "actions": ["Set status to VALIDATION_FAILED", "Create validation error"],
+                        "file": "custodian-banking-rules.drl",
+                        "line_range": "108-119"
+                    },
+                    {
+                        "name": "Weekend Settlement Check",
+                        "description": "Alerts when settlement falls on weekend",
+                        "salience": 80,
+                        "trigger_condition": "settlementDate on weekend",
+                        "actions": ["Create weekend settlement alert"],
+                        "file": "custodian-banking-rules.drl", 
+                        "line_range": "121-133"
+                    },
+                    {
+                        "name": "Zero Price Validation",
+                        "description": "Validates trade price is greater than zero",
+                        "salience": 85,
+                        "trigger_condition": "price <= 0",
+                        "actions": ["Set status to VALIDATION_FAILED", "Create validation error"],
+                        "file": "custodian-banking-rules.drl",
+                        "line_range": "135-146"
+                    }
+                ]
+            },
+            "risk_management": {
+                "category": "Risk Management",
+                "description": "Rules for monitoring and controlling trading risks",
+                "rules": [
+                    {
+                        "name": "Position Limit Check",
+                        "description": "Monitors portfolio exposure against limits",
+                        "salience": 75,
+                        "trigger_condition": "totalExposure + tradeValue > exposureLimit",
+                        "actions": ["Set status to RISK_LIMIT_EXCEEDED", "Require risk review", "Create risk alert"],
+                        "file": "custodian-banking-rules.drl",
+                        "line_range": "152-169"
+                    },
+                    {
+                        "name": "Concentration Risk Check",
+                        "description": "Monitors security concentration limits",
+                        "salience": 70,
+                        "trigger_condition": "securityExposure > concentrationLimit",
+                        "actions": ["Require risk review", "Create concentration risk alert"],
+                        "file": "custodian-banking-rules.drl",
+                        "line_range": "171-185"
+                    },
+                    {
+                        "name": "Overnight Risk Limit",
+                        "description": "Special approval for large trades outside business hours",
+                        "salience": 65,
+                        "trigger_condition": "tradeValue > $5M AND outside business hours",
+                        "actions": ["Require approval", "Set priority to HIGH", "Create overnight risk alert"],
+                        "file": "custodian-banking-rules.drl",
+                        "line_range": "187-201"
+                    }
+                ]
+            },
+            "compliance": {
+                "category": "Compliance & KYC",
+                "description": "Rules for regulatory compliance and client verification",
+                "rules": [
+                    {
+                        "name": "KYC Status Check",
+                        "description": "Verifies client KYC approval status",
+                        "salience": 95,
+                        "trigger_condition": "client kycStatus != APPROVED",
+                        "actions": ["Set status to COMPLIANCE_HOLD", "Create compliance alert"],
+                        "file": "custodian-banking-rules.drl",
+                        "line_range": "207-220"
+                    },
+                    {
+                        "name": "AML High Risk Screening",
+                        "description": "Screens high-risk clients for large trades",
+                        "salience": 90,
+                        "trigger_condition": "tradeValue > $10K AND amlRiskRating = HIGH",
+                        "actions": ["Require AML review", "Create compliance alert"],
+                        "file": "custodian-banking-rules.drl",
+                        "line_range": "222-235"
+                    },
+                    {
+                        "name": "Stale KYC Review",
+                        "description": "Identifies clients with outdated KYC reviews",
+                        "salience": 60,
+                        "trigger_condition": "lastReviewDate > 1 year ago",
+                        "actions": ["Require approval", "Create stale KYC alert"],
+                        "file": "custodian-banking-rules.drl",
+                        "line_range": "237-251"
+                    },
+                    {
+                        "name": "Sanctioned Country Check",
+                        "description": "Blocks trades from sanctioned countries",
+                        "salience": 100,
+                        "trigger_condition": "client from sanctioned country",
+                        "actions": ["Set status to COMPLIANCE_BLOCKED", "Create sanctions alert"],
+                        "file": "custodian-banking-rules.drl",
+                        "line_range": "253-267"
+                    }
+                ]
+            },
+            "settlement": {
+                "category": "Settlement & Operations",
+                "description": "Rules for settlement processing and operational controls",
+                "rules": [
+                    {
+                        "name": "Cash Availability Check",
+                        "description": "Verifies sufficient cash for settlement",
+                        "salience": 70,
+                        "trigger_condition": "availableCash < tradeValue",
+                        "actions": ["Require approval", "Create insufficient cash alert"],
+                        "file": "custodian-banking-rules.drl",
+                        "line_range": "273-288"
+                    },
+                    {
+                        "name": "Settlement Cutoff Time",
+                        "description": "Checks trade submission against cutoff times",
+                        "salience": 80,
+                        "trigger_condition": "currentTime > cutoffTime",
+                        "actions": ["Create settlement cutoff alert"],
+                        "file": "custodian-banking-rules.drl",
+                        "line_range": "290-303"
+                    },
+                    {
+                        "name": "Corporate Action Pending",
+                        "description": "Identifies securities with pending corporate actions",
+                        "salience": 75,
+                        "trigger_condition": "hasPendingCorporateAction = true",
+                        "actions": ["Require approval", "Create corporate action alert"],
+                        "file": "custodian-banking-rules.drl",
+                        "line_range": "305-318"
+                    }
+                ]
+            },
+            "market_timing": {
+                "category": "Market Hours & Timing",
+                "description": "Rules for market hours and trading frequency monitoring",
+                "rules": [
+                    {
+                        "name": "Market Hours Check",
+                        "description": "Monitors trades executed outside market hours",
+                        "salience": 50,
+                        "trigger_condition": "!isMarketOpen",
+                        "actions": ["Create outside market hours alert"],
+                        "file": "custodian-banking-rules.drl",
+                        "line_range": "324-336"
+                    },
+                    {
+                        "name": "High Frequency Trading Detection",
+                        "description": "Detects high-frequency trading patterns",
+                        "salience": 80,
+                        "trigger_condition": ">=10 trades per day from same counterparty",
+                        "actions": ["Require approval", "Create HFT detection alert"],
+                        "file": "custodian-banking-rules.drl", 
+                        "line_range": "338-355"
+                    }
+                ]
+            },
+            "pricing": {
+                "category": "Pricing & Valuation",
+                "description": "Rules for equity pricing and valuation calculations",
+                "rules": [
+                    {
+                        "name": "Equity Price Calculator",
+                        "description": "Calculates equity prices using market data and adjustments",
+                        "salience": 50,
+                        "trigger_condition": "Equity pricing request with market data",
+                        "actions": ["Calculate base price", "Apply adjustments", "Set calculated price"],
+                        "file": "equity-pricing-rules.drl",
+                        "line_range": "1-45"
+                    },
+                    {
+                        "name": "Fair Value Adjustment",
+                        "description": "Applies fair value adjustments to equity prices",
+                        "salience": 40,
+                        "trigger_condition": "Price variance > threshold",
+                        "actions": ["Calculate adjustment", "Apply fair value correction"],
+                        "file": "equity-pricing-rules.drl",
+                        "line_range": "47-65"
+                    }
+                ]
+            }
+        }
+        
+        # Calculate summary statistics
+        total_rules = sum(len(category["rules"]) for category in catalog.values())
+        categories_count = len(catalog)
+        
+        return {
+            "catalog": catalog,
+            "summary": {
+                "total_rules": total_rules,
+                "total_categories": categories_count,
+                "categories": list(catalog.keys())
+            },
+            "metadata": {
+                "requested_by": current_user.email,
+                "timestamp": datetime.now().isoformat(),
+                "version": "1.0.0"
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get rules catalog: {str(e)}"
+        )
+
+
+@router.get("/catalog/{category}")
+async def get_rules_by_category(
+    category: str,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Get rules for a specific category
+    
+    Args:
+        category: Category name (trade_validation, risk_management, etc.)
+        
+    Returns:
+        Dict: Rules in the specified category
+    """
+    try:
+        # Get full catalog
+        full_catalog_response = await get_rules_catalog(current_user)
+        catalog = full_catalog_response["catalog"]
+        
+        if category not in catalog:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Category '{category}' not found"
+            )
+        
+        return {
+            "category": category,
+            "rules": catalog[category],
+            "count": len(catalog[category]["rules"]),
+            "requested_by": current_user.email,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get category rules: {str(e)}"
+        )
+
+
+@router.get("/search")
+async def search_rules(
+    query: str,
+    category: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Search rules by name, description, or trigger condition
+    
+    Args:
+        query: Search query string
+        category: Optional category filter
+        
+    Returns:
+        Dict: Matching rules
+    """
+    try:
+        # Get full catalog
+        full_catalog_response = await get_rules_catalog(current_user)
+        catalog = full_catalog_response["catalog"]
+        
+        matching_rules = []
+        query_lower = query.lower()
+        
+        for cat_name, cat_data in catalog.items():
+            # Skip if category filter specified and doesn't match
+            if category and cat_name != category:
+                continue
+                
+            for rule in cat_data["rules"]:
+                # Search in name, description, and trigger condition
+                searchable_text = " ".join([
+                    rule["name"],
+                    rule["description"], 
+                    rule["trigger_condition"]
+                ]).lower()
+                
+                if query_lower in searchable_text:
+                    matching_rules.append({
+                        **rule,
+                        "category": cat_name,
+                        "category_name": cat_data["category"]
+                    })
+        
+        return {
+            "query": query,
+            "category_filter": category,
+            "results": matching_rules,
+            "count": len(matching_rules),
+            "searched_by": current_user.email,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Search failed: {str(e)}"
+        )
