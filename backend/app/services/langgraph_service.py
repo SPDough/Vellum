@@ -169,6 +169,90 @@ class FIBOPositionMappingNode:
             return None
 
 
+class TradeValidationNode:
+    """LangGraph node for trade validation and compliance checking."""
+    
+    def __init__(self) -> None:
+        self.node_id = str(uuid4())
+        self.node_type = "TRADE_VALIDATION"
+        self.name = "Trade Validation Node"
+    
+    async def __call__(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute trade validation logic."""
+        try:
+            logger.info(f"Executing trade validation node: {self.node_id}")
+            
+            trade_data = state.get("data", {}).get("trades", [])
+            if not trade_data:
+                logger.warning("No trade data found in state")
+                return {
+                    **state,
+                    "errors": state.get("errors", []) + ["No trade data provided"],
+                }
+            
+            validation_results = []
+            for trade in trade_data:
+                validation_result = await self._validate_trade(trade)
+                validation_results.append(validation_result)
+            
+            new_state = {
+                **state,
+                "data": {
+                    **state.get("data", {}),
+                    "validation_results": validation_results,
+                    "validated_trades": [r for r in validation_results if r["status"] == "VALID"],
+                    "failed_trades": [r for r in validation_results if r["status"] == "INVALID"],
+                },
+                "messages": state.get("messages", [])
+                + [
+                    {
+                        "role": "system",
+                        "content": f"Validated {len(trade_data)} trades",
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "node_id": self.node_id,
+                    }
+                ],
+            }
+            
+            logger.info(f"Trade validation completed: {len(validation_results)} trades processed")
+            return new_state
+            
+        except Exception as e:
+            logger.error(f"Trade validation node failed: {e}")
+            return {
+                **state,
+                "errors": state.get("errors", []) + [f"Trade validation failed: {str(e)}"],
+            }
+    
+    async def _validate_trade(self, trade: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate a single trade."""
+        trade_id = trade.get("id", "unknown")
+        issues = []
+        
+        # Amount validation
+        amount = trade.get("total_amount", 0)
+        if amount > 10000000:  # $10M limit
+            issues.append("Trade amount exceeds $10M limit")
+        
+        # Currency validation
+        currency = trade.get("currency", "")
+        valid_currencies = ["USD", "EUR", "GBP", "JPY", "CAD"]
+        if currency not in valid_currencies:
+            issues.append(f"Invalid currency: {currency}")
+        
+        # Settlement date validation
+        settlement_date = trade.get("settlement_date")
+        if not settlement_date:
+            issues.append("Missing settlement date")
+        
+        return {
+            "trade_id": trade_id,
+            "status": "VALID" if not issues else "INVALID",
+            "issues": issues,
+            "validated_at": datetime.utcnow().isoformat()
+        }
+
+
 class LangGraphService:
     """Service for managing LangGraph workflows."""
 
@@ -180,6 +264,7 @@ class LangGraphService:
     def _register_default_nodes(self) -> None:
         """Register default LangGraph nodes."""
         self.node_registry["FIBO_MAPPING"] = FIBOPositionMappingNode
+        self.node_registry["TRADE_VALIDATION"] = TradeValidationNode
         logger.info("Registered default LangGraph nodes")
 
     async def create_fibo_mapping_workflow(self) -> str:
@@ -205,6 +290,30 @@ class LangGraphService:
 
         except Exception as e:
             logger.error(f"Failed to create FIBO mapping workflow: {e}")
+            raise
+
+    async def create_trade_validation_workflow(self) -> str:
+        """Create a trade validation workflow."""
+        try:
+            workflow_id = str(uuid4())
+
+            workflow = StateGraph(dict)
+
+            # Add trade validation node
+            validation_node = TradeValidationNode()
+            workflow.add_node("trade_validation", validation_node)
+
+            workflow.set_entry_point("trade_validation")
+            workflow.set_finish_point("trade_validation")
+
+            compiled_graph = workflow.compile()
+            self.graphs[workflow_id] = compiled_graph
+
+            logger.info(f"Created trade validation workflow: {workflow_id}")
+            return workflow_id
+
+        except Exception as e:
+            logger.error(f"Failed to create trade validation workflow: {e}")
             raise
 
     async def execute_workflow(

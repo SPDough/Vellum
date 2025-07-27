@@ -127,4 +127,60 @@ export const workflowService = {
   }> {
     return api.get(`/workflows/${workflowId}/validate`);
   },
+
+  // Langchain and Langgraph specific methods
+  
+  // List Langchain workflows
+  async listLangchainWorkflows(): Promise<any[]> {
+    return api.get<any[]>('/workflows/langchain/list');
+  },
+
+  // List Langgraph workflows
+  async listLanggraphWorkflows(): Promise<any[]> {
+    return api.get<any[]>('/workflows/langgraph/list');
+  },
+
+  // Create Langchain workflow
+  async createLangchainWorkflow(templateType: string): Promise<any> {
+    return api.post(`/workflows/langchain/create/${templateType}`);
+  },
+
+  // Create Langgraph workflow
+  async createLanggraphWorkflow(templateType: string): Promise<any> {
+    return api.post(`/workflows/langgraph/create/${templateType}`);
+  },
+
+  // Execute Langchain workflow
+  async executeLangchainWorkflow(workflowId: string, inputData: any): Promise<any> {
+    return api.post(`/workflows/langchain/${workflowId}/execute`, { input_data: inputData });
+  },
+
+  // Execute Langgraph workflow
+  async executeLanggraphWorkflow(workflowId: string, inputData: any): Promise<any> {
+    return api.post(`/workflows/langgraph/${workflowId}/execute`, { input_data: inputData });
+  },
+
+  // Get Langchain workflow info
+  async getLangchainWorkflowInfo(workflowId: string): Promise<any> {
+    return api.get(`/workflows/langchain/${workflowId}/info`);
+  },
+
+  // Get Langgraph workflow info
+  async getLanggraphWorkflowInfo(workflowId: string): Promise<any> {
+    return api.get(`/workflows/langgraph/${workflowId}/info`);
+  },
+
+  // Get available templates
+  async getLangchainTemplates(): Promise<any[]> {
+    return api.get<any[]>('/workflows/templates/langchain');
+  },
+
+  async getLanggraphTemplates(): Promise<any[]> {
+    return api.get<any[]>('/workflows/templates/langgraph');
+  },
+
+  // Get all workflows summary
+  async getAllWorkflowsSummary(): Promise<any> {
+    return api.get('/workflows/all/summary');
+  },
 };

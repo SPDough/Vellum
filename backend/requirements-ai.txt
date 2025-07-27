@@ -10,6 +10,7 @@ langchain==0.3.7
 langchain-anthropic==0.2.4
 langchain-openai==0.2.6
 langchain-ollama==0.2.0
+langgraph==0.2.45
 
 # Vector Operations & ML
 sentence-transformers==2.7.0
