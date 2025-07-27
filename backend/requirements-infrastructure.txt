@@ -1,0 +1,21 @@
+# Infrastructure Dependencies - Optional enterprise features
+# Install only if using specific infrastructure components
+
+# Message Streaming (Kafka)
+kafka-python==2.0.2
+aiokafka==0.10.0
+
+# Workflow Engine (Temporal)
+temporalio==1.6.0
+
+# Caching & Sessions (Redis)
+redis==5.0.6
+
+# Rules Engine (Drools)
+py4j==0.10.9.7
+
+# Data Analysis
+pandas==2.2.2
+
+# WebSockets
+websockets==12.0
