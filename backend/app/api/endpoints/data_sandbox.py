@@ -3,6 +3,7 @@ import io
 from datetime import datetime
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
+
 from fastapi import (
     APIRouter,
     BackgroundTasks,
@@ -501,7 +502,9 @@ async def stream_data_updates(
                 yield f'data: {{"type": "heartbeat", "timestamp": "{datetime.utcnow().isoformat()}"}}\n\n'
                 await asyncio.sleep(30)
         except Exception:
+
             return
+
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 

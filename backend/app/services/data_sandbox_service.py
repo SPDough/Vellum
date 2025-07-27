@@ -276,8 +276,10 @@ class DataSandboxService:
             + 1
         )
 
+
         # Update data source record count efficiently
         data_source.record_count = (data_source.record_count or 0) + 1
+
         data_source.last_updated = datetime.utcnow()
 
         self.db.commit()
@@ -351,8 +353,10 @@ class DataSandboxService:
             + 1
         )
 
+
         # Update data source record count efficiently
         data_source.record_count = (data_source.record_count or 0) + 1
+
 
         data_source.last_updated = datetime.utcnow()
 
@@ -428,8 +432,10 @@ class DataSandboxService:
             + 1
         )
 
+
         # Update data source record count efficiently
         data_source.record_count = (data_source.record_count or 0) + 1
+
 
         data_source.last_updated = datetime.utcnow()
 
@@ -568,9 +574,11 @@ class DataSandboxService:
 
 
 # Singleton service instance
+
 async def get_data_sandbox_service(db: Optional[Session] = None) -> DataSandboxService:
     if db is None:
         db_gen = get_db()
         db = await db_gen.__anext__()
+
 
     return DataSandboxService(db)
