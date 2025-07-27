@@ -143,19 +143,20 @@ class DataSandboxService:
         records = db_query.all()
 
         # Transform records to dict format
-        data = []
+        data: List[Dict[str, Any]] = []
         for record in records:
-            record_data = record.data.copy()
+            record_data: Dict[str, Any] = record.data.copy() if record.data else {}
             record_data["_id"] = record.id
             record_data["_timestamp"] = record.timestamp.isoformat()
 
             # Apply field selection if specified
             if query.fields:
-                record_data = {
+                filtered_data: Dict[str, Any] = {
                     k: v
                     for k, v in record_data.items()
                     if k in query.fields or k.startswith("_")
                 }
+                record_data = filtered_data
 
             data.append(record_data)
 
