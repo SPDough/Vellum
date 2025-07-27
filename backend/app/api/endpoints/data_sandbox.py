@@ -56,7 +56,8 @@ async def create_data_source(
     service: DataSandboxService = Depends(get_data_sandbox_service),
 ) -> DataSourceResponse:
     """Create a new data source."""
-    return await service.create_data_source(data_source)
+    result = await service.create_data_source(data_source)
+    return DataSourceResponse.from_orm(result)
 
 
 @router.get("/sources", response_model=List[DataSourceResponse])
@@ -75,7 +76,7 @@ async def get_data_source(
     data_source = await service.get_data_source(source_id)
     if not data_source:
         raise HTTPException(status_code=404, detail="Data source not found")
-    return data_source
+    return DataSourceResponse.from_orm(data_source)
 
 
 @router.put("/sources/{source_id}", response_model=DataSourceResponse)
@@ -88,7 +89,7 @@ async def update_data_source(
     data_source = await service.update_data_source(source_id, updates)
     if not data_source:
         raise HTTPException(status_code=404, detail="Data source not found")
-    return data_source
+    return DataSourceResponse.from_orm(data_source)
 
 
 @router.delete("/sources/{source_id}")
@@ -189,7 +190,8 @@ async def create_data_source_from_workflow(
             status_code=400, detail="workflow_id and output_name are required"
         )
 
-    return await service.create_data_source_from_workflow(workflow_id, output_name)
+    result = await service.create_data_source_from_workflow(workflow_id, output_name)
+    return DataSourceResponse.from_orm(result)
 
 
 # MCP Integration
@@ -229,7 +231,8 @@ async def create_data_source_from_mcp(
             status_code=400, detail="server_id and stream_name are required"
         )
 
-    return await service.create_data_source_from_mcp(server_id, stream_name)
+    result = await service.create_data_source_from_mcp(server_id, stream_name)
+    return DataSourceResponse.from_orm(result)
 
 
 # Agent Integration
@@ -279,7 +282,8 @@ async def create_data_source_from_agent(
         source_metadata={"agent_id": agent_id, "task_type": task_type},
     )
 
-    return await service.create_data_source(data_source_create)
+    result = await service.create_data_source(data_source_create)
+    return DataSourceResponse.from_orm(result)
 
 
 # Data Export
@@ -367,7 +371,8 @@ async def save_transformation(
         },
     )
 
-    return await service.create_data_source(data_source_create)
+    result = await service.create_data_source(data_source_create)
+    return DataSourceResponse.from_orm(result)
 
 
 # Visualizations
