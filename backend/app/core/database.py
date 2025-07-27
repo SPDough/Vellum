@@ -1,5 +1,6 @@
 import asyncio
 from contextlib import asynccontextmanager
+
 from typing import AsyncGenerator, Generator, Optional
 
 import psycopg
@@ -8,6 +9,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.core.base import Base as DataSandboxBase
 from app.core.config import get_settings
 from app.models.sop import Base as SOPBase
 from app.models.trade import Base as TradeBase
@@ -39,6 +41,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=sync_engine)
 class DatabaseManager:
     """Manages database connections and operations."""
 
+
     def __init__(self) -> None:
         self.neo4j_driver: Optional[AsyncDriver] = None
         self.postgres_engine = engine
@@ -55,6 +58,7 @@ class DatabaseManager:
                 await conn.run_sync(TradeBase.metadata.create_all)
                 await conn.run_sync(SOPBase.metadata.create_all)
                 await conn.run_sync(WorkflowBase.metadata.create_all)
+
 
             print("✅ PostgreSQL initialized successfully")
 
@@ -223,6 +227,7 @@ class Neo4jService:
             )
 
             record = await result.single()
+
             return str(record["id"]) if record else ""
 
     @staticmethod

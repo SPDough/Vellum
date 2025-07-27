@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
+
 from fastapi import HTTPException
 from sqlalchemy import and_, asc, desc, func, or_, text
 from sqlalchemy.orm import Session
@@ -29,6 +30,7 @@ from app.models.data_sandbox import (
     SharedDataView,
     WorkflowOutputCreate,
 )
+
 
 
 class DataSandboxService:
@@ -265,6 +267,7 @@ class DataSandboxService:
 
         self.db.add(data_record)
 
+
         # Update data source record count
         data_source.record_count = (
             self.db.query(DataRecord)
@@ -272,6 +275,9 @@ class DataSandboxService:
             .count()
             + 1
         )
+
+        # Update data source record count efficiently
+        data_source.record_count = (data_source.record_count or 0) + 1
         data_source.last_updated = datetime.utcnow()
 
         self.db.commit()
@@ -336,6 +342,7 @@ class DataSandboxService:
 
         self.db.add(data_record)
 
+
         # Update data source record count
         data_source.record_count = (
             self.db.query(DataRecord)
@@ -343,6 +350,10 @@ class DataSandboxService:
             .count()
             + 1
         )
+
+        # Update data source record count efficiently
+        data_source.record_count = (data_source.record_count or 0) + 1
+
         data_source.last_updated = datetime.utcnow()
 
         self.db.commit()
@@ -408,6 +419,7 @@ class DataSandboxService:
 
         self.db.add(data_record)
 
+
         # Update data source record count
         data_source.record_count = (
             self.db.query(DataRecord)
@@ -415,6 +427,10 @@ class DataSandboxService:
             .count()
             + 1
         )
+
+        # Update data source record count efficiently
+        data_source.record_count = (data_source.record_count or 0) + 1
+
         data_source.last_updated = datetime.utcnow()
 
         self.db.commit()
@@ -424,16 +440,26 @@ class DataSandboxService:
     # Data Export
     async def export_data(
         self, query: DataQuery, format: str, filename: Optional[str] = None
+
     ) -> str:
+
+    ) -> bytes:
+
         """Export data in the specified format."""
         data, total_count, execution_time = await self.query_data(query)
 
         if format == "json":
+
             return json.dumps(data, indent=2, default=str)
 
         elif format == "csv":
             if not data:
                 return ""
+            return json.dumps(data, indent=2, default=str).encode("utf-8")
+
+        elif format == "csv":
+            if not data:
+                return b""
 
             df = pd.DataFrame(data)
             output = io.StringIO()
@@ -447,6 +473,16 @@ class DataSandboxService:
             df = pd.DataFrame(data)
             output = io.StringIO()
             df.to_csv(output, index=False)  # Convert to CSV for string return
+            return output.getvalue().encode("utf-8")
+
+        elif format == "xlsx":
+            if not data:
+                return b""
+
+            df = pd.DataFrame(data)
+            output = io.BytesIO()
+            with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+                df.to_excel(writer, index=False, sheet_name="Data")
             return output.getvalue()
 
         else:
@@ -469,6 +505,7 @@ class DataSandboxService:
         )
 
         if not records:
+
             return DataQualityAnalysis(
                 completeness=0.0,
                 accuracy=0.0,
@@ -518,6 +555,7 @@ class DataSandboxService:
                 }
             )
 
+
         from app.models.data_sandbox import DataQualityAnalysis
 
         return DataQualityAnalysis(
@@ -534,4 +572,5 @@ async def get_data_sandbox_service(db: Optional[Session] = None) -> DataSandboxS
     if db is None:
         db_gen = get_db()
         db = await db_gen.__anext__()
+
     return DataSandboxService(db)
