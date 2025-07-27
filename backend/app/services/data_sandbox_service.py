@@ -44,7 +44,7 @@ class DataSandboxService:
             name=data_source.name,
             type=data_source.type.value,
             description=data_source.description,
-            schema=data_source.schema.dict() if data_source.schema else None,
+            schema=data_source.data_schema.dict() if data_source.data_schema else None,
             source_metadata=data_source.source_metadata or {},
             config=data_source.config or {},
         )
@@ -76,8 +76,10 @@ class DataSandboxService:
 
         update_data = updates.dict(exclude_unset=True)
         for field, value in update_data.items():
-            if field == "schema" and value:
-                setattr(db_data_source, field, value.dict())
+            if field == "data_schema" and value:
+                setattr(db_data_source, "schema", value.dict())
+            elif field == "data_schema":
+                setattr(db_data_source, "schema", value)
             else:
                 setattr(db_data_source, field, value)
 
