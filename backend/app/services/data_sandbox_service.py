@@ -168,33 +168,33 @@ class DataSandboxService:
 
         if filter_item.operator == FilterOperator.EQ:
             return db_query.filter(
-                text(f"{field_path} = :value").bindparam(value=str(filter_item.value))
+                text(f"{field_path} = :value").bindparams(value=str(filter_item.value))
             )
         elif filter_item.operator == FilterOperator.NE:
             return db_query.filter(
-                text(f"{field_path} != :value").bindparam(value=str(filter_item.value))
+                text(f"{field_path} != :value").bindparams(value=str(filter_item.value))
             )
         elif filter_item.operator == FilterOperator.GT:
             return db_query.filter(
-                text(f"CAST({field_path} AS NUMERIC) > :value").bindparam(
+                text(f"CAST({field_path} AS NUMERIC) > :value").bindparams(
                     value=filter_item.value
                 )
             )
         elif filter_item.operator == FilterOperator.GTE:
             return db_query.filter(
-                text(f"CAST({field_path} AS NUMERIC) >= :value").bindparam(
+                text(f"CAST({field_path} AS NUMERIC) >= :value").bindparams(
                     value=filter_item.value
                 )
             )
         elif filter_item.operator == FilterOperator.LT:
             return db_query.filter(
-                text(f"CAST({field_path} AS NUMERIC) < :value").bindparam(
+                text(f"CAST({field_path} AS NUMERIC) < :value").bindparams(
                     value=filter_item.value
                 )
             )
         elif filter_item.operator == FilterOperator.LTE:
             return db_query.filter(
-                text(f"CAST({field_path} AS NUMERIC) <= :value").bindparam(
+                text(f"CAST({field_path} AS NUMERIC) <= :value").bindparams(
                     value=filter_item.value
                 )
             )
@@ -204,13 +204,13 @@ class DataSandboxService:
                 return db_query.filter(text(f"{field_path} IN ({placeholders})"))
         elif filter_item.operator == FilterOperator.LIKE:
             return db_query.filter(
-                text(f"{field_path} ILIKE :value").bindparam(
+                text(f"{field_path} ILIKE :value").bindparams(
                     value=f"%{filter_item.value}%"
                 )
             )
         elif filter_item.operator == FilterOperator.REGEX:
             return db_query.filter(
-                text(f"{field_path} ~ :value").bindparam(value=filter_item.value)
+                text(f"{field_path} ~ :value").bindparams(value=filter_item.value)
             )
 
         return db_query
