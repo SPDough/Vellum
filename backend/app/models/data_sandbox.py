@@ -165,7 +165,7 @@ class DataFilter(BaseModel):
 
 class DataSort(BaseModel):
     field: str
-    direction: str = Field(..., regex="^(asc|desc)$")
+    direction: str = Field(..., pattern="^(asc|desc)$")
 
 
 class DataQuery(BaseModel):
@@ -294,12 +294,12 @@ class AgentResult(BaseModel):
 
 class DataExportRequest(BaseModel):
     query: DataQuery
-    format: str = Field(..., regex="^(csv|json|xlsx|parquet)$")
+    format: str = Field(..., pattern="^(csv|json|xlsx|parquet)$")
     filename: Optional[str] = None
 
 
 class DataVisualizationConfig(BaseModel):
-    type: str = Field(..., regex="^(table|chart|graph|map)$")
+    type: str = Field(..., pattern="^(table|chart|graph|map)$")
     title: str
     description: Optional[str] = None
     config: Dict[str, Any]
@@ -308,7 +308,7 @@ class DataVisualizationConfig(BaseModel):
 class DataVisualizationCreate(BaseModel):
     title: str
     description: Optional[str] = None
-    type: str = Field(..., regex="^(table|chart|graph|map)$")
+    type: str = Field(..., pattern="^(table|chart|graph|map)$")
     config: Dict[str, Any]
 
 

@@ -20,6 +20,7 @@ from app.models.data_sandbox import (
     DataSort,
     DataSource,
     DataSourceCreate,
+    DataSourceResponse,
     DataSourceStatus,
     DataSourceType,
     DataSourceUpdate,
@@ -54,12 +55,12 @@ class DataSandboxService:
         self.db.refresh(db_data_source)
         return db_data_source
 
-    async def get_data_sources(self) -> List[DataSource]:
+    async def get_data_sources(self) -> List[DataSourceResponse]:
         """Get all data sources."""
         sources = (
             self.db.query(DataSource).order_by(desc(DataSource.last_updated)).all()
         )
-        return list(sources)
+        return [DataSourceResponse.from_orm(source) for source in sources]
 
     async def get_data_source(self, source_id: str) -> Optional[DataSource]:
         """Get a specific data source."""
@@ -446,21 +447,11 @@ class DataSandboxService:
     # Data Export
     async def export_data(
         self, query: DataQuery, format: str, filename: Optional[str] = None
-
-    ) -> str:
-
     ) -> bytes:
-
         """Export data in the specified format."""
         data, total_count, execution_time = await self.query_data(query)
 
         if format == "json":
-
-            return json.dumps(data, indent=2, default=str)
-
-        elif format == "csv":
-            if not data:
-                return ""
             return json.dumps(data, indent=2, default=str).encode("utf-8")
 
         elif format == "csv":
@@ -470,15 +461,6 @@ class DataSandboxService:
             df = pd.DataFrame(data)
             output = io.StringIO()
             df.to_csv(output, index=False)
-            return output.getvalue()
-
-        elif format == "xlsx":
-            if not data:
-                return ""
-
-            df = pd.DataFrame(data)
-            output = io.StringIO()
-            df.to_csv(output, index=False)  # Convert to CSV for string return
             return output.getvalue().encode("utf-8")
 
         elif format == "xlsx":
@@ -562,8 +544,6 @@ class DataSandboxService:
             )
 
 
-        from app.models.data_sandbox import DataQualityAnalysis
-
         return DataQualityAnalysis(
             completeness=completeness,
             accuracy=95.0,  # Placeholder - would need domain-specific rules
@@ -575,10 +555,9 @@ class DataSandboxService:
 
 # Singleton service instance
 
-async def get_data_sandbox_service(db: Optional[Session] = None) -> DataSandboxService:
+def get_data_sandbox_service(db: Optional[Session] = None) -> DataSandboxService:
+    """Get singleton instance of DataSandboxService."""
     if db is None:
-        db_gen = get_db()
-        db = await db_gen.__anext__()
-
-
+        from app.core.database import SessionLocal
+        db = SessionLocal()
     return DataSandboxService(db)

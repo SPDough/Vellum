@@ -15,7 +15,7 @@ from fastapi import (
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
+from app.core.database import get_db, get_sync_db
 
 from app.models.data_sandbox import (
     AgentResult,
@@ -35,14 +35,16 @@ from app.models.data_sandbox import (
     WorkflowOutput,
     WorkflowOutputCreate,
 )
-from app.services.data_sandbox_service import (
-    DataSandboxService,
-    get_data_sandbox_service,
-)
+from app.services.data_sandbox_service import DataSandboxService
 from app.services.websocket_service import connection_manager, data_stream_service
 
 
 router = APIRouter()
+
+
+async def get_data_sandbox_service(db: Session = Depends(get_sync_db)) -> DataSandboxService:
+    """Get data sandbox service instance."""
+    return DataSandboxService(db)
 
 
 # Data Sources

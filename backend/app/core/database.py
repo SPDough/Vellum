@@ -76,12 +76,13 @@ class DatabaseManager:
             )
 
             # Test connection
-            await self.neo4j_driver.verify_connectivity()
+            if self.neo4j_driver:
+                await self.neo4j_driver.verify_connectivity()
 
-            # Create constraints and indexes
-            async with self.neo4j_driver.session() as session:
-                # SOP Document constraints
-                await session.run(
+                # Create constraints and indexes
+                async with self.neo4j_driver.session() as session:
+                    # SOP Document constraints
+                    await session.run(
                     """
                     CREATE CONSTRAINT sop_document_id IF NOT EXISTS
                     FOR (s:SOPDocument) REQUIRE s.id IS UNIQUE
