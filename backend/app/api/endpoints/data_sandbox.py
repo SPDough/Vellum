@@ -1,25 +1,43 @@
 import io
 from typing import List, Optional
 
-from fastapi import (APIRouter, BackgroundTasks, Depends, HTTPException,
-                     Response, WebSocket)
+
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Response,
+    WebSocket,
+)
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.data_sandbox import (AgentResult, AgentResultCreate,
-                                     DataExportRequest, DataLineage,
-                                     DataQualityAnalysis, DataQuery,
-                                     DataQueryResult, DataSourceCreate,
-                                     DataSourceResponse, DataSourceUpdate,
-                                     DataVisualizationCreate,
-                                     DataVisualizationResponse, MCPDataStream,
-                                     MCPDataStreamCreate, WorkflowOutput,
-                                     WorkflowOutputCreate)
-from app.services.data_sandbox_service import (DataSandboxService,
-                                               get_data_sandbox_service)
-from app.services.websocket_service import (connection_manager,
-                                            data_stream_service)
+
+from app.models.data_sandbox import (
+    AgentResult,
+    AgentResultCreate,
+    DataExportRequest,
+    DataLineage,
+    DataQualityAnalysis,
+    DataQuery,
+    DataQueryResult,
+    DataSourceCreate,
+    DataSourceResponse,
+    DataSourceUpdate,
+    DataVisualizationCreate,
+    DataVisualizationResponse,
+    MCPDataStream,
+    MCPDataStreamCreate,
+    WorkflowOutput,
+    WorkflowOutputCreate,
+)
+from app.services.data_sandbox_service import (
+    DataSandboxService,
+    get_data_sandbox_service,
+)
+from app.services.websocket_service import connection_manager, data_stream_service
 
 router = APIRouter()
 
@@ -435,7 +453,9 @@ async def stream_data_updates(
                 yield f'data: {{"type": "heartbeat", "timestamp": "{datetime.utcnow().isoformat()}"}}\n\n'
                 await asyncio.sleep(30)
         except Exception:
-            return
+
+            break
+
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 

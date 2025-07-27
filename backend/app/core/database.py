@@ -1,12 +1,13 @@
 import asyncio
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
+
+from typing import AsyncGenerator
 
 import psycopg
 from neo4j import AsyncGraphDatabase, GraphDatabase
 from sqlalchemy import create_engine, text
-from sqlalchemy.ext.asyncio import (AsyncSession, async_sessionmaker,
-                                    create_async_engine)
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.base import Base as DataSandboxBase
@@ -58,9 +59,6 @@ class DatabaseManager:
                 await conn.run_sync(SOPBase.metadata.create_all)
                 await conn.run_sync(WorkflowBase.metadata.create_all)
 
-                from app.models import data_sandbox
-
-                await conn.run_sync(DataSandboxBase.metadata.create_all)
 
             print("✅ PostgreSQL initialized successfully")
 
