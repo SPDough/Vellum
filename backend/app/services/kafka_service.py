@@ -9,14 +9,14 @@ logger = logging.getLogger(__name__)
 class KafkaService:
     """Kafka service for message streaming and event processing."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.producers: Dict[str, Any] = {}
         self.consumers: Dict[str, Any] = {}
         self.topics: List[str] = []
         self.running = False
         self.message_handlers: Dict[str, List[Callable]] = {}
 
-    async def start(self):
+    async def start(self) -> None:
         """Start Kafka service."""
         try:
             # In a real implementation, this would initialize Kafka clients
@@ -32,7 +32,7 @@ class KafkaService:
             logger.error(f"Failed to start Kafka service: {e}")
             raise
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop Kafka service."""
         try:
             logger.info("Stopping Kafka service...")
@@ -52,7 +52,7 @@ class KafkaService:
         except Exception as e:
             logger.error(f"Error stopping Kafka service: {e}")
 
-    async def _create_default_topics(self):
+    async def _create_default_topics(self) -> None:
         """Create default topics for the application."""
         default_topics = [
             "workflow-events",
@@ -69,7 +69,7 @@ class KafkaService:
 
     async def create_topic(
         self, topic_name: str, partitions: int = 3, replication_factor: int = 1
-    ):
+    ) -> bool:
         """Create a Kafka topic."""
         try:
             # In a real implementation, this would create the topic in Kafka
@@ -86,7 +86,7 @@ class KafkaService:
 
     async def publish_message(
         self, topic: str, message: Dict[str, Any], key: Optional[str] = None
-    ):
+    ) -> bool:
         """Publish a message to a Kafka topic."""
         try:
             # In a real implementation, this would send to Kafka
@@ -111,7 +111,7 @@ class KafkaService:
 
     async def subscribe_to_topic(
         self, topic: str, handler: Callable[[Dict[str, Any]], None]
-    ):
+    ) -> bool:
         """Subscribe to a Kafka topic with a message handler."""
         try:
             logger.info(f"Subscribing to topic: {topic}")
@@ -129,7 +129,7 @@ class KafkaService:
 
     async def publish_workflow_event(
         self, workflow_id: str, event_type: str, data: Dict[str, Any]
-    ):
+    ) -> bool:
         """Publish a workflow-related event."""
         message = {
             "workflow_id": workflow_id,
@@ -142,7 +142,7 @@ class KafkaService:
 
     async def publish_mcp_event(
         self, server_id: str, event_type: str, data: Dict[str, Any]
-    ):
+    ) -> bool:
         """Publish an MCP server-related event."""
         message = {
             "server_id": server_id,
@@ -155,7 +155,7 @@ class KafkaService:
 
     async def publish_data_stream_event(
         self, stream_id: str, event_type: str, data: Dict[str, Any]
-    ):
+    ) -> bool:
         """Publish a data stream-related event."""
         message = {
             "stream_id": stream_id,
@@ -166,7 +166,7 @@ class KafkaService:
 
         return await self.publish_message("data-stream-events", message, key=stream_id)
 
-    async def publish_trade_event(self, trade_data: Dict[str, Any]):
+    async def publish_trade_event(self, trade_data: Dict[str, Any]) -> bool:
         """Publish a trade event."""
         message = {
             "event_type": "trade_executed",
@@ -178,7 +178,7 @@ class KafkaService:
 
     async def publish_position_update(
         self, account_id: str, position_data: Dict[str, Any]
-    ):
+    ) -> bool:
         """Publish a position update event."""
         message = {
             "account_id": account_id,
@@ -189,7 +189,9 @@ class KafkaService:
 
         return await self.publish_message("position-updates", message, key=account_id)
 
-    async def publish_market_data(self, symbol: str, market_data: Dict[str, Any]):
+    async def publish_market_data(
+        self, symbol: str, market_data: Dict[str, Any]
+    ) -> bool:
         """Publish market data update."""
         message = {
             "symbol": symbol,

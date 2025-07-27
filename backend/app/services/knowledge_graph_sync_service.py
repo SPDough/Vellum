@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 class KnowledgeGraphSyncService:
     """Service to synchronize data between operational systems and knowledge graph."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.neo4j_service: Optional[Neo4jService] = None
         self.mcp_service: Optional[MCPService] = None
-        self.sync_tasks = {}
+        self.sync_tasks: Dict[str, Any] = {}
 
-    async def initialize(self):
+    async def initialize(self) -> None:
         """Initialize the sync service with dependencies."""
         self.neo4j_service = await get_neo4j_service()
         self.mcp_service = await get_mcp_service()
@@ -29,6 +29,9 @@ class KnowledgeGraphSyncService:
             logger.info("Syncing MCP servers to knowledge graph...")
 
             # Get all MCP servers from the service
+            if not self.mcp_service:
+                logger.error("MCP service not initialized")
+                return 0
             servers = await self.mcp_service.list_servers()
             synced_count = 0
 
@@ -50,6 +53,9 @@ class KnowledgeGraphSyncService:
                     }
 
                     # Check if entity exists
+                    if not self.neo4j_service:
+                        logger.error("Neo4j service not initialized")
+                        continue
                     existing = await self.neo4j_service.get_entity(
                         EntityType.MCP_SERVER.value, server["id"]
                     )
@@ -104,6 +110,9 @@ class KnowledgeGraphSyncService:
                     }
 
                     # Check if entity exists
+                    if not self.neo4j_service:
+                        logger.error("Neo4j service not initialized")
+                        continue
                     existing = await self.neo4j_service.get_entity(
                         EntityType.WORKFLOW.value, workflow["id"]
                     )
@@ -138,7 +147,9 @@ class KnowledgeGraphSyncService:
             logger.error(f"Failed to sync workflows to knowledge graph: {e}")
             return 0
 
-    async def _create_workflow_mcp_relationships(self, workflow: Dict[str, Any]):
+    async def _create_workflow_mcp_relationships(
+        self, workflow: Dict[str, Any]
+    ) -> None:
         """Create relationships between workflow and MCP servers it uses."""
         try:
             workflow_id = workflow["id"]
@@ -147,7 +158,7 @@ class KnowledgeGraphSyncService:
             for node in workflow.get("nodes", []):
                 if node.get("type") == "MCP_CALL":
                     mcp_server_id = node.get("config", {}).get("mcp_server_id")
-                    if mcp_server_id:
+                    if mcp_server_id and self.neo4j_service:
                         # Check if MCP server exists in graph
                         mcp_entity = await self.neo4j_service.get_entity(
                             EntityType.MCP_SERVER.value, mcp_server_id
@@ -198,6 +209,9 @@ class KnowledgeGraphSyncService:
                     }
 
                     # Check if entity exists
+                    if not self.neo4j_service:
+                        logger.error("Neo4j service not initialized")
+                        continue
                     existing = await self.neo4j_service.get_entity(
                         EntityType.DATA_STREAM.value, stream["id"]
                     )
@@ -215,7 +229,7 @@ class KnowledgeGraphSyncService:
 
                     # Create relationship with source MCP server
                     source_mcp_id = stream.get("source_mcp_server_id")
-                    if source_mcp_id:
+                    if source_mcp_id and self.neo4j_service:
                         await self.neo4j_service.create_relationship(
                             from_entity_type=EntityType.MCP_SERVER.value,
                             from_entity_id=source_mcp_id,
@@ -244,7 +258,7 @@ class KnowledgeGraphSyncService:
             logger.error(f"Failed to sync data streams to knowledge graph: {e}")
             return 0
 
-    async def create_sample_financial_data(self):
+    async def create_sample_financial_data(self) -> None:
         """Create sample financial entities for demonstration."""
         try:
             logger.info("Creating sample financial data in knowledge graph...")
@@ -294,6 +308,9 @@ class KnowledgeGraphSyncService:
             ]
 
             # Create entities
+            if not self.neo4j_service:
+                logger.error("Neo4j service not initialized")
+                return
             for account in accounts:
                 await self.neo4j_service.create_entity(
                     EntityType.ACCOUNT.value, account
@@ -323,26 +340,27 @@ class KnowledgeGraphSyncService:
             ]
 
             for position in positions:
-                await self.neo4j_service.create_relationship(
-                    from_entity_type=EntityType.ACCOUNT.value,
-                    from_entity_id=position["account_id"],
-                    to_entity_type=EntityType.SECURITY.value,
-                    to_entity_id=position["security_id"],
-                    relationship_type=RelationshipType.HOLDS.value,
-                    properties={
-                        "quantity": position["quantity"],
-                        "market_value": position["market_value"],
-                        "book_cost": position["book_cost"],
-                        "as_of_date": datetime.utcnow().isoformat(),
-                    },
-                )
+                if self.neo4j_service:
+                    await self.neo4j_service.create_relationship(
+                        from_entity_type=EntityType.ACCOUNT.value,
+                        from_entity_id=str(position["account_id"]),
+                        to_entity_type=EntityType.SECURITY.value,
+                        to_entity_id=str(position["security_id"]),
+                        relationship_type=RelationshipType.HOLDS.value,
+                        properties={
+                            "quantity": position["quantity"],
+                            "market_value": position["market_value"],
+                            "book_cost": position["book_cost"],
+                            "as_of_date": datetime.utcnow().isoformat(),
+                        },
+                    )
 
             logger.info("Successfully created sample financial data")
 
         except Exception as e:
             logger.error(f"Failed to create sample financial data: {e}")
 
-    async def sync_all_data(self):
+    async def sync_all_data(self) -> None:
         """Sync all data sources to the knowledge graph."""
         try:
             logger.info("Starting full knowledge graph sync...")

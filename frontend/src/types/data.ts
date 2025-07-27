@@ -11,6 +11,9 @@ export interface MCPServer {
   last_connected: string;
   config: MCPServerConfig;
   metrics: MCPServerMetrics;
+  enabled: boolean;
+  description?: string;
+  provider_type?: string;
 }
 
 export enum DataProviderType {

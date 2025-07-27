@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
 from opentelemetry import metrics, trace
 from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -59,18 +62,18 @@ def setup_telemetry(settings: Settings) -> None:
     print(f"✅ OpenTelemetry configured for {settings.otel_service_name}")
 
 
-def instrument_fastapi(app):
+def instrument_fastapi(app: Any) -> None:
     """Instrument FastAPI application."""
     FastAPIInstrumentor.instrument_app(app)
 
 
 # Utility functions for custom spans and metrics
-def get_tracer(name: str = "otomeshon"):
+def get_tracer(name: str = "otomeshon") -> trace.Tracer:
     """Get a tracer instance."""
     return trace.get_tracer(name)
 
 
-def get_meter(name: str = "otomeshon"):
+def get_meter(name: str = "otomeshon") -> metrics.Meter:
     """Get a meter instance."""
     return metrics.get_meter(name)
 
@@ -79,7 +82,7 @@ def get_meter(name: str = "otomeshon"):
 class BusinessMetrics:
     """Custom business metrics for the application."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.meter = get_meter("otomeshon.business")
 
         # Trade processing metrics
@@ -150,12 +153,14 @@ class BusinessMetrics:
             unit="1",
         )
 
-    def record_trade_processed(self, trade_type: str, status: str, duration: float):
+    def record_trade_processed(
+        self, trade_type: str, status: str, duration: float
+    ) -> None:
         """Record a trade processing event."""
         self.trade_counter.add(1, {"trade_type": trade_type, "status": status})
         self.trade_processing_time.record(duration, {"trade_type": trade_type})
 
-    def record_trade_exception(self, exception_type: str, severity: str):
+    def record_trade_exception(self, exception_type: str, severity: str) -> None:
         """Record a trade exception."""
         self.trade_exceptions.add(
             1, {"exception_type": exception_type, "severity": severity}
@@ -163,26 +168,28 @@ class BusinessMetrics:
 
     def record_workflow_execution(
         self, workflow_type: str, status: str, duration: float
-    ):
+    ) -> None:
         """Record a workflow execution."""
         self.workflow_executions.add(
             1, {"workflow_type": workflow_type, "status": status}
         )
         self.workflow_duration.record(duration, {"workflow_type": workflow_type})
 
-    def record_human_intervention(self, workflow_type: str, reason: str):
+    def record_human_intervention(self, workflow_type: str, reason: str) -> None:
         """Record a human intervention event."""
         self.human_interventions.add(
             1, {"workflow_type": workflow_type, "reason": reason}
         )
 
-    def record_llm_call(self, model: str, provider: str, tokens: int, cost: float):
+    def record_llm_call(
+        self, model: str, provider: str, tokens: int, cost: float
+    ) -> None:
         """Record an LLM API call."""
         self.llm_calls.add(1, {"model": model, "provider": provider})
         self.llm_tokens.add(tokens, {"model": model, "provider": provider})
         self.llm_cost.add(cost, {"model": model, "provider": provider})
 
-    def record_sop_search(self, search_type: str, results_count: int):
+    def record_sop_search(self, search_type: str, results_count: int) -> None:
         """Record an SOP search."""
         self.sop_searches.add(
             1,
@@ -192,7 +199,9 @@ class BusinessMetrics:
             },
         )
 
-    def record_automation_suggestion(self, sop_category: str, confidence: float):
+    def record_automation_suggestion(
+        self, sop_category: str, confidence: float
+    ) -> None:
         """Record an automation suggestion."""
         self.automation_suggestions.add(
             1,
@@ -205,6 +214,36 @@ class BusinessMetrics:
                 ),
             },
         )
+
+
+telemetry_data: List[Dict[str, Any]] = []
+
+
+def track_event(
+    event_name: str, properties: Optional[dict] = None, user_id: Optional[str] = None
+) -> None:
+    """Track a telemetry event."""
+    event = {
+        "event_name": event_name,
+        "properties": properties or {},
+        "user_id": user_id,
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+    telemetry_data.append(event)
+
+
+def get_telemetry_summary() -> Dict[str, Any]:
+    """Get telemetry summary."""
+    return {
+        "total_events": len(telemetry_data),
+        "unique_users": len(
+            set(
+                event.get("user_id") for event in telemetry_data if event.get("user_id")
+            )
+        ),
+        "event_types": list(set(event["event_name"] for event in telemetry_data)),
+        "last_event": telemetry_data[-1] if telemetry_data else None,
+    }
 
 
 # Global metrics instance

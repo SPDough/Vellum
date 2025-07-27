@@ -4,6 +4,7 @@ Simple FastAPI server for local development and testing
 """
 
 import json
+import logging
 import random
 import uuid
 from datetime import datetime, timedelta
@@ -85,7 +86,7 @@ def generate_sample_data() -> None:
 
 # Health check endpoint
 @app.get("/health")
-async def health_check():
+async def health_check() -> Dict[str, Any]:
     return {
         "status": "healthy",
         "timestamp": datetime.now(),
@@ -100,7 +101,7 @@ async def get_records(
     page_size: int = 50,
     source: Optional[str] = None,
     data_type: Optional[str] = None,
-):
+) -> Dict[str, Any]:
     """Get paginated data records with optional filtering"""
 
     # Filter data
@@ -125,7 +126,7 @@ async def get_records(
 
 
 @app.post("/api/v1/data-sandbox/filter")
-async def filter_records(request: FilterRequest):
+async def filter_records(request: FilterRequest) -> Dict[str, Any]:
     """Advanced filtering of data records"""
 
     filtered_data = sample_data
@@ -174,17 +175,17 @@ async def filter_records(request: FilterRequest):
 
 
 @app.get("/api/v1/data-sandbox/sources")
-async def get_data_sources():
+async def get_data_sources() -> Dict[str, List[str]]:
     """Get available data sources"""
     sources = list(set(r.source for r in sample_data))
     return {"sources": sources}
 
 
 @app.get("/api/v1/data-sandbox/stats")
-async def get_stats():
+async def get_stats() -> Dict[str, Any]:
     """Get data sandbox statistics"""
     total_records = len(sample_data)
-    sources_count = {}
+    sources_count: Dict[str, int] = {}
     for record in sample_data:
         sources_count[record.source] = sources_count.get(record.source, 0) + 1
 
@@ -196,7 +197,7 @@ async def get_stats():
 
 
 @app.post("/api/v1/data-sandbox/export")
-async def export_data(request: Dict[str, Any]):
+async def export_data(request: Dict[str, Any]) -> Dict[str, Any]:
     """Export data in various formats"""
 
     return {
@@ -210,7 +211,7 @@ async def export_data(request: Dict[str, Any]):
 
 # WebSocket stats endpoint (simplified)
 @app.get("/api/v1/data-sandbox/ws/stats")
-async def websocket_stats():
+async def websocket_stats() -> Dict[str, Any]:
     """Get WebSocket connection stats for monitoring"""
     return {
         "active_connections": random.randint(1, 10),
@@ -221,7 +222,7 @@ async def websocket_stats():
 
 # Metrics endpoint for monitoring
 @app.get("/metrics")
-async def metrics():
+async def metrics() -> Dict[str, Any]:
     """Prometheus-style metrics endpoint"""
     return {
         "otomeshon_websocket_connections_total": random.randint(1, 10),
@@ -232,13 +233,40 @@ async def metrics():
 
 # Initialize sample data on startup
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     """Initialize the application with sample data"""
     generate_sample_data()
     print(f"🎯 Generated {len(sample_data)} sample records")
     print("🚀 Simple Otomeshon Backend is ready!")
     print("📊 Data Sandbox API available at /api/v1/data-sandbox/")
     print("📖 API Documentation available at /docs")
+
+
+def custom_openapi() -> Dict[str, Any]:
+    """Custom OpenAPI schema."""
+    if app.openapi_schema:
+        return dict(app.openapi_schema)
+
+    from fastapi.openapi.utils import get_openapi
+
+    openapi_schema = get_openapi(
+        title="Otomeshon Simple Backend",
+        version="1.0.0",
+        description="Simplified backend for local testing",
+        routes=app.routes,
+    )
+    app.openapi_schema = openapi_schema
+    return dict(openapi_schema)
+
+
+app.openapi = custom_openapi
+
+
+@app.on_event("shutdown")
+async def shutdown_event() -> None:
+    """Application shutdown event."""
+    logger = logging.getLogger(__name__)
+    logger.info("🛑 Vellum API shutting down...")
 
 
 if __name__ == "__main__":

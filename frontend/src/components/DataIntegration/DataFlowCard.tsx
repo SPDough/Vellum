@@ -6,18 +6,14 @@ import {
   Typography,
   Chip,
   Avatar,
-  IconButton,
   LinearProgress,
-  Tooltip,
   Button,
 } from '@mui/material';
 import {
   PlayArrow as PlayArrowIcon,
   Pause as PauseIcon,
-  Schedule as ScheduleIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
-  DataUsage as DataUsageIcon,
   AccountTree as AccountTreeIcon,
   Timeline as TimelineIcon,
 } from '@mui/icons-material';

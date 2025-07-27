@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import {
   Box,
   Drawer,
@@ -16,8 +16,6 @@ import {
   Avatar,
   Menu,
   MenuItem,
-  useTheme,
-  useMediaQuery,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -32,22 +30,19 @@ import {
   Notifications,
   Psychology as KnowledgeGraphIcon,
   TableChart as DataSandboxIcon,
+  AccountBalance as AccountBalanceIcon,
+  SwapHoriz as SwapHorizIcon,
+  CompareArrows as CompareArrowsIcon,
 } from '@mui/icons-material';
 
 import { useAuthStore } from '@/store';
 
 const drawerWidth = 280;
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
@@ -59,6 +54,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { label: 'AI Agents', path: '/agents', icon: <AgentIcon /> },
     { label: 'Knowledge Graph', path: '/knowledge-graph', icon: <KnowledgeGraphIcon /> },
     { label: 'Data Sandbox', path: '/data-sandbox', icon: <DataSandboxIcon /> },
+    { label: 'Positions', path: '/positions', icon: <AccountBalanceIcon /> },
+    { label: 'Transactions', path: '/transactions', icon: <SwapHorizIcon /> },
+    { label: 'Reconciliation', path: '/reconciliation', icon: <CompareArrowsIcon /> },
     { label: 'Analytics', path: '/analytics', icon: <AnalyticsIcon /> },
     { label: 'Settings', path: '/settings', icon: <SettingsIcon /> },
   ];
@@ -273,7 +271,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         }}
       >
         <Toolbar />
-        {children}
+        <Outlet />
       </Box>
     </Box>
   );

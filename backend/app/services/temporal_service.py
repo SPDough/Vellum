@@ -10,14 +10,14 @@ logger = logging.getLogger(__name__)
 class TemporalService:
     """Temporal service for workflow orchestration and scheduling."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.workflows: Dict[str, Dict[str, Any]] = {}
         self.activities: Dict[str, Callable] = {}
         self.scheduled_workflows: Dict[str, Dict[str, Any]] = {}
         self.running = False
-        self._scheduler_task = None
+        self._scheduler_task: Optional[asyncio.Task] = None
 
-    async def start(self):
+    async def start(self) -> None:
         """Start Temporal service."""
         try:
             logger.info("Starting Temporal service...")
@@ -35,7 +35,7 @@ class TemporalService:
             logger.error(f"Failed to start Temporal service: {e}")
             raise
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop Temporal service."""
         try:
             logger.info("Stopping Temporal service...")
@@ -53,7 +53,7 @@ class TemporalService:
         except Exception as e:
             logger.error(f"Error stopping Temporal service: {e}")
 
-    async def _register_default_activities(self):
+    async def _register_default_activities(self) -> None:
         """Register default workflow activities."""
         self.activities.update(
             {
@@ -87,7 +87,7 @@ class TemporalService:
             return False
 
     async def execute_workflow(
-        self, workflow_id: str, input_data: Dict[str, Any] = None
+        self, workflow_id: str, input_data: Optional[Dict[str, Any]] = None
     ) -> str:
         """Execute a workflow and return execution ID."""
         try:
@@ -119,7 +119,7 @@ class TemporalService:
             logger.error(f"Failed to execute workflow {workflow_id}: {e}")
             raise
 
-    async def _execute_workflow_steps(self, execution: Dict[str, Any]):
+    async def _execute_workflow_steps(self, execution: Dict[str, Any]) -> None:
         """Execute workflow steps."""
         try:
             workflow_id = execution["workflow_id"]
@@ -183,7 +183,9 @@ class TemporalService:
         node_type = node.get("type", "unknown")
         node_config = node.get("config", {})
 
-        if node_type == "MCP_CALL":
+        if node_type == "FIBO_MAPPING":
+            return await self._fibo_mapping_activity(node_config, input_data)
+        elif node_type == "MCP_CALL":
             return await self._mcp_call_activity(node_config, input_data)
         elif node_type == "TRANSFORM":
             return await self._data_transform_activity(node_config, input_data)
@@ -339,9 +341,44 @@ class TemporalService:
             logger.error(f"Wait for condition activity failed: {e}")
             raise
 
+    async def _fibo_mapping_activity(
+        self, config: Dict[str, Any], input_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """FIBO ontology mapping activity."""
+        try:
+            from app.services.langgraph_service import get_langgraph_service
+
+            langgraph_service = await get_langgraph_service()
+
+            workflow_id = await langgraph_service.create_fibo_mapping_workflow()
+            result = await langgraph_service.execute_workflow(workflow_id, input_data)
+
+            fibo_result = {
+                "fibo_mapping_completed": True,
+                "workflow_id": workflow_id,
+                "mapped_positions": result.get("data", {}).get("fibo_positions", []),
+                "mapping_results": result.get("data", {}).get("mapping_results", []),
+                "messages": result.get("messages", []),
+                "errors": result.get("errors", []),
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+
+            return fibo_result
+
+        except Exception as e:
+            logger.error(f"FIBO mapping activity failed: {e}")
+            return {
+                "fibo_mapping_completed": False,
+                "error": str(e),
+                "timestamp": datetime.utcnow().isoformat(),
+            }
+
     async def schedule_workflow(
-        self, workflow_id: str, schedule: str, input_data: Dict[str, Any] = None
-    ):
+        self,
+        workflow_id: str,
+        schedule: str,
+        input_data: Optional[Dict[str, Any]] = None,
+    ) -> str:
         """Schedule a workflow for periodic execution."""
         schedule_id = str(uuid4())
 
@@ -379,7 +416,7 @@ class TemporalService:
         # Default to 1 hour
         return now + timedelta(hours=1)
 
-    async def _scheduler_loop(self):
+    async def _scheduler_loop(self) -> None:
         """Background scheduler loop."""
         while self.running:
             try:
@@ -431,7 +468,7 @@ class TemporalService:
 
         for execution in self.workflows[workflow_id]["executions"]:
             if execution["id"] == execution_id:
-                return execution
+                return dict(execution)
 
         return None
 
@@ -440,7 +477,9 @@ class TemporalService:
         if workflow_id not in self.workflows:
             return []
 
-        return self.workflows[workflow_id]["executions"]
+        return [
+            dict(execution) for execution in self.workflows[workflow_id]["executions"]
+        ]
 
     def is_healthy(self) -> bool:
         """Check if Temporal service is healthy."""

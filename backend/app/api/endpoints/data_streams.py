@@ -1,6 +1,6 @@
 import random
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -90,7 +90,7 @@ async def list_data_streams(
     data_type: Optional[str] = None,
     status: Optional[str] = None,
     enabled_only: bool = False,
-):
+) -> List[Dict[str, Any]]:
     """List all data streams."""
     streams = []
     for stream_id, stream_data in streams_db.items():
@@ -112,7 +112,7 @@ async def list_data_streams(
 
 
 @router.post("/", response_model=DataStreamResponse)
-async def create_data_stream(stream_data: DataStreamCreate):
+async def create_data_stream(stream_data: DataStreamCreate) -> Dict[str, Any]:
     """Create a new data stream."""
     stream_id = str(uuid4())
 
@@ -137,7 +137,7 @@ async def create_data_stream(stream_data: DataStreamCreate):
 
 
 @router.get("/{stream_id}", response_model=DataStreamResponse)
-async def get_data_stream(stream_id: str):
+async def get_data_stream(stream_id: str) -> Dict[str, Any]:
     """Get details of a specific data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
@@ -149,11 +149,13 @@ async def get_data_stream(stream_id: str):
     stream_data.update(metrics)
     stream_data["last_update"] = datetime.utcnow()
 
-    return stream_data
+    return dict(stream_data)
 
 
 @router.put("/{stream_id}", response_model=DataStreamResponse)
-async def update_data_stream(stream_id: str, update_data: DataStreamUpdate):
+async def update_data_stream(
+    stream_id: str, update_data: DataStreamUpdate
+) -> Dict[str, Any]:
     """Update a data stream configuration."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
@@ -177,11 +179,11 @@ async def update_data_stream(stream_id: str, update_data: DataStreamUpdate):
 
     stream["updated_at"] = datetime.utcnow()
 
-    return stream
+    return dict(stream)
 
 
 @router.delete("/{stream_id}")
-async def delete_data_stream(stream_id: str):
+async def delete_data_stream(stream_id: str) -> Dict[str, Any]:
     """Delete a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
@@ -191,7 +193,7 @@ async def delete_data_stream(stream_id: str):
 
 
 @router.post("/{stream_id}/start")
-async def start_data_stream(stream_id: str):
+async def start_data_stream(stream_id: str) -> Dict[str, Any]:
     """Start a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
@@ -205,7 +207,7 @@ async def start_data_stream(stream_id: str):
 
 
 @router.post("/{stream_id}/pause")
-async def pause_data_stream(stream_id: str):
+async def pause_data_stream(stream_id: str) -> Dict[str, Any]:
     """Pause a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
@@ -218,7 +220,7 @@ async def pause_data_stream(stream_id: str):
 
 
 @router.post("/{stream_id}/stop")
-async def stop_data_stream(stream_id: str):
+async def stop_data_stream(stream_id: str) -> Dict[str, Any]:
     """Stop a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
@@ -232,7 +234,7 @@ async def stop_data_stream(stream_id: str):
 
 
 @router.get("/{stream_id}/metrics", response_model=DataStreamMetrics)
-async def get_stream_metrics(stream_id: str):
+async def get_stream_metrics(stream_id: str) -> Dict[str, Any]:
     """Get detailed metrics for a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
@@ -263,7 +265,9 @@ async def get_stream_metrics(stream_id: str):
 
 
 @router.post("/{stream_id}/subscribe")
-async def subscribe_to_stream(stream_id: str, subscription: StreamSubscription):
+async def subscribe_to_stream(
+    stream_id: str, subscription: StreamSubscription
+) -> Dict[str, Any]:
     """Subscribe to a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
@@ -289,7 +293,9 @@ async def subscribe_to_stream(stream_id: str, subscription: StreamSubscription):
 
 
 @router.delete("/{stream_id}/subscribe/{subscription_id}")
-async def unsubscribe_from_stream(stream_id: str, subscription_id: str):
+async def unsubscribe_from_stream(
+    stream_id: str, subscription_id: str
+) -> Dict[str, Any]:
     """Unsubscribe from a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
@@ -309,7 +315,7 @@ async def unsubscribe_from_stream(stream_id: str, subscription_id: str):
 
 
 @router.get("/{stream_id}/subscribers")
-async def list_stream_subscribers(stream_id: str):
+async def list_stream_subscribers(stream_id: str) -> Dict[str, Any]:
     """List all subscribers for a data stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")
@@ -339,7 +345,7 @@ async def get_stream_data(
     offset: int = 0,
     start_time: Optional[datetime] = None,
     end_time: Optional[datetime] = None,
-):
+) -> Dict[str, Any]:
     """Get recent data from a stream."""
     if stream_id not in streams_db:
         raise HTTPException(status_code=404, detail="Data stream not found")

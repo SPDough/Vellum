@@ -1,7 +1,7 @@
 import asyncio
 import os
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator, Dict
 
 import uvicorn
 from fastapi import Depends, FastAPI
@@ -75,14 +75,40 @@ app.include_router(api_router, prefix="/api/v1")
 security = HTTPBearer()
 
 
+def custom_openapi() -> Dict[str, Any]:
+    """Custom OpenAPI schema."""
+    if app.openapi_schema:
+        return dict(app.openapi_schema)
+
+    from fastapi.openapi.utils import get_openapi
+
+    openapi_schema = get_openapi(
+        title="Otomeshon",
+        version="1.0.0",
+        description="Agentic trading system with LangGraph workflows and knowledge graphs",
+        routes=app.routes,
+    )
+    app.openapi_schema = openapi_schema
+    return dict(openapi_schema)
+
+
+app.openapi = custom_openapi
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    """Application startup event."""
+    pass
+
+
 @app.get("/health")
-async def health():
+async def health() -> Dict[str, str]:
     """Health check endpoint."""
     return {"status": "healthy", "service": "otomeshon-api", "version": "1.0.0"}
 
 
 @app.get("/")
-async def root():
+async def root() -> Dict[str, str]:
     """Root endpoint."""
     return {"message": "Otomeshon API", "docs": "/docs", "health": "/health"}
 

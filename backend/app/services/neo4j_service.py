@@ -17,11 +17,11 @@ settings = get_settings()
 class Neo4jService:
     """Service for Neo4j knowledge graph operations."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.driver = None
         self.connected = False
 
-    async def connect(self):
+    async def connect(self) -> None:
         """Initialize connection to Neo4j database."""
         try:
             logger.info("Connecting to Neo4j...")
@@ -48,25 +48,29 @@ class Neo4jService:
             logger.error(f"Failed to connect to Neo4j: {e}")
             raise
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
         """Close Neo4j driver."""
         if self.driver:
             await self.driver.close()
             self.connected = False
             logger.info("Disconnected from Neo4j")
 
-    async def _verify_connectivity(self):
+    async def _verify_connectivity(self) -> None:
         """Verify that we can connect to Neo4j."""
+        if not self.driver:
+            raise Exception("Neo4j driver not initialized")
         async with self.driver.session() as session:
             result = await session.run("RETURN 1 as test")
             record = await result.single()
             if record["test"] != 1:
                 raise Exception("Neo4j connectivity test failed")
 
-    async def _initialize_schema(self):
+    async def _initialize_schema(self) -> None:
         """Initialize Neo4j schema with constraints and indexes."""
         with tracer.start_as_current_span("neo4j_initialize_schema"):
             try:
+                if not self.driver:
+                    raise Exception("Neo4j driver not initialized")
                 async with self.driver.session() as session:
                     # Create constraints for unique identifiers
                     constraints = [
@@ -130,6 +134,8 @@ class Neo4jService:
                 RETURN e
                 """
 
+                if not self.driver:
+                    raise Exception("Neo4j driver not initialized")
                 async with self.driver.session() as session:
                     result = await session.run(query, properties=properties)
                     record = await result.single()
@@ -162,6 +168,8 @@ class Neo4jService:
                 RETURN e
                 """
 
+                if not self.driver:
+                    return None
                 async with self.driver.session() as session:
                     result = await session.run(query, entity_id=entity_id)
                     record = await result.single()
@@ -203,6 +211,8 @@ class Neo4jService:
                 RETURN e
                 """
 
+                if not self.driver:
+                    raise Exception("Neo4j driver not initialized")
                 async with self.driver.session() as session:
                     result = await session.run(
                         query, entity_id=entity_id, properties=properties
@@ -236,6 +246,8 @@ class Neo4jService:
                 RETURN count(e) as deleted_count
                 """
 
+                if not self.driver:
+                    return False
                 async with self.driver.session() as session:
                     result = await session.run(query, entity_id=entity_id)
                     record = await result.single()
@@ -259,7 +271,7 @@ class Neo4jService:
         to_entity_type: str,
         to_entity_id: str,
         relationship_type: str,
-        properties: Dict[str, Any] = None,
+        properties: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Create a relationship between two entities."""
         with tracer.start_as_current_span("neo4j_create_relationship") as span:
@@ -282,6 +294,8 @@ class Neo4jService:
                 RETURN r
                 """
 
+                if not self.driver:
+                    raise Exception("Neo4j driver not initialized")
                 async with self.driver.session() as session:
                     result = await session.run(
                         query,
@@ -331,6 +345,8 @@ class Neo4jService:
                 RETURN r, other, labels(other) as other_labels
                 """
 
+                if not self.driver:
+                    return []
                 async with self.driver.session() as session:
                     result = await session.run(query, entity_id=entity_id)
 
@@ -354,13 +370,15 @@ class Neo4jService:
                 raise
 
     async def execute_cypher(
-        self, query: str, parameters: Dict[str, Any] = None
+        self, query: str, parameters: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """Execute a custom Cypher query."""
         with tracer.start_as_current_span("neo4j_execute_cypher") as span:
             span.set_attribute("neo4j.query_length", len(query))
 
             try:
+                if not self.driver:
+                    return []
                 async with self.driver.session() as session:
                     result = await session.run(query, parameters or {})
 
@@ -388,8 +406,10 @@ class Neo4jService:
                 "relationship_types": "MATCH ()-[r]->() RETURN type(r) as type, count(*) as count ORDER BY count DESC",
             }
 
-            statistics = {}
+            statistics: Dict[str, Any] = {}
 
+            if not self.driver:
+                return {}
             async with self.driver.session() as session:
                 # Get simple counts
                 for stat_name, query in stats_queries.items():

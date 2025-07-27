@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from abc import ABC, abstractmethod
-from typing import List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union, cast
 
 import httpx
 import numpy as np
@@ -38,7 +38,9 @@ class EmbeddingProvider(ABC):
 class OllamaEmbeddingProvider(EmbeddingProvider):
     """Ollama local embedding provider."""
 
-    def __init__(self, base_url: str = None, model: str = "nomic-embed-text"):
+    def __init__(
+        self, base_url: Optional[str] = None, model: str = "nomic-embed-text"
+    ) -> None:
         self.base_url = base_url or settings.ollama_base_url
         self.model = model
         self.client = httpx.AsyncClient(base_url=self.base_url, timeout=30.0)
@@ -92,7 +94,9 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
 class OpenAIEmbeddingProvider(EmbeddingProvider):
     """OpenAI embedding provider."""
 
-    def __init__(self, api_key: str = None, model: str = "text-embedding-3-small"):
+    def __init__(
+        self, api_key: Optional[str] = None, model: str = "text-embedding-3-small"
+    ) -> None:
         self.api_key = api_key or settings.openai_api_key
         self.model = model
         self.client = AsyncOpenAI(api_key=self.api_key) if self.api_key else None
@@ -170,11 +174,11 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 class SentenceTransformerProvider(EmbeddingProvider):
     """Local sentence transformer provider (fallback)."""
 
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2") -> None:
         self.model_name = model_name
         self.model = None  # Lazy load
 
-    def _load_model(self):
+    def _load_model(self) -> None:
         """Lazy load the model."""
         if self.model is None:
             self.model = SentenceTransformer(self.model_name)
@@ -195,6 +199,8 @@ class SentenceTransformerProvider(EmbeddingProvider):
 
                 # Run in thread pool to avoid blocking
                 loop = asyncio.get_event_loop()
+                if not self.model:
+                    raise RuntimeError("Model not loaded")
                 embeddings = await loop.run_in_executor(
                     None, lambda: self.model.encode(texts).tolist()
                 )
@@ -232,17 +238,17 @@ class SentenceTransformerProvider(EmbeddingProvider):
 class EmbeddingService:
     """Main embedding service with fallback providers."""
 
-    def __init__(self):
-        self.providers = self._initialize_providers()
+    def __init__(self) -> None:
+        self.providers: Dict[str, EmbeddingProvider] = self._initialize_providers()
         self.primary_provider = self._get_primary_provider()
 
-    def _initialize_providers(self) -> dict:
+    def _initialize_providers(self) -> Dict[str, EmbeddingProvider]:
         """Initialize all available embedding providers."""
-        providers = {}
+        providers: Dict[str, EmbeddingProvider] = {}
 
         # Try Ollama first (local, cost-effective)
         try:
-            providers["ollama"] = OllamaEmbeddingProvider()
+            providers["ollama"] = cast(EmbeddingProvider, OllamaEmbeddingProvider())
             logger.info("✅ Ollama embedding provider initialized")
         except Exception as e:
             logger.warning(f"⚠️ Ollama embedding provider failed: {e}")
@@ -250,14 +256,16 @@ class EmbeddingService:
         # OpenAI provider (if API key available)
         if settings.openai_api_key:
             try:
-                providers["openai"] = OpenAIEmbeddingProvider()
+                providers["openai"] = cast(EmbeddingProvider, OpenAIEmbeddingProvider())
                 logger.info("✅ OpenAI embedding provider initialized")
             except Exception as e:
                 logger.warning(f"⚠️ OpenAI embedding provider failed: {e}")
 
         # Sentence Transformers as fallback
         try:
-            providers["sentence_transformer"] = SentenceTransformerProvider()
+            providers["sentence_transformer"] = cast(
+                EmbeddingProvider, SentenceTransformerProvider()
+            )
             logger.info("✅ Sentence Transformer embedding provider initialized")
         except Exception as e:
             logger.warning(f"⚠️ Sentence Transformer provider failed: {e}")
@@ -292,7 +300,7 @@ class EmbeddingService:
 
         # Try primary provider first
         try:
-            return await chosen_provider.get_embeddings(texts)
+            return cast(List[List[float]], await chosen_provider.get_embeddings(texts))
         except Exception as e:
             logger.warning(f"Primary provider failed: {e}, trying fallbacks...")
 
@@ -301,7 +309,10 @@ class EmbeddingService:
                 if fallback_provider != chosen_provider:
                     try:
                         logger.info(f"Trying fallback provider: {name}")
-                        return await fallback_provider.get_embeddings(texts)
+                        return cast(
+                            List[List[float]],
+                            await fallback_provider.get_embeddings(texts),
+                        )
                     except Exception as fallback_error:
                         logger.warning(
                             f"Fallback provider {name} failed: {fallback_error}"
@@ -322,7 +333,7 @@ class EmbeddingService:
         """Get embedding dimension."""
         if provider and provider in self.providers:
             return self.providers[provider].get_dimension()
-        return self.primary_provider.get_dimension()
+        return cast(int, self.primary_provider.get_dimension())
 
     def get_available_providers(self) -> List[str]:
         """Get list of available providers."""
@@ -348,7 +359,9 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
     """Calculate cosine similarity between two vectors."""
     a_np = np.array(a)
     b_np = np.array(b)
-    return np.dot(a_np, b_np) / (np.linalg.norm(a_np) * np.linalg.norm(b_np))
+    return cast(
+        float, np.dot(a_np, b_np) / (np.linalg.norm(a_np) * np.linalg.norm(b_np))
+    )
 
 
 def find_most_similar(
@@ -359,8 +372,8 @@ def find_most_similar(
         cosine_similarity(query_embedding, candidate)
         for candidate in candidate_embeddings
     ]
-    max_idx = np.argmax(similarities)
-    return max_idx, similarities[max_idx]
+    max_idx = int(np.argmax(similarities))
+    return max_idx, float(similarities[max_idx])
 
 
 # Global embedding service instance

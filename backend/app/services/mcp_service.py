@@ -37,6 +37,9 @@ class MCPServerType(str, Enum):
 class MCPClient(ABC):
     """Abstract base class for MCP client implementations."""
 
+    def __init__(self) -> None:
+        self.connected: bool = False
+
     @abstractmethod
     async def connect(self) -> bool:
         """Establish connection to MCP server."""
@@ -68,7 +71,8 @@ class MCPClient(ABC):
 class HTTPMCPClient(MCPClient):
     """HTTP-based MCP client implementation."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any]) -> None:
+        super().__init__()
         self.base_url = config["base_url"]
         self.auth_type = config.get("auth_type", "none")
         self.api_key = config.get("api_key")
@@ -81,7 +85,6 @@ class HTTPMCPClient(MCPClient):
         self.client = httpx.AsyncClient(
             base_url=self.base_url, headers=self.headers, timeout=self.timeout
         )
-        self.connected = False
 
     async def connect(self) -> bool:
         """Test connection to MCP server."""
@@ -125,7 +128,11 @@ class HTTPMCPClient(MCPClient):
                     {"mcp.success": True, "mcp.response_size": len(str(result))}
                 )
 
-                return result
+                return (
+                    dict(result)
+                    if isinstance(result, dict)
+                    else {"result": str(result)}
+                )
 
             except Exception as e:
                 span.set_attribute("mcp.success", False)
@@ -138,7 +145,15 @@ class HTTPMCPClient(MCPClient):
         try:
             response = await self.client.get("/mcp/tools")
             response.raise_for_status()
-            return response.json().get("tools", [])
+            tools = response.json().get("tools", [])
+            return (
+                [
+                    dict(tool) if isinstance(tool, dict) else {"tool": tool}
+                    for tool in tools
+                ]
+                if isinstance(tools, list)
+                else []
+            )
         except Exception as e:
             logger.error(f"Failed to list MCP tools: {e}")
             return []
@@ -148,7 +163,8 @@ class HTTPMCPClient(MCPClient):
         try:
             response = await self.client.get("/mcp/info")
             response.raise_for_status()
-            return response.json()
+            result = response.json()
+            return dict(result) if isinstance(result, dict) else {"result": result}
         except Exception as e:
             logger.error(f"Failed to get MCP server info: {e}")
             return {}
@@ -157,11 +173,11 @@ class HTTPMCPClient(MCPClient):
 class WebSocketMCPClient(MCPClient):
     """WebSocket-based MCP client for real-time data."""
 
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any]) -> None:
+        super().__init__()
         self.ws_url = config["ws_url"]
         self.auth_token = config.get("auth_token")
         self.websocket = None
-        self.connected = False
         self.message_id = 0
         self.pending_requests: Dict[int, asyncio.Future] = {}
 
@@ -194,9 +210,11 @@ class WebSocketMCPClient(MCPClient):
             await self.websocket.close()
         self.connected = False
 
-    async def _handle_messages(self):
+    async def _handle_messages(self) -> None:
         """Handle incoming WebSocket messages."""
         try:
+            if not self.websocket:
+                return
             async for message in self.websocket:
                 data = json.loads(message)
 
@@ -211,7 +229,7 @@ class WebSocketMCPClient(MCPClient):
         except Exception as e:
             logger.error(f"WebSocket message handler error: {e}")
 
-    async def _handle_server_message(self, message: Dict[str, Any]):
+    async def _handle_server_message(self, message: Dict[str, Any]) -> None:
         """Handle server-initiated messages."""
         # Handle real-time data updates, notifications, etc.
         logger.info(f"Received server message: {message.get('type', 'unknown')}")
@@ -231,9 +249,11 @@ class WebSocketMCPClient(MCPClient):
             "parameters": parameters,
         }
 
-        future = asyncio.Future()
+        future: asyncio.Future[Dict[str, Any]] = asyncio.Future()
         self.pending_requests[self.message_id] = future
 
+        if not self.websocket:
+            raise RuntimeError("WebSocket not connected")
         await self.websocket.send(json.dumps(message))
 
         # Wait for response with timeout
@@ -247,21 +267,30 @@ class WebSocketMCPClient(MCPClient):
     async def list_tools(self) -> List[Dict[str, Any]]:
         """List available tools via WebSocket."""
         result = await self.call_tool("list_tools", {})
-        return result.get("tools", [])
+        tools = result.get("tools", []) if isinstance(result, dict) else []
+        return (
+            [
+                dict(tool) if isinstance(tool, dict) else {"name": str(tool)}
+                for tool in tools
+            ]
+            if isinstance(tools, list)
+            else []
+        )
 
     async def get_server_info(self) -> Dict[str, Any]:
         """Get server info via WebSocket."""
-        return await self.call_tool("get_info", {})
+        result = await self.call_tool("get_info", {})
+        return dict(result) if isinstance(result, dict) else {}
 
 
 class MCPServerManager:
     """Manages connections to multiple MCP servers."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.servers: Dict[str, Dict[str, Any]] = {}
         self.clients: Dict[str, MCPClient] = {}
         self.health_check_interval = 60  # seconds
-        self._health_check_task = None
+        self._health_check_task: Optional[asyncio.Task[None]] = None
 
     async def register_server(self, server_config: Dict[str, Any]) -> bool:
         """Register a new MCP server."""
@@ -269,6 +298,7 @@ class MCPServerManager:
 
         try:
             # Create appropriate client based on protocol
+            client: MCPClient
             if server_config.get("protocol") == "websocket":
                 client = WebSocketMCPClient(server_config)
             else:
@@ -366,20 +396,20 @@ class MCPServerManager:
 
         return all_tools
 
-    async def start_health_monitoring(self):
+    async def start_health_monitoring(self) -> None:
         """Start periodic health checks of all servers."""
         if self._health_check_task:
             return
 
         self._health_check_task = asyncio.create_task(self._health_check_loop())
 
-    async def stop_health_monitoring(self):
+    async def stop_health_monitoring(self) -> None:
         """Stop health monitoring."""
         if self._health_check_task:
             self._health_check_task.cancel()
             self._health_check_task = None
 
-    async def _health_check_loop(self):
+    async def _health_check_loop(self) -> None:
         """Periodic health check loop."""
         while True:
             try:
@@ -406,7 +436,7 @@ mcp_manager = MCPServerManager()
 class MCPService:
     """Service layer for MCP server management."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.manager = mcp_manager
         # In-memory storage for demo - should be replaced with database
         self.servers_db: Dict[str, Dict[str, Any]] = {}

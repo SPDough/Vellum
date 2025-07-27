@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List, Optional, Set
 
 from fastapi import WebSocket, WebSocketDisconnect
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class ConnectionManager:
     """Manages WebSocket connections for real-time data updates."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Store active connections by data source ID
         self.active_connections: Dict[str, Set[WebSocket]] = {}
         # Store all connections for broadcasting
@@ -21,8 +21,11 @@ class ConnectionManager:
         self.connection_metadata: Dict[WebSocket, Dict[str, Any]] = {}
 
     async def connect(
-        self, websocket: WebSocket, source_id: str = None, user_id: str = None
-    ):
+        self,
+        websocket: WebSocket,
+        source_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> None:
         """Accept a new WebSocket connection."""
         await websocket.accept()
         self.all_connections.add(websocket)
@@ -53,7 +56,7 @@ class ConnectionManager:
 
         logger.info(f"WebSocket connected - Source: {source_id}, User: {user_id}")
 
-    def disconnect(self, websocket: WebSocket):
+    def disconnect(self, websocket: WebSocket) -> None:
         """Remove a WebSocket connection."""
         # Remove from all connections
         self.all_connections.discard(websocket)
@@ -75,7 +78,7 @@ class ConnectionManager:
 
     async def send_personal_message(
         self, message: Dict[str, Any], websocket: WebSocket
-    ):
+    ) -> None:
         """Send a message to a specific WebSocket connection."""
         try:
             await websocket.send_text(json.dumps(message))
@@ -83,7 +86,9 @@ class ConnectionManager:
             logger.error(f"Error sending personal message: {e}")
             self.disconnect(websocket)
 
-    async def broadcast_to_source(self, source_id: str, message: Dict[str, Any]):
+    async def broadcast_to_source(
+        self, source_id: str, message: Dict[str, Any]
+    ) -> None:
         """Broadcast a message to all connections subscribed to a data source."""
         if source_id not in self.active_connections:
             return
@@ -106,7 +111,7 @@ class ConnectionManager:
         for connection in disconnected_connections:
             self.disconnect(connection)
 
-    async def broadcast_to_all(self, message: Dict[str, Any]):
+    async def broadcast_to_all(self, message: Dict[str, Any]) -> None:
         """Broadcast a message to all active connections."""
         message.update({"timestamp": datetime.utcnow().isoformat()})
 
@@ -125,7 +130,7 @@ class ConnectionManager:
 
     async def send_data_update(
         self, source_id: str, data: Any, operation: str = "insert"
-    ):
+    ) -> None:
         """Send a data update notification to subscribers."""
         message = {
             "type": "data_update",
@@ -135,14 +140,14 @@ class ConnectionManager:
         }
         await self.broadcast_to_source(source_id, message)
 
-    async def send_schema_update(self, source_id: str, schema: Dict[str, Any]):
+    async def send_schema_update(self, source_id: str, schema: Dict[str, Any]) -> None:
         """Send a schema update notification to subscribers."""
         message = {"type": "schema_update", "schema": schema, "source_id": source_id}
         await self.broadcast_to_source(source_id, message)
 
     async def send_source_status_update(
-        self, source_id: str, status: str, details: str = None
-    ):
+        self, source_id: str, status: str, details: Optional[str] = None
+    ) -> None:
         """Send a data source status update."""
         message = {
             "type": "source_status_update",
@@ -153,8 +158,12 @@ class ConnectionManager:
         await self.broadcast_to_source(source_id, message)
 
     async def send_workflow_update(
-        self, workflow_id: str, execution_id: str, status: str, output_data: Any = None
-    ):
+        self,
+        workflow_id: str,
+        execution_id: str,
+        status: str,
+        output_data: Optional[Any] = None,
+    ) -> None:
         """Send a workflow execution update."""
         message = {
             "type": "workflow_update",
@@ -165,7 +174,9 @@ class ConnectionManager:
         }
         await self.broadcast_to_all(message)
 
-    async def send_mcp_stream_update(self, server_id: str, stream_name: str, data: Any):
+    async def send_mcp_stream_update(
+        self, server_id: str, stream_name: str, data: Any
+    ) -> None:
         """Send an MCP data stream update."""
         # Create a pseudo source_id for MCP streams
         source_id = f"mcp:{server_id}:{stream_name}"
@@ -179,7 +190,7 @@ class ConnectionManager:
 
     async def send_agent_result_update(
         self, agent_id: str, execution_id: str, result: Any
-    ):
+    ) -> None:
         """Send an agent execution result update."""
         # Create a pseudo source_id for agent results
         source_id = f"agent:{agent_id}"
@@ -217,12 +228,15 @@ connection_manager = ConnectionManager()
 class DataStreamService:
     """Service for handling real-time data streaming."""
 
-    def __init__(self, connection_manager: ConnectionManager):
+    def __init__(self, connection_manager: ConnectionManager) -> None:
         self.connection_manager = connection_manager
 
     async def handle_websocket_connection(
-        self, websocket: WebSocket, source_id: str = None, user_id: str = None
-    ):
+        self,
+        websocket: WebSocket,
+        source_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+    ) -> None:
         """Handle a new WebSocket connection with message processing."""
         await self.connection_manager.connect(websocket, source_id, user_id)
 
@@ -254,7 +268,7 @@ class DataStreamService:
 
     async def handle_client_message(
         self, websocket: WebSocket, message: Dict[str, Any]
-    ):
+    ) -> None:
         """Handle messages received from WebSocket clients."""
         message_type = message.get("type")
 
@@ -300,7 +314,7 @@ class DataStreamService:
                 websocket,
             )
 
-    async def start_heartbeat(self):
+    async def start_heartbeat(self) -> None:
         """Start heartbeat task to keep connections alive."""
         while True:
             try:

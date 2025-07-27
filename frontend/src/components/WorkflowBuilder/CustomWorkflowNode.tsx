@@ -5,10 +5,8 @@ import {
   Typography,
   Avatar,
   Chip,
-  IconButton,
 } from '@mui/material';
 import {
-  MoreVert as MoreVertIcon,
   PlayArrow as PlayArrowIcon,
   Error as ErrorIcon,
   CheckCircle as CheckCircleIcon,
@@ -28,16 +26,7 @@ interface CustomNodeData {
 const CustomWorkflowNode: React.FC<NodeProps<CustomNodeData>> = ({ 
   data, 
   selected, 
-  id 
 }) => {
-  const getStatusColor = () => {
-    switch (data.status) {
-      case 'running': return 'info.main';
-      case 'success': return 'success.main';
-      case 'error': return 'error.main';
-      default: return 'grey.400';
-    }
-  };
 
   const getStatusIcon = () => {
     switch (data.status) {
