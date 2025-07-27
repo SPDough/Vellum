@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     ollama_base_url: str = Field(default="http://ollama:11434", alias="OLLAMA_BASE_URL")
     
     # Authentication
-    keycloak_url: str = Field(default="http://keycloak:8080", alias="KEYCLOAK_URL")
+    secret_key: str = Field(default="changeme-secret-key-for-production", alias="SECRET_KEY")
     jwt_secret_key: str = Field(default="changeme", alias="JWT_SECRET_KEY")
     
     # Rules Engine

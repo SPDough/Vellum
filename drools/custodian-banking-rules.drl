@@ -1,0 +1,388 @@
+package com.otomeshon.custodian.rules
+
+import java.math.BigDecimal
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.Map
+
+// Fact objects for custodian banking operations
+declare Trade
+    tradeId: String
+    tradeType: String  // EQUITY, BOND, FX, DERIVATIVE, REPO, SECURITIES_LENDING
+    counterpartyId: String
+    securityId: String
+    quantity: BigDecimal
+    price: BigDecimal
+    tradeValue: BigDecimal
+    currency: String
+    tradeDate: LocalDate
+    settlementDate: LocalDate
+    status: String
+    portfolio: String
+    custodyAccount: String
+    requiresApproval: boolean
+    requiresRiskReview: boolean
+    requiresAmlReview: boolean
+    priority: String
+end
+
+declare Portfolio
+    portfolioId: String
+    totalExposure: BigDecimal
+    exposureLimit: BigDecimal
+    concentrationLimit: BigDecimal
+    availableCash: BigDecimal
+    securityExposures: Map
+end
+
+declare Client
+    clientId: String
+    kycStatus: String
+    amlRiskRating: String
+    creditRating: String
+    lastReviewDate: LocalDate
+    approvedInstruments: java.util.List
+    tradingLimits: Map
+end
+
+declare Settlement
+    settlementId: String
+    tradeId: String
+    cashRequired: BigDecimal
+    securitiesRequired: BigDecimal
+    settlementAgent: String
+    instructionStatus: String
+    cutoffTime: LocalDateTime
+end
+
+declare Alert
+    alertType: String
+    message: String
+    tradeId: String
+    severity: String
+    timestamp: LocalDateTime
+end
+
+declare ValidationError
+    errorType: String
+    message: String
+    tradeId: String
+    timestamp: LocalDateTime
+end
+
+declare RiskAlert
+    riskType: String
+    message: String
+    tradeId: String
+    severity: String
+    timestamp: LocalDateTime
+end
+
+declare ComplianceAlert
+    complianceType: String
+    message: String
+    tradeId: String
+    severity: String
+    timestamp: LocalDateTime
+end
+
+// =============================================================================
+// TRADE VALIDATION RULES
+// =============================================================================
+
+rule "Large Trade Alert"
+    salience 100
+    when
+        $trade : Trade(tradeValue.compareTo(new BigDecimal("1000000")) > 0)
+    then
+        $trade.setRequiresApproval(true);
+        $trade.setPriority("HIGH");
+        insert(new Alert("LARGE_TRADE", 
+                        "Trade value exceeds $1M threshold: $" + $trade.getTradeValue(), 
+                        $trade.getTradeId(), 
+                        "HIGH", 
+                        LocalDateTime.now()));
+        System.out.println("RULE FIRED: Large Trade Alert for trade " + $trade.getTradeId());
+end
+
+rule "Settlement Date Validation"
+    salience 90
+    when
+        $trade : Trade(settlementDate != null, settlementDate.isBefore(tradeDate))
+    then
+        $trade.setStatus("VALIDATION_FAILED");
+        insert(new ValidationError("INVALID_SETTLEMENT_DATE", 
+                                 "Settlement date cannot be before trade date", 
+                                 $trade.getTradeId(), 
+                                 LocalDateTime.now()));
+        System.out.println("RULE FIRED: Invalid Settlement Date for trade " + $trade.getTradeId());
+end
+
+rule "Weekend Settlement Check"
+    salience 80
+    when
+        $trade : Trade(settlementDate != null)
+        eval($trade.getSettlementDate().getDayOfWeek().getValue() >= 6)
+    then
+        insert(new Alert("WEEKEND_SETTLEMENT", 
+                        "Settlement date falls on weekend - will be moved to next business day", 
+                        $trade.getTradeId(), 
+                        "MEDIUM", 
+                        LocalDateTime.now()));
+        System.out.println("RULE FIRED: Weekend Settlement Alert for trade " + $trade.getTradeId());
+end
+
+rule "Zero Price Validation"
+    salience 85
+    when
+        $trade : Trade(price.compareTo(BigDecimal.ZERO) <= 0)
+    then
+        $trade.setStatus("VALIDATION_FAILED");
+        insert(new ValidationError("ZERO_PRICE", 
+                                 "Trade price must be greater than zero", 
+                                 $trade.getTradeId(), 
+                                 LocalDateTime.now()));
+        System.out.println("RULE FIRED: Zero Price Validation for trade " + $trade.getTradeId());
+end
+
+// =============================================================================
+// RISK MANAGEMENT RULES
+// =============================================================================
+
+rule "Position Limit Check"
+    salience 75
+    when
+        $trade : Trade()
+        $portfolio : Portfolio(portfolioId == $trade.portfolio, 
+                              totalExposure.add($trade.tradeValue).compareTo(exposureLimit) > 0)
+    then
+        $trade.setStatus("RISK_LIMIT_EXCEEDED");
+        $trade.setRequiresRiskReview(true);
+        insert(new RiskAlert("POSITION_LIMIT", 
+                           "Portfolio exposure limit would be exceeded. Current: $" + 
+                           $portfolio.getTotalExposure() + ", Trade: $" + $trade.getTradeValue() + 
+                           ", Limit: $" + $portfolio.getExposureLimit(), 
+                           $trade.getTradeId(), 
+                           "HIGH", 
+                           LocalDateTime.now()));
+        System.out.println("RULE FIRED: Position Limit Exceeded for trade " + $trade.getTradeId());
+end
+
+rule "Concentration Risk Check"
+    salience 70
+    when
+        $trade : Trade()
+        $portfolio : Portfolio(portfolioId == $trade.portfolio)
+        eval(getSecurityExposure($portfolio, $trade.getSecurityId()).compareTo($portfolio.getConcentrationLimit()) > 0)
+    then
+        $trade.setRequiresRiskReview(true);
+        insert(new RiskAlert("CONCENTRATION_RISK", 
+                           "Security concentration limit exceeded for " + $trade.getSecurityId(), 
+                           $trade.getTradeId(), 
+                           "MEDIUM", 
+                           LocalDateTime.now()));
+        System.out.println("RULE FIRED: Concentration Risk for trade " + $trade.getTradeId());
+end
+
+rule "Overnight Risk Limit"
+    salience 65
+    when
+        $trade : Trade(tradeValue.compareTo(new BigDecimal("5000000")) > 0)
+        eval(LocalDateTime.now().getHour() >= 17 || LocalDateTime.now().getHour() <= 8)
+    then
+        $trade.setRequiresApproval(true);
+        $trade.setPriority("HIGH");
+        insert(new RiskAlert("OVERNIGHT_RISK", 
+                           "Large trade executed outside business hours requires approval", 
+                           $trade.getTradeId(), 
+                           "HIGH", 
+                           LocalDateTime.now()));
+        System.out.println("RULE FIRED: Overnight Risk Alert for trade " + $trade.getTradeId());
+end
+
+// =============================================================================
+// COMPLIANCE AND KYC RULES
+// =============================================================================
+
+rule "KYC Status Check"
+    salience 95
+    when
+        $trade : Trade()
+        $client : Client(clientId == $trade.counterpartyId, kycStatus != "APPROVED")
+    then
+        $trade.setStatus("COMPLIANCE_HOLD");
+        insert(new ComplianceAlert("KYC_NOT_APPROVED", 
+                                 "Client KYC status is " + $client.getKycStatus() + " - trade blocked", 
+                                 $trade.getTradeId(), 
+                                 "HIGH", 
+                                 LocalDateTime.now()));
+        System.out.println("RULE FIRED: KYC Status Check failed for trade " + $trade.getTradeId());
+end
+
+rule "AML High Risk Screening"
+    salience 90
+    when
+        $trade : Trade(tradeValue.compareTo(new BigDecimal("10000")) > 0)
+        $client : Client(clientId == $trade.counterpartyId, amlRiskRating == "HIGH")
+    then
+        $trade.setRequiresAmlReview(true);
+        insert(new ComplianceAlert("AML_HIGH_RISK", 
+                                 "High-risk client requires AML review for trade over $10K", 
+                                 $trade.getTradeId(), 
+                                 "HIGH", 
+                                 LocalDateTime.now()));
+        System.out.println("RULE FIRED: AML High Risk Screening for trade " + $trade.getTradeId());
+end
+
+rule "Stale KYC Review"
+    salience 60
+    when
+        $trade : Trade()
+        $client : Client(clientId == $trade.counterpartyId, 
+                        lastReviewDate.isBefore(LocalDate.now().minusYears(1)))
+    then
+        $trade.setRequiresApproval(true);
+        insert(new ComplianceAlert("STALE_KYC", 
+                                 "Client KYC review is over 1 year old - requires refresh", 
+                                 $trade.getTradeId(), 
+                                 "MEDIUM", 
+                                 LocalDateTime.now()));
+        System.out.println("RULE FIRED: Stale KYC Review for trade " + $trade.getTradeId());
+end
+
+rule "Sanctioned Country Check"
+    salience 100
+    when
+        $trade : Trade()
+        $client : Client(clientId == $trade.counterpartyId)
+        eval(isSanctionedCountry($client.getCountryCode()))
+    then
+        $trade.setStatus("COMPLIANCE_BLOCKED");
+        insert(new ComplianceAlert("SANCTIONS_VIOLATION", 
+                                 "Trade blocked - client from sanctioned country", 
+                                 $trade.getTradeId(), 
+                                 "CRITICAL", 
+                                 LocalDateTime.now()));
+        System.out.println("RULE FIRED: Sanctioned Country Check for trade " + $trade.getTradeId());
+end
+
+// =============================================================================
+// SETTLEMENT AND OPERATIONAL RULES
+// =============================================================================
+
+rule "Cash Availability Check"
+    salience 70
+    when
+        $trade : Trade(tradeType == "EQUITY" || tradeType == "BOND")
+        $portfolio : Portfolio(portfolioId == $trade.portfolio, 
+                              availableCash.compareTo($trade.tradeValue) < 0)
+    then
+        $trade.setRequiresApproval(true);
+        insert(new Alert("INSUFFICIENT_CASH", 
+                        "Insufficient cash for settlement. Required: $" + $trade.getTradeValue() + 
+                        ", Available: $" + $portfolio.getAvailableCash(), 
+                        $trade.getTradeId(), 
+                        "HIGH", 
+                        LocalDateTime.now()));
+        System.out.println("RULE FIRED: Insufficient Cash for trade " + $trade.getTradeId());
+end
+
+rule "Settlement Cutoff Time"
+    salience 80
+    when
+        $trade : Trade()
+        $settlement : Settlement(tradeId == $trade.tradeId)
+        eval(LocalDateTime.now().isAfter($settlement.getCutoffTime()))
+    then
+        insert(new Alert("SETTLEMENT_CUTOFF", 
+                        "Trade received after settlement cutoff - will settle next business day", 
+                        $trade.getTradeId(), 
+                        "MEDIUM", 
+                        LocalDateTime.now()));
+        System.out.println("RULE FIRED: Settlement Cutoff for trade " + $trade.getTradeId());
+end
+
+rule "Corporate Action Pending"
+    salience 75
+    when
+        $trade : Trade()
+        eval(hasPendingCorporateAction($trade.getSecurityId()))
+    then
+        $trade.setRequiresApproval(true);
+        insert(new Alert("CORPORATE_ACTION_PENDING", 
+                        "Security has pending corporate action - review required", 
+                        $trade.getTradeId(), 
+                        "MEDIUM", 
+                        LocalDateTime.now()));
+        System.out.println("RULE FIRED: Corporate Action Pending for trade " + $trade.getTradeId());
+end
+
+// =============================================================================
+// MARKET HOURS AND TIMING RULES
+// =============================================================================
+
+rule "Market Hours Check"
+    salience 50
+    when
+        $trade : Trade()
+        eval(!isMarketOpen($trade.getSecurityId()))
+    then
+        insert(new Alert("OUTSIDE_MARKET_HOURS", 
+                        "Trade executed outside market hours", 
+                        $trade.getTradeId(), 
+                        "LOW", 
+                        LocalDateTime.now()));
+        System.out.println("RULE FIRED: Outside Market Hours for trade " + $trade.getTradeId());
+end
+
+rule "High Frequency Trading Detection"
+    salience 80
+    when
+        $trade : Trade()
+        Number(intValue >= 10) from accumulate(
+            Trade(counterpartyId == $trade.counterpartyId, 
+                  tradeDate == LocalDate.now()),
+            count(1)
+        )
+    then
+        $trade.setRequiresApproval(true);
+        insert(new Alert("HIGH_FREQUENCY_TRADING", 
+                        "High frequency trading pattern detected - requires review", 
+                        $trade.getTradeId(), 
+                        "MEDIUM", 
+                        LocalDateTime.now()));
+        System.out.println("RULE FIRED: High Frequency Trading for trade " + $trade.getTradeId());
+end
+
+// =============================================================================
+// HELPER FUNCTIONS (would be implemented in Java helper class)
+// =============================================================================
+
+function BigDecimal getSecurityExposure(Portfolio portfolio, String securityId) {
+    Map<String, BigDecimal> exposures = portfolio.getSecurityExposures();
+    return exposures.getOrDefault(securityId, BigDecimal.ZERO);
+}
+
+function boolean isSanctionedCountry(String countryCode) {
+    // This would check against a sanctions list
+    String[] sanctionedCountries = {"IR", "KP", "SY", "CU"};
+    for (String country : sanctionedCountries) {
+        if (country.equals(countryCode)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function boolean hasPendingCorporateAction(String securityId) {
+    // This would check against corporate actions database
+    // For demo purposes, return false
+    return false;
+}
+
+function boolean isMarketOpen(String securityId) {
+    // This would check market hours for the security's exchange
+    // For demo purposes, check if it's business hours
+    int hour = LocalDateTime.now().getHour();
+    return hour >= 9 && hour <= 16;
+}
