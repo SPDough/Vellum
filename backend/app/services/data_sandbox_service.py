@@ -1,20 +1,22 @@
-import json
-import pandas as pd
 import io
+import json
 import time
-from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, desc, asc, func, text
-from fastapi import HTTPException
+from typing import Any, Dict, List, Optional, Tuple
 
-from app.models.data_sandbox import (
-    DataSource, DataRecord, DataTransformation, DataVisualization, SharedDataView,
-    DataSourceCreate, DataSourceUpdate, DataQuery, DataFilter, DataSort,
-    WorkflowOutputCreate, MCPDataStreamCreate, AgentResultCreate,
-    DataSourceType, DataSourceStatus, FilterOperator
-)
-from app.core.database import get_db
+import pandas as pd
+from fastapi import Depends, HTTPException
+from sqlalchemy import and_, asc, desc, func, or_, text
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db, get_sync_db
+from app.models.data_sandbox import (AgentResultCreate, DataFilter, DataQuery,
+                                     DataRecord, DataSort, DataSource,
+                                     DataSourceCreate, DataSourceStatus,
+                                     DataSourceType, DataSourceUpdate,
+                                     DataTransformation, DataVisualization,
+                                     FilterOperator, MCPDataStreamCreate,
+                                     SharedDataView, WorkflowOutputCreate)
 
 
 class DataSandboxService:
@@ -30,9 +32,9 @@ class DataSandboxService:
             description=data_source.description,
             schema=data_source.schema.dict() if data_source.schema else None,
             source_metadata=data_source.source_metadata or {},
-            config=data_source.config or {}
+            config=data_source.config or {},
         )
-        
+
         self.db.add(db_data_source)
         self.db.commit()
         self.db.refresh(db_data_source)
@@ -46,7 +48,9 @@ class DataSandboxService:
         """Get a specific data source."""
         return self.db.query(DataSource).filter(DataSource.id == source_id).first()
 
-    async def update_data_source(self, source_id: str, updates: DataSourceUpdate) -> Optional[DataSource]:
+    async def update_data_source(
+        self, source_id: str, updates: DataSourceUpdate
+    ) -> Optional[DataSource]:
         """Update a data source."""
         db_data_source = await self.get_data_source(source_id)
         if not db_data_source:
@@ -75,17 +79,21 @@ class DataSandboxService:
         return True
 
     # Data Querying
-    async def query_data(self, query: DataQuery) -> Tuple[List[Dict[str, Any]], int, float]:
+    async def query_data(
+        self, query: DataQuery
+    ) -> Tuple[List[Dict[str, Any]], int, float]:
         """Execute a data query and return results."""
         start_time = time.time()
-        
+
         # Get the data source
         data_source = await self.get_data_source(query.source)
         if not data_source:
             raise HTTPException(status_code=404, detail="Data source not found")
 
         # Build the base query
-        db_query = self.db.query(DataRecord).filter(DataRecord.data_source_id == query.source)
+        db_query = self.db.query(DataRecord).filter(
+            DataRecord.data_source_id == query.source
+        )
 
         # Apply filters
         if query.filters:
@@ -96,9 +104,13 @@ class DataSandboxService:
         if query.sorts:
             for sort_item in query.sorts:
                 if sort_item.direction == "desc":
-                    db_query = db_query.order_by(desc(text(f"data->>'{sort_item.field}'")))
+                    db_query = db_query.order_by(
+                        desc(text(f"data->>'{sort_item.field}'"))
+                    )
                 else:
-                    db_query = db_query.order_by(asc(text(f"data->>'{sort_item.field}'")))
+                    db_query = db_query.order_by(
+                        asc(text(f"data->>'{sort_item.field}'"))
+                    )
 
         # Get total count before applying limit/offset
         total_count = db_query.count()
@@ -116,13 +128,17 @@ class DataSandboxService:
         data = []
         for record in records:
             record_data = record.data.copy()
-            record_data['_id'] = record.id
-            record_data['_timestamp'] = record.timestamp.isoformat()
-            
+            record_data["_id"] = record.id
+            record_data["_timestamp"] = record.timestamp.isoformat()
+
             # Apply field selection if specified
             if query.fields:
-                record_data = {k: v for k, v in record_data.items() if k in query.fields or k.startswith('_')}
-            
+                record_data = {
+                    k: v
+                    for k, v in record_data.items()
+                    if k in query.fields or k.startswith("_")
+                }
+
             data.append(record_data)
 
         execution_time = time.time() - start_time
@@ -131,31 +147,59 @@ class DataSandboxService:
     def _apply_filter(self, db_query, filter_item: DataFilter):
         """Apply a filter to the database query."""
         field_path = f"data->>'{filter_item.field}'"
-        
+
         if filter_item.operator == FilterOperator.EQ:
-            return db_query.filter(text(f"{field_path} = :value").bindparam(value=str(filter_item.value)))
+            return db_query.filter(
+                text(f"{field_path} = :value").bindparam(value=str(filter_item.value))
+            )
         elif filter_item.operator == FilterOperator.NE:
-            return db_query.filter(text(f"{field_path} != :value").bindparam(value=str(filter_item.value)))
+            return db_query.filter(
+                text(f"{field_path} != :value").bindparam(value=str(filter_item.value))
+            )
         elif filter_item.operator == FilterOperator.GT:
-            return db_query.filter(text(f"CAST({field_path} AS NUMERIC) > :value").bindparam(value=filter_item.value))
+            return db_query.filter(
+                text(f"CAST({field_path} AS NUMERIC) > :value").bindparam(
+                    value=filter_item.value
+                )
+            )
         elif filter_item.operator == FilterOperator.GTE:
-            return db_query.filter(text(f"CAST({field_path} AS NUMERIC) >= :value").bindparam(value=filter_item.value))
+            return db_query.filter(
+                text(f"CAST({field_path} AS NUMERIC) >= :value").bindparam(
+                    value=filter_item.value
+                )
+            )
         elif filter_item.operator == FilterOperator.LT:
-            return db_query.filter(text(f"CAST({field_path} AS NUMERIC) < :value").bindparam(value=filter_item.value))
+            return db_query.filter(
+                text(f"CAST({field_path} AS NUMERIC) < :value").bindparam(
+                    value=filter_item.value
+                )
+            )
         elif filter_item.operator == FilterOperator.LTE:
-            return db_query.filter(text(f"CAST({field_path} AS NUMERIC) <= :value").bindparam(value=filter_item.value))
+            return db_query.filter(
+                text(f"CAST({field_path} AS NUMERIC) <= :value").bindparam(
+                    value=filter_item.value
+                )
+            )
         elif filter_item.operator == FilterOperator.IN:
             if isinstance(filter_item.value, list):
-                placeholders = ','.join([f"'{v}'" for v in filter_item.value])
+                placeholders = ",".join([f"'{v}'" for v in filter_item.value])
                 return db_query.filter(text(f"{field_path} IN ({placeholders})"))
         elif filter_item.operator == FilterOperator.LIKE:
-            return db_query.filter(text(f"{field_path} ILIKE :value").bindparam(value=f"%{filter_item.value}%"))
+            return db_query.filter(
+                text(f"{field_path} ILIKE :value").bindparam(
+                    value=f"%{filter_item.value}%"
+                )
+            )
         elif filter_item.operator == FilterOperator.REGEX:
-            return db_query.filter(text(f"{field_path} ~ :value").bindparam(value=filter_item.value))
-        
+            return db_query.filter(
+                text(f"{field_path} ~ :value").bindparam(value=filter_item.value)
+            )
+
         return db_query
 
-    async def get_data_preview(self, source_id: str, limit: int = 100) -> Tuple[List[Dict[str, Any]], int, float]:
+    async def get_data_preview(
+        self, source_id: str, limit: int = 100
+    ) -> Tuple[List[Dict[str, Any]], int, float]:
         """Get a preview of data from a source."""
         query = DataQuery(source=source_id, limit=limit)
         return await self.query_data(query)
@@ -165,12 +209,17 @@ class DataSandboxService:
         """Store workflow output as a data record."""
         # Find or create data source for this workflow
         source_name = f"Workflow: {output.workflow_name}"
-        data_source = self.db.query(DataSource).filter(
-            and_(
-                DataSource.type == DataSourceType.WORKFLOW,
-                DataSource.source_metadata['workflow_id'].astext == output.workflow_id
+        data_source = (
+            self.db.query(DataSource)
+            .filter(
+                and_(
+                    DataSource.type == DataSourceType.WORKFLOW,
+                    DataSource.source_metadata["workflow_id"].astext
+                    == output.workflow_id,
+                )
             )
-        ).first()
+            .first()
+        )
 
         if not data_source:
             # Create new data source for this workflow
@@ -179,10 +228,10 @@ class DataSandboxService:
                 type=DataSourceType.WORKFLOW,
                 description=f"Data from workflow: {output.workflow_name}",
                 source_metadata={
-                    'workflow_id': output.workflow_id,
-                    'workflow_name': output.workflow_name
+                    "workflow_id": output.workflow_id,
+                    "workflow_name": output.workflow_name,
                 },
-                schema=output.schema.dict() if output.schema else None
+                schema=output.schema.dict() if output.schema else None,
             )
             self.db.add(data_source)
             self.db.flush()
@@ -192,25 +241,25 @@ class DataSandboxService:
             data_source_id=data_source.id,
             data=output.data,
             metadata={
-                'execution_id': output.execution_id,
-                'step_name': output.step_name,
-                **output.metadata
-            }
+                "execution_id": output.execution_id,
+                "step_name": output.step_name,
+                **output.metadata,
+            },
         )
 
         self.db.add(data_record)
-        
-        # Update data source record count
-        data_source.record_count = self.db.query(DataRecord).filter(
-            DataRecord.data_source_id == data_source.id
-        ).count() + 1
+
+        # Update data source record count efficiently
+        data_source.record_count = (data_source.record_count or 0) + 1
         data_source.last_updated = datetime.utcnow()
 
         self.db.commit()
         self.db.refresh(data_record)
         return data_record
 
-    async def create_data_source_from_workflow(self, workflow_id: str, output_name: str) -> DataSource:
+    async def create_data_source_from_workflow(
+        self, workflow_id: str, output_name: str
+    ) -> DataSource:
         """Create a data source from workflow outputs."""
         # This would integrate with the workflow service to get recent outputs
         # For now, create a placeholder data source
@@ -218,10 +267,7 @@ class DataSandboxService:
             name=f"Workflow Output: {output_name}",
             type=DataSourceType.WORKFLOW,
             description=f"Data source created from workflow {workflow_id} output '{output_name}'",
-            source_metadata={
-                'workflow_id': workflow_id,
-                'output_name': output_name
-            }
+            source_metadata={"workflow_id": workflow_id, "output_name": output_name},
         )
 
         self.db.add(data_source)
@@ -234,13 +280,18 @@ class DataSandboxService:
         """Store MCP data stream as a data record."""
         # Find or create data source for this MCP stream
         source_name = f"MCP: {stream.server_name} - {stream.stream_name}"
-        data_source = self.db.query(DataSource).filter(
-            and_(
-                DataSource.type == DataSourceType.MCP,
-                DataSource.source_metadata['server_id'].astext == stream.server_id,
-                DataSource.source_metadata['stream_name'].astext == stream.stream_name
+        data_source = (
+            self.db.query(DataSource)
+            .filter(
+                and_(
+                    DataSource.type == DataSourceType.MCP,
+                    DataSource.source_metadata["server_id"].astext == stream.server_id,
+                    DataSource.source_metadata["stream_name"].astext
+                    == stream.stream_name,
+                )
             )
-        ).first()
+            .first()
+        )
 
         if not data_source:
             data_source = DataSource(
@@ -248,44 +299,39 @@ class DataSandboxService:
                 type=DataSourceType.MCP,
                 description=f"Data from MCP server: {stream.server_name}, stream: {stream.stream_name}",
                 source_metadata={
-                    'server_id': stream.server_id,
-                    'server_name': stream.server_name,
-                    'stream_name': stream.stream_name
+                    "server_id": stream.server_id,
+                    "server_name": stream.server_name,
+                    "stream_name": stream.stream_name,
                 },
-                schema=stream.schema.dict() if stream.schema else None
+                schema=stream.schema.dict() if stream.schema else None,
             )
             self.db.add(data_source)
             self.db.flush()
 
         # Create data record
         data_record = DataRecord(
-            data_source_id=data_source.id,
-            data=stream.data,
-            metadata=stream.metadata
+            data_source_id=data_source.id, data=stream.data, metadata=stream.metadata
         )
 
         self.db.add(data_record)
-        
-        # Update data source record count
-        data_source.record_count = self.db.query(DataRecord).filter(
-            DataRecord.data_source_id == data_source.id
-        ).count() + 1
+
+        # Update data source record count efficiently
+        data_source.record_count = (data_source.record_count or 0) + 1
         data_source.last_updated = datetime.utcnow()
 
         self.db.commit()
         self.db.refresh(data_record)
         return data_record
 
-    async def create_data_source_from_mcp(self, server_id: str, stream_name: str) -> DataSource:
+    async def create_data_source_from_mcp(
+        self, server_id: str, stream_name: str
+    ) -> DataSource:
         """Create a data source from MCP stream."""
         data_source = DataSource(
             name=f"MCP Stream: {stream_name}",
             type=DataSourceType.MCP,
             description=f"Data source created from MCP server {server_id} stream '{stream_name}'",
-            source_metadata={
-                'server_id': server_id,
-                'stream_name': stream_name
-            }
+            source_metadata={"server_id": server_id, "stream_name": stream_name},
         )
 
         self.db.add(data_source)
@@ -298,12 +344,16 @@ class DataSandboxService:
         """Store agent result as a data record."""
         # Find or create data source for this agent
         source_name = f"Agent: {result.agent_name}"
-        data_source = self.db.query(DataSource).filter(
-            and_(
-                DataSource.type == DataSourceType.AGENT,
-                DataSource.source_metadata['agent_id'].astext == result.agent_id
+        data_source = (
+            self.db.query(DataSource)
+            .filter(
+                and_(
+                    DataSource.type == DataSourceType.AGENT,
+                    DataSource.source_metadata["agent_id"].astext == result.agent_id,
+                )
             )
-        ).first()
+            .first()
+        )
 
         if not data_source:
             data_source = DataSource(
@@ -311,10 +361,10 @@ class DataSandboxService:
                 type=DataSourceType.AGENT,
                 description=f"Data from agent: {result.agent_name}",
                 source_metadata={
-                    'agent_id': result.agent_id,
-                    'agent_name': result.agent_name
+                    "agent_id": result.agent_id,
+                    "agent_name": result.agent_name,
                 },
-                schema=result.schema.dict() if result.schema else None
+                schema=result.schema.dict() if result.schema else None,
             )
             self.db.add(data_source)
             self.db.flush()
@@ -324,18 +374,16 @@ class DataSandboxService:
             data_source_id=data_source.id,
             data=result.result,
             metadata={
-                'execution_id': result.execution_id,
-                'task_type': result.task_type,
-                **result.metadata
-            }
+                "execution_id": result.execution_id,
+                "task_type": result.task_type,
+                **result.metadata,
+            },
         )
 
         self.db.add(data_record)
-        
-        # Update data source record count
-        data_source.record_count = self.db.query(DataRecord).filter(
-            DataRecord.data_source_id == data_source.id
-        ).count() + 1
+
+        # Update data source record count efficiently
+        data_source.record_count = (data_source.record_count or 0) + 1
         data_source.last_updated = datetime.utcnow()
 
         self.db.commit()
@@ -343,34 +391,38 @@ class DataSandboxService:
         return data_record
 
     # Data Export
-    async def export_data(self, query: DataQuery, format: str, filename: Optional[str] = None) -> bytes:
+    async def export_data(
+        self, query: DataQuery, format: str, filename: Optional[str] = None
+    ) -> bytes:
         """Export data in the specified format."""
         data, total_count, execution_time = await self.query_data(query)
-        
+
         if format == "json":
-            return json.dumps(data, indent=2, default=str).encode('utf-8')
-        
+            return json.dumps(data, indent=2, default=str).encode("utf-8")
+
         elif format == "csv":
             if not data:
                 return b""
-            
+
             df = pd.DataFrame(data)
             output = io.StringIO()
             df.to_csv(output, index=False)
-            return output.getvalue().encode('utf-8')
-        
+            return output.getvalue().encode("utf-8")
+
         elif format == "xlsx":
             if not data:
                 return b""
-            
+
             df = pd.DataFrame(data)
             output = io.BytesIO()
-            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-                df.to_excel(writer, index=False, sheet_name='Data')
+            with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+                df.to_excel(writer, index=False, sheet_name="Data")
             return output.getvalue()
-        
+
         else:
-            raise HTTPException(status_code=400, detail=f"Unsupported export format: {format}")
+            raise HTTPException(
+                status_code=400, detail=f"Unsupported export format: {format}"
+            )
 
     # Data Quality Analysis
     async def analyze_data_quality(self, source_id: str) -> Dict[str, Any]:
@@ -380,9 +432,11 @@ class DataSandboxService:
             raise HTTPException(status_code=404, detail="Data source not found")
 
         # Get all records for this source
-        records = self.db.query(DataRecord).filter(
-            DataRecord.data_source_id == source_id
-        ).all()
+        records = (
+            self.db.query(DataRecord)
+            .filter(DataRecord.data_source_id == source_id)
+            .all()
+        )
 
         if not records:
             return {
@@ -390,7 +444,7 @@ class DataSandboxService:
                 "accuracy": 0.0,
                 "consistency": 0.0,
                 "timeliness": 0.0,
-                "issues": []
+                "issues": [],
             }
 
         # Convert to DataFrame for analysis
@@ -400,43 +454,51 @@ class DataSandboxService:
         # Calculate quality metrics
         total_cells = df.size
         missing_cells = df.isnull().sum().sum()
-        completeness = ((total_cells - missing_cells) / total_cells) * 100 if total_cells > 0 else 0
+        completeness = (
+            ((total_cells - missing_cells) / total_cells) * 100
+            if total_cells > 0
+            else 0
+        )
 
         # Find issues
         issues = []
-        
+
         # Missing values
         missing_by_column = df.isnull().sum()
         for column, missing_count in missing_by_column.items():
             if missing_count > 0:
-                issues.append({
-                    "type": "missing_values",
-                    "count": int(missing_count),
-                    "description": f"Column '{column}' has {missing_count} missing values",
-                    "affected_fields": [column]
-                })
+                issues.append(
+                    {
+                        "type": "missing_values",
+                        "count": int(missing_count),
+                        "description": f"Column '{column}' has {missing_count} missing values",
+                        "affected_fields": [column],
+                    }
+                )
 
         # Duplicates
         duplicate_count = df.duplicated().sum()
         if duplicate_count > 0:
-            issues.append({
-                "type": "duplicates",
-                "count": int(duplicate_count),
-                "description": f"Found {duplicate_count} duplicate records",
-                "affected_fields": list(df.columns)
-            })
+            issues.append(
+                {
+                    "type": "duplicates",
+                    "count": int(duplicate_count),
+                    "description": f"Found {duplicate_count} duplicate records",
+                    "affected_fields": list(df.columns),
+                }
+            )
 
         return {
             "completeness": completeness,
             "accuracy": 95.0,  # Placeholder - would need domain-specific rules
             "consistency": 90.0,  # Placeholder - would need consistency checks
             "timeliness": 85.0,  # Placeholder - would check data freshness
-            "issues": issues
+            "issues": issues,
         }
 
 
 # Singleton service instance
-def get_data_sandbox_service(db: Session = None) -> DataSandboxService:
-    if db is None:
-        db = next(get_db())
+def get_data_sandbox_service(
+    db: Session = Depends(get_sync_db),
+) -> DataSandboxService:
     return DataSandboxService(db)
