@@ -27,7 +27,7 @@ class LangGraphState(BaseModel):
 class FIBOPositionMappingNode:
     """LangGraph node for mapping position data to FIBO ontology."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.node_id = str(uuid4())
         self.node_type = "FIBO_MAPPING"
         self.name = "FIBO Position Mapping Node"
@@ -119,7 +119,7 @@ class FIBOPositionMappingNode:
             }
 
     async def _map_position_to_fibo(
-        self, position: Dict[str, Any], fibo_service, neo4j_service
+        self, position: Dict[str, Any], fibo_service: Any, neo4j_service: Any
     ) -> Optional[Dict[str, Any]]:
         """Map a single position to FIBO ontology."""
         try:
@@ -148,7 +148,9 @@ class FIBOPositionMappingNode:
                 "Position", position_id, "FIBOPositionHolding"
             )
 
-            return fibo_position
+            if fibo_position is not None:
+                return dict(fibo_position)
+            return None
 
         except Exception as e:
             logger.error(f"Failed to map position to FIBO: {e}")
@@ -158,7 +160,7 @@ class FIBOPositionMappingNode:
 class LangGraphService:
     """Service for managing LangGraph workflows."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.graphs: Dict[str, Graph] = {}
         self.node_registry: Dict[str, Any] = {}
         self._register_default_nodes()
@@ -224,11 +226,16 @@ class LangGraphService:
             
             result = await graph.ainvoke(initial_state)
             
-            result["context"]["end_time"] = datetime.utcnow().isoformat()
-            result["context"]["status"] = "COMPLETED" if not result.get("errors") else "FAILED"
+            if not isinstance(result, dict):
+                result_dict: Dict[str, Any] = {"data": result, "context": {}, "messages": [], "errors": []}
+            else:
+                result_dict = dict(result)
+            
+            result_dict["context"]["end_time"] = datetime.utcnow().isoformat()
+            result_dict["context"]["status"] = "COMPLETED" if not result_dict.get("errors") else "FAILED"
             
             logger.info(f"Workflow execution completed: {workflow_id}")
-            return result
+            return result_dict
 
         except Exception as e:
             logger.error(f"Workflow execution failed: {e}")

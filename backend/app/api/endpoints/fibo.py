@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.models.fibo_ontology import FIBOOntologyQuery
+from app.models.fibo_ontology import FIBOQuery
 from app.services.fibo_service import get_fibo_service, FIBOService
 
 router = APIRouter()
@@ -16,7 +16,7 @@ async def list_fibo_entities(
 ) -> List[Dict[str, Any]]:
     """List FIBO ontology entities."""
     try:
-        query = FIBOOntologyQuery(
+        query = FIBOQuery(
             entity_types=[entity_type] if entity_type else None,
             limit=limit,
         )
@@ -39,7 +39,7 @@ async def get_entity_mappings(
 ) -> List[Dict[str, Any]]:
     """Get entity mappings between original and FIBO entities."""
     try:
-        query = FIBOOntologyQuery(
+        query = FIBOQuery(
             entity_types=["FIBOEntityMapping"],
             property_filters={},
         )
@@ -89,7 +89,7 @@ async def create_entity_mapping(
 
 @router.post("/query", response_model=List[Dict[str, Any]])
 async def query_fibo_entities(
-    query: FIBOOntologyQuery,
+    query: FIBOQuery,
     fibo_service: FIBOService = Depends(get_fibo_service),
 ) -> List[Dict[str, Any]]:
     """Execute a flexible query against FIBO entities."""

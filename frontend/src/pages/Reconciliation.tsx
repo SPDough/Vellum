@@ -27,7 +27,6 @@ import {
   PlayArrow as PlayArrowIcon,
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
 } from '@mui/icons-material';
 
 interface TabPanelProps {
@@ -109,7 +108,7 @@ const Reconciliation: React.FC = () => {
     },
   ];
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
