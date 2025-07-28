@@ -9,6 +9,7 @@ import Transactions from './pages/Transactions';
 import Reconciliation from './pages/Reconciliation';
 import WorkflowManagement from './pages/WorkflowManagement';
 import RulesCatalog from './pages/RulesCatalog';
+import DataSourceConfiguration from './pages/DataSourceConfiguration';
 
 const theme = createTheme({
   palette: {
@@ -35,6 +36,7 @@ const App: React.FC = () => {
             <Route path="reconciliation" element={<Reconciliation />} />
             <Route path="workflows" element={<WorkflowManagement />} />
             <Route path="rules" element={<RulesCatalog />} />
+            <Route path="data-sources" element={<DataSourceConfiguration />} />
           </Route>
         </Routes>
       </Router>

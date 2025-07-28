@@ -34,6 +34,7 @@ import {
   SwapHoriz as SwapHorizIcon,
   CompareArrows as CompareArrowsIcon,
   Rule as RuleIcon,
+  DataObject as DataSourceIcon,
 } from '@mui/icons-material';
 
 import { useAuthStore } from '@/store';
@@ -51,6 +52,7 @@ const Layout: React.FC = () => {
   const navigationItems = [
     { label: 'Dashboard', path: '/', icon: <DashboardIcon /> },
     { label: 'Data Integration', path: '/data', icon: <DataIcon /> },
+    { label: 'Data Sources', path: '/data-sources', icon: <DataSourceIcon /> },
     { label: 'Workflows', path: '/workflows', icon: <WorkflowIcon /> },
     { label: 'Rules Catalog', path: '/rules', icon: <RuleIcon /> },
     { label: 'AI Agents', path: '/agents', icon: <AgentIcon /> },

@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  python-repl:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: otomeshon-python-repl
+    restart: unless-stopped
+    
+    # Resource limits for security
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    
+    # Security settings
+    security_opt:
+      - no-new-privileges:true
+    read_only: false  # Needs write access for logs and temp files
+    
+    # Environment variables
+    environment:
+      - MAX_EXECUTION_TIME=30
+      - MAX_MEMORY_MB=256
+      - MAX_OUTPUT_LENGTH=10000
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+    
+    # Port mapping
+    ports:
+      - "8001:8000"  # Map to 8001 to avoid conflicts with main backend
+    
+    # Volume mounts
+    volumes:
+      - repl_logs:/app/logs
+      - repl_executions:/app/executions
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # Network
+    networks:
+      - otomeshon-network
+
+  # Optional: Redis for caching execution results
+  repl-redis:
+    image: redis:7-alpine
+    container_name: otomeshon-repl-redis
+    restart: unless-stopped
+    
+    # Security settings
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 128M
+    
+    # Configuration
+    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
+    
+    # Volume for persistence (optional)
+    volumes:
+      - repl_redis_data:/data
+    
+    # Network
+    networks:
+      - otomeshon-network
+
+volumes:
+  repl_logs:
+    driver: local
+  repl_executions:
+    driver: local
+  repl_redis_data:
+    driver: local
+
+networks:
+  otomeshon-network:
+    external: true  # Assumes this network exists for the main application

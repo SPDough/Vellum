@@ -3,7 +3,9 @@ from fastapi import APIRouter
 from app.api.endpoints import (
     auth_unified,
     data_sandbox,
+    data_sources,
     data_streams,
+    data_workflows,
     fibo,
     knowledge_graph,
     mcp_servers,
@@ -52,6 +54,14 @@ api_router.include_router(
 
 api_router.include_router(
     data_streams.router, prefix="/data-streams", tags=["Data Streams"]
+)
+
+api_router.include_router(
+    data_sources.router, tags=["Data Sources"]
+)
+
+api_router.include_router(
+    data_workflows.router, tags=["Data Workflows"]
 )
 
 api_router.include_router(

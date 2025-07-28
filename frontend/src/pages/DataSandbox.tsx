@@ -297,6 +297,7 @@ const DataSandbox: React.FC<DataSandboxProps> = () => {
     { value: 'mcp_data', label: 'MCP Data Streams' },
     { value: 'agent_results', label: 'Agent Results' },
     { value: 'market_data', label: 'Market Data' },
+    { value: 'data_sources', label: 'Configured Data Sources' },
     { value: 'custom_query', label: 'Custom Query' },
   ];
 
