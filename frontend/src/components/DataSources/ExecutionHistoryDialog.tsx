@@ -31,7 +31,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 
-import { dataSourceService, DataSourceConfiguration, DataPullExecution } from '@/services/dataSourceService';
+import { dataSourceService, DataSourceConfiguration } from '@/services/dataSourceService';
 
 interface ExecutionHistoryDialogProps {
   open: boolean;
@@ -108,14 +108,14 @@ const ExecutionHistoryDialog: React.FC<ExecutionHistoryDialogProps> = ({ open, o
 
   const calculateSuccessRate = () => {
     if (executions.length === 0) return 0;
-    const successful = executions.filter(e => e.status === 'COMPLETED').length;
+    const successful = executions.filter((e: any) => e.status === 'COMPLETED').length;
     return Math.round((successful / executions.length) * 100);
   };
 
   const getAverageExecutionTime = () => {
-    const completedExecutions = executions.filter(e => e.status === 'COMPLETED' && e.duration_seconds);
+    const completedExecutions = executions.filter((e: any) => e.status === 'COMPLETED' && e.duration_seconds);
     if (completedExecutions.length === 0) return 0;
-    const totalTime = completedExecutions.reduce((sum, e) => sum + (e.duration_seconds || 0), 0);
+    const totalTime = completedExecutions.reduce((sum: any, e: any) => sum + (e.duration_seconds || 0), 0);
     return Math.round(totalTime / completedExecutions.length);
   };
 
@@ -195,7 +195,7 @@ const ExecutionHistoryDialog: React.FC<ExecutionHistoryDialogProps> = ({ open, o
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {executions.map((execution) => (
+                        {executions.map((execution: any) => (
                           <TableRow key={execution.id} hover>
                             <TableCell>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

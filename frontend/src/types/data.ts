@@ -23,6 +23,7 @@ export enum DataProviderType {
   REFERENCE_DATA = 'REFERENCE_DATA',
   SETTLEMENT = 'SETTLEMENT',
   REGULATORY = 'REGULATORY',
+  PORTFOLIO_MANAGEMENT = 'PORTFOLIO_MANAGEMENT',
   INTERNAL = 'INTERNAL',
 }
 
@@ -76,6 +77,12 @@ export enum DataType {
   RECONCILIATION = 'RECONCILIATION',
   RISK_METRICS = 'RISK_METRICS',
   COMPLIANCE = 'COMPLIANCE',
+  PORTFOLIOS = 'PORTFOLIOS',
+  ORDERS = 'ORDERS',
+  ALLOCATIONS = 'ALLOCATIONS',
+  BENCHMARKS = 'BENCHMARKS',
+  PERFORMANCE = 'PERFORMANCE',
+  EXPOSURES = 'EXPOSURES',
 }
 
 // Data Flow Management
@@ -263,4 +270,67 @@ export interface CustodianTransaction {
   settlement_date: string;
   custodian: string;
   status: 'PENDING' | 'SETTLED' | 'FAILED';
+}
+
+// Portfolio Management System-specific Data Types
+export interface PortfolioData {
+  portfolio_id: string;
+  portfolio_name: string;
+  strategy: string;
+  manager: string;
+  base_currency: string;
+  inception_date: string;
+  total_nav: number;
+  positions: PortfolioPosition[];
+  cash_balances: CashBalance[];
+  benchmark_id?: string;
+  risk_profile: RiskProfile;
+}
+
+export interface PortfolioPosition {
+  security_id: string;
+  symbol: string;
+  quantity: number;
+  market_value: number;
+  weight: number;
+  currency: string;
+  sector?: string;
+  asset_class: string;
+  unrealized_pnl?: number;
+  cost_basis?: number;
+}
+
+export interface CashBalance {
+  currency: string;
+  amount: number;
+  available_balance: number;
+  pending_settlements: number;
+}
+
+export interface RiskProfile {
+  var_1d: number;
+  var_10d: number;
+  tracking_error: number;
+  beta: number;
+  sharpe_ratio: number;
+  max_drawdown: number;
+  sector_exposures: Record<string, number>;
+  country_exposures: Record<string, number>;
+}
+
+export interface OrderData {
+  order_id: string;
+  portfolio_id: string;
+  security_id: string;
+  side: 'BUY' | 'SELL';
+  order_type: 'MARKET' | 'LIMIT' | 'STOP' | 'MOC' | 'LOC';
+  quantity: number;
+  limit_price?: number;
+  stop_price?: number;
+  status: 'NEW' | 'PARTIALLY_FILLED' | 'FILLED' | 'CANCELLED' | 'REJECTED';
+  time_in_force: 'DAY' | 'GTC' | 'IOC' | 'FOK';
+  created_time: string;
+  updated_time: string;
+  filled_quantity: number;
+  avg_fill_price: number;
 }

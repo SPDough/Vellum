@@ -30,7 +30,7 @@ import {
   Warning,
   Info,
 } from '@mui/icons-material';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 
 import { agentService } from '@/services/agentService';
 import { Agent, AgentStatus } from '@/types/agent';
@@ -45,33 +45,27 @@ const AgentMonitoringDashboard: React.FC<AgentMonitoringDashboardProps> = ({ age
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
 
   // Fetch agents or specific agent
-  const { data: agents, isLoading } = useQuery<Agent[]>(
-    agentId ? ['agent', agentId] : 'agents',
-    () => agentId ? agentService.getAgent(agentId).then(agent => [agent]) : agentService.listAgents(),
-    {
-      refetchInterval: 10000, // Refresh every 10 seconds
-    }
-  );
+  const { data: agents, isLoading } = useQuery<Agent[]>({
+    queryKey: agentId ? ['agent', agentId] : ['agents'],
+    queryFn: () => agentId ? agentService.getAgent(agentId).then(agent => [agent]) : agentService.listAgents(),
+    refetchInterval: 10000, // Refresh every 10 seconds
+  });
 
   // Fetch agent metrics for selected agent
-  const { data: metrics } = useQuery(
-    ['agent-metrics', selectedAgent?.id],
-    () => selectedAgent ? agentService.getAgentMetrics(selectedAgent.id) : null,
-    {
-      enabled: !!selectedAgent,
-      refetchInterval: 5000,
-    }
-  );
+  const { data: metrics } = useQuery({
+    queryKey: ['agent-metrics', selectedAgent?.id],
+    queryFn: () => selectedAgent ? agentService.getAgentMetrics(selectedAgent.id) : null,
+    enabled: !!selectedAgent,
+    refetchInterval: 5000,
+  });
 
   // Fetch agent logs for selected agent
-  const { data: logs } = useQuery(
-    ['agent-logs', selectedAgent?.id],
-    () => selectedAgent ? agentService.getAgentLogs(selectedAgent.id, { limit: 100 }) : null,
-    {
-      enabled: !!selectedAgent,
-      refetchInterval: 5000,
-    }
-  );
+  const { data: logs } = useQuery({
+    queryKey: ['agent-logs', selectedAgent?.id],
+    queryFn: () => selectedAgent ? agentService.getAgentLogs(selectedAgent.id, { limit: 100 }) : null,
+    enabled: !!selectedAgent,
+    refetchInterval: 5000,
+  });
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);

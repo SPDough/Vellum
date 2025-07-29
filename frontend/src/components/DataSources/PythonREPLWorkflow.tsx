@@ -8,24 +8,18 @@ import {
   Typography,
   Box,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Switch,
   FormControlLabel,
   Alert,
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   Accordion,
   AccordionSummary,
   AccordionDetails,
   Grid,
   Paper,
   IconButton,
-  Tooltip,
   Tabs,
   Tab,
 } from '@mui/material';
@@ -42,7 +36,7 @@ import {
 import { useQuery, useMutation } from '@tanstack/react-query';
 import MonacoEditor from '@monaco-editor/react';
 
-import { dataSourceService } from '@/services/dataSourceService';
+// import { dataSourceService } from '@/services/dataSourceService'; // Unused import
 
 interface DataSourceConfiguration {
   id: string;
@@ -57,12 +51,12 @@ interface PythonREPLWorkflowProps {
   config?: DataSourceConfiguration | null;
 }
 
-interface WorkflowTemplate {
-  name: string;
-  description: string;
-  prompt: string;
-  category: string;
-}
+// interface WorkflowTemplate { // Unused interface
+//   name: string;
+//   description: string;
+//   prompt: string;
+//   category: string;
+// }
 
 const PythonREPLWorkflow: React.FC<PythonREPLWorkflowProps> = ({ open, onClose, config }) => {
   const [activeTab, setActiveTab] = useState(0);

@@ -24,7 +24,7 @@ import {
   Clear as ClearIcon,
   Download as DownloadIcon,
 } from '@mui/icons-material';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { agentService } from '@/services/agentService';
 import { Agent, AgentConversation, AgentChatRequest } from '@/types/agent';
@@ -47,9 +47,9 @@ const AgentChatInterface: React.FC<AgentChatInterfaceProps> = ({
   const queryClient = useQueryClient();
 
   // Fetch or create conversation
-  const { data: conversation, isLoading: conversationLoading } = useQuery(
-    ['agent-conversation', agent.id, conversationId],
-    async () => {
+  const { data: conversation, isLoading: conversationLoading } = useQuery({
+    queryKey: ['agent-conversation', agent.id, conversationId],
+    queryFn: async () => {
       if (conversationId) {
         return agentService.getConversation(agent.id, conversationId);
       } else {
@@ -58,39 +58,33 @@ const AgentChatInterface: React.FC<AgentChatInterfaceProps> = ({
         return newConversation;
       }
     },
-    {
-      enabled: !!agent.id,
-    }
-  );
+    enabled: !!agent.id,
+  });
 
   // Send message mutation
-  const sendMessageMutation = useMutation(
-    (request: AgentChatRequest) => 
+  const sendMessageMutation = useMutation({
+    mutationFn: (request: AgentChatRequest) => 
       agentService.chatWithAgent(agent.id, conversation!.id, request),
-    {
-      onMutate: () => {
-        setIsTyping(true);
-      },
-      onSuccess: () => {
-        queryClient.invalidateQueries(['agent-conversation', agent.id, conversation?.id]);
-        setMessage('');
-        setIsTyping(false);
-      },
-      onError: () => {
-        setIsTyping(false);
-      },
-    }
-  );
+    onMutate: () => {
+      setIsTyping(true);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agent-conversation', agent.id, conversation?.id] });
+      setMessage('');
+      setIsTyping(false);
+    },
+    onError: () => {
+      setIsTyping(false);
+    },
+  });
 
   // Clear conversation mutation
-  const clearConversationMutation = useMutation(
-    () => agentService.deleteConversation(agent.id, conversation!.id),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries(['agent-conversation', agent.id]);
-      },
-    }
-  );
+  const clearConversationMutation = useMutation({
+    mutationFn: () => agentService.deleteConversation(agent.id, conversation!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agent-conversation', agent.id] });
+    },
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -333,17 +327,17 @@ const AgentChatInterface: React.FC<AgentChatInterfaceProps> = ({
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            disabled={sendMessageMutation.isLoading}
+            disabled={sendMessageMutation.isPending}
             variant="outlined"
             size="small"
           />
           <IconButton
             onClick={handleSendMessage}
-            disabled={!message.trim() || sendMessageMutation.isLoading}
+            disabled={!message.trim() || sendMessageMutation.isPending}
             color="primary"
             sx={{ mb: 0.5 }}
           >
-            {sendMessageMutation.isLoading ? <CircularProgress size={20} /> : <SendIcon />}
+            {sendMessageMutation.isPending ? <CircularProgress size={20} /> : <SendIcon />}
           </IconButton>
         </Box>
       </Box>
@@ -355,7 +349,7 @@ const AgentChatInterface: React.FC<AgentChatInterfaceProps> = ({
         onClose={handleMenuClose}
       >
         <MenuItem onClick={() => {
-          queryClient.invalidateQueries(['agent-conversation', agent.id, conversation.id]);
+          queryClient.invalidateQueries({ queryKey: ['agent-conversation', agent.id, conversation.id] });
           handleMenuClose();
         }}>
           <RefreshIcon sx={{ mr: 1 }} />

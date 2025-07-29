@@ -17,7 +17,6 @@ import {
   CardContent,
   Switch,
   FormControlLabel,
-  Chip,
   Alert,
   Accordion,
   AccordionSummary,
@@ -94,7 +93,7 @@ const DataSourceForm: React.FC<DataSourceFormProps> = ({ open, onClose, config, 
       output_table_name: '',
     },
     validationSchema,
-    onSubmit: async (values) => {
+    onSubmit: async (values: any) => {
       // Build configuration objects from form fields
       const source_config = sourceConfigFields.reduce((acc, field) => {
         if (field.key && field.value) {

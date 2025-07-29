@@ -35,7 +35,7 @@ import {
   Visibility as ViewIcon,
   TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import GraphVisualization from '@/components/KnowledgeGraph/GraphVisualization';
 import { 
@@ -57,35 +57,29 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = () => {
   const queryClient = useQueryClient();
 
   // Fetch graph statistics
-  const { data: statistics } = useQuery<GraphStatistics>(
-    'graph-statistics',
-    () => knowledgeGraphService.getStatistics(),
-    {
-      refetchInterval: 30000,
-    }
-  );
+  const { data: statistics } = useQuery<GraphStatistics>({
+    queryKey: ['graph-statistics'],
+    queryFn: () => knowledgeGraphService.getStatistics(),
+    refetchInterval: 30000,
+  });
 
   // Fetch centrality analysis
-  const { data: centralityData } = useQuery<CentralityAnalysis>(
-    'graph-centrality',
-    () => knowledgeGraphService.getCentralityAnalysis({ limit: 10 }),
-    {
-      refetchInterval: 60000,
-    }
-  );
+  const { data: centralityData } = useQuery<CentralityAnalysis>({
+    queryKey: ['graph-centrality'],
+    queryFn: () => knowledgeGraphService.getCentralityAnalysis({ limit: 10 }),
+    refetchInterval: 60000,
+  });
 
   // Create entity mutation
-  const createEntityMutation = useMutation(
-    (request: EntityCreateRequest) => knowledgeGraphService.createEntity(request),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('graph-statistics');
-        queryClient.invalidateQueries('graph-visualization');
-        setCreateEntityOpen(false);
-        setEntityProperties({});
-      },
-    }
-  );
+  const createEntityMutation = useMutation({
+    mutationFn: (request: EntityCreateRequest) => knowledgeGraphService.createEntity(request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['graph-statistics'] });
+      queryClient.invalidateQueries({ queryKey: ['graph-visualization'] });
+      setCreateEntityOpen(false);
+      setEntityProperties({});
+    },
+  });
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -416,9 +410,9 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = () => {
           <Button 
             variant="contained" 
             onClick={handleCreateEntity}
-            disabled={createEntityMutation.isLoading}
+            disabled={createEntityMutation.isPending}
           >
-            {createEntityMutation.isLoading ? 'Creating...' : 'Create Entity'}
+            {createEntityMutation.isPending ? 'Creating...' : 'Create Entity'}
           </Button>
         </DialogActions>
       </Dialog>

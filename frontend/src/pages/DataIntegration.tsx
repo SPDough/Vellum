@@ -17,12 +17,13 @@ import {
   Add as AddIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import { useQuery, useQueryClient } from 'react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { MCPServer, DataStream } from '@/types/data';
 import { mcpServerService } from '@/services/mcpServerService';
 import { dataStreamService } from '@/services/dataStreamService';
 import NewConnectionDialog from '@/components/DataIntegration/NewConnectionDialog';
+import PortfolioManagementSection from '@/components/DataIntegration/PortfolioManagementSection';
 
 interface DataIntegrationProps {}
 
@@ -31,39 +32,35 @@ const DataIntegration: React.FC<DataIntegrationProps> = () => {
   const queryClient = useQueryClient();
 
   // Fetch MCP servers from API
-  const { data: mcpServers = [], error: serversError } = useQuery<MCPServer[], Error>(
-    'mcp-servers',
-    () => mcpServerService.listServers(),
-    {
-      refetchInterval: 30000,
-      staleTime: 10000,
-    }
-  );
+  const { data: mcpServers = [], error: serversError } = useQuery<MCPServer[], Error>({
+    queryKey: ['mcp-servers'],
+    queryFn: () => mcpServerService.listServers(),
+    refetchInterval: 30000,
+    staleTime: 10000,
+  });
 
   // Fetch data streams from API
-  const { data: dataStreams = [], error: streamsError } = useQuery<DataStream[], Error>(
-    'data-streams',
-    () => dataStreamService.listStreams(),
-    {
-      refetchInterval: 5000,
-      staleTime: 2000,
-    }
-  );
+  const { data: dataStreams = [], error: streamsError } = useQuery<DataStream[], Error>({
+    queryKey: ['data-streams'],
+    queryFn: () => dataStreamService.listStreams(),
+    refetchInterval: 5000,
+    staleTime: 2000,
+  });
 
   const handleRefresh = () => {
-    queryClient.invalidateQueries('mcp-servers');
-    queryClient.invalidateQueries('data-streams');
+    queryClient.invalidateQueries({ queryKey: ['mcp-servers'] });
+    queryClient.invalidateQueries({ queryKey: ['data-streams'] });
   };
 
   const handleNewConnectionSuccess = () => {
     setShowNewConnectionDialog(false);
-    queryClient.invalidateQueries('mcp-servers');
+    queryClient.invalidateQueries({ queryKey: ['mcp-servers'] });
   };
 
-  const connectedServers = mcpServers.filter(s => s.status === 'CONNECTED').length;
-  const totalDataVolume = mcpServers.reduce((acc, server) => acc + (server.metrics?.data_volume_mb || 0), 0);
+  const connectedServers = mcpServers.filter((s: any) => s.status === 'CONNECTED').length;
+  const totalDataVolume = mcpServers.reduce((acc: any, server: any) => acc + (server.metrics?.data_volume_mb || 0), 0);
   const avgUptime = mcpServers.length > 0 
-    ? mcpServers.reduce((acc, server) => acc + (server.metrics?.uptime_percentage || 0), 0) / mcpServers.length 
+    ? mcpServers.reduce((acc: any, server: any) => acc + (server.metrics?.uptime_percentage || 0), 0) / mcpServers.length 
     : 0;
 
 
@@ -76,7 +73,7 @@ const DataIntegration: React.FC<DataIntegrationProps> = () => {
             Data Integration
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Monitor and manage connections to custodians and market data providers
+            Monitor and manage connections to custodians, market data providers, and portfolio management systems
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -185,6 +182,11 @@ const DataIntegration: React.FC<DataIntegrationProps> = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Portfolio Management Systems Section */}
+      <PortfolioManagementSection 
+        onNewConnection={() => setShowNewConnectionDialog(true)}
+      />
 
       {/* New Connection Dialog */}
       <NewConnectionDialog

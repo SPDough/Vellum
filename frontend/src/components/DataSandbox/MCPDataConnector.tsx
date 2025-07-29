@@ -31,7 +31,7 @@ import {
   Refresh as RefreshIcon,
   Link as LinkIcon,
 } from '@mui/icons-material';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { mcpServerService } from '@/services/mcpServerService';
 import { dataSandboxService } from '@/services/dataSandboxService';
@@ -50,34 +50,31 @@ const MCPDataConnector: React.FC<MCPDataConnectorProps> = ({ onDataSourceCreated
   const queryClient = useQueryClient();
 
   // Fetch MCP servers
-  const { data: mcpServers } = useQuery(
-    'mcp-servers',
-    () => mcpServerService.listServers()
-  );
+  const { data: mcpServers } = useQuery({
+    queryKey: ['mcp-servers'],
+    queryFn: () => mcpServerService.listServers(),
+  });
 
   // Fetch recent MCP data streams
-  const { data: mcpDataStreams, isLoading: streamsLoading } = useQuery(
-    'mcp-data-streams',
-    () => dataSandboxService.getMCPDataStreams({ limit: 20 }),
-    {
-      refetchInterval: 10000,
-    }
-  );
+  const { data: mcpDataStreams, isLoading: streamsLoading } = useQuery({
+    queryKey: ['mcp-data-streams'],
+    queryFn: () => dataSandboxService.getMCPDataStreams({ limit: 20 }),
+    refetchInterval: 10000,
+  });
 
   // Create data source from MCP
-  const createDataSourceMutation = useMutation(
-    ({ serverId, streamName, name }: { serverId: string; streamName: string; name: string }) =>
+  const createDataSourceMutation = useMutation({
+    mutationFn: ({ serverId, streamName, name }: { serverId: string; streamName: string; name: string }) =>
       dataSandboxService.createDataSourceFromMCP(serverId, streamName).then(source => ({
         ...source,
         name: name || source.name,
       })),
-    {
-      onSuccess: (dataSource) => {
-        queryClient.invalidateQueries(['data-sources']);
-        onDataSourceCreated?.(dataSource);
-        setConnectDialogOpen(false);
-        resetForm();
-      },
+    onSuccess: (dataSource) => {
+      queryClient.invalidateQueries({ queryKey: ['data-sources'] });
+      onDataSourceCreated?.(dataSource);
+      setConnectDialogOpen(false);
+      resetForm();
+    },
     }
   );
 
@@ -152,7 +149,7 @@ const MCPDataConnector: React.FC<MCPDataConnectorProps> = ({ onDataSourceCreated
           <Button
             variant="outlined"
             startIcon={<RefreshIcon />}
-            onClick={() => queryClient.invalidateQueries('mcp-data-streams')}
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['mcp-data-streams'] })}
             sx={{ borderRadius: 2 }}
           >
             Refresh
@@ -343,9 +340,9 @@ const MCPDataConnector: React.FC<MCPDataConnectorProps> = ({ onDataSourceCreated
           <Button 
             variant="contained" 
             onClick={handleConnect}
-            disabled={!selectedServerId || !selectedStreamName || createDataSourceMutation.isLoading}
+            disabled={!selectedServerId || !selectedStreamName || createDataSourceMutation.isPending}
           >
-            {createDataSourceMutation.isLoading ? 'Connecting...' : 'Connect'}
+            {createDataSourceMutation.isPending ? 'Connecting...' : 'Connect'}
           </Button>
         </DialogActions>
       </Dialog>
