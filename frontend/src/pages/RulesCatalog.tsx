@@ -524,4 +524,4 @@ const RulesCatalogPage: React.FC = () => {
   );
 };
 
-export default RulesCatalog;
+export default RulesCatalogPage;
