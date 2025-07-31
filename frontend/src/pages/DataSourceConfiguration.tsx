@@ -43,7 +43,7 @@ import {
   Pause as PauseIcon,
   History as HistoryIcon,
   Settings as SettingsIcon,
-  TestTube as TestIcon,
+  Science as TestIcon,
   Schedule as ScheduleIcon,
   DataObject as DataIcon,
   Api as ApiIcon,
