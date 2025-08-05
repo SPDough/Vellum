@@ -33,6 +33,7 @@ import {
   Delete as DeleteIcon,
   PlayArrow as PlayIcon,
   History as HistoryIcon,
+  Settings as SettingsIcon,
   Science as TestIcon,
   Schedule as ScheduleIcon,
   DataObject as DataIcon,

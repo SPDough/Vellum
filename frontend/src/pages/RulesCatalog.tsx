@@ -78,7 +78,7 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-const RulesCatalog: React.FC = () => {
+const RulesCatalogPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [catalog, setCatalog] = useState<RulesCatalog | null>(null);
   const [loading, setLoading] = useState(true);
@@ -524,4 +524,4 @@ const RulesCatalog: React.FC = () => {
   );
 };
 
-export default RulesCatalog;
+export default RulesCatalogPage;
