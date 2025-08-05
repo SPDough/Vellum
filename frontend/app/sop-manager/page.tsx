@@ -2,14 +2,12 @@
 
 import React from 'react';
 import NextLayout from '@/components/Layout/NextLayout';
-import Agents from '@/pages/Agents';
+import SOPManager from '@/pages/SOPManager';
 
-export const dynamic = 'force-dynamic';
-
-export default function AgentsPage() {
+export default function SOPManagerPage() {
   return (
     <NextLayout>
-      <Agents />
+      <SOPManager />
     </NextLayout>
   );
 }

@@ -2,14 +2,12 @@
 
 import React from 'react';
 import NextLayout from '@/components/Layout/NextLayout';
-import Agents from '@/pages/Agents';
+import WorkflowBuilder from '@/pages/WorkflowBuilder';
 
-export const dynamic = 'force-dynamic';
-
-export default function AgentsPage() {
+export default function WorkflowBuilderPage() {
   return (
     <NextLayout>
-      <Agents />
+      <WorkflowBuilder />
     </NextLayout>
   );
 }

@@ -1,8 +1,5 @@
 import React from 'react';
-import { ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { theme } from '@/theme';
-import EmotionRegistry from '@/lib/registry';
+import Providers from '@/providers/Providers';
 
 export default function RootLayout({
   children,
@@ -15,12 +12,9 @@ export default function RootLayout({
         <meta name="emotion-insertion-point" content="" />
       </head>
       <body>
-        <EmotionRegistry>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            {children}
-          </ThemeProvider>
-        </EmotionRegistry>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

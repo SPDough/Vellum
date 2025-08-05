@@ -40,12 +40,15 @@ export const useAuthStore = create<AuthState>()(
           user: state.user ? { ...state.user, ...userData } : null,
         })),
       checkAuth: () => {
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-          // In a real app, you'd validate the token with the server
-          set({ isAuthenticated: true, token });
-        } else {
-          set({ isAuthenticated: false, token: null, user: null });
+        // Check if we're on the client side to avoid SSR issues
+        if (typeof window !== 'undefined') {
+          const token = localStorage.getItem('auth_token');
+          if (token) {
+            // In a real app, you'd validate the token with the server
+            set({ isAuthenticated: true, token });
+          } else {
+            set({ isAuthenticated: false, token: null, user: null });
+          }
         }
       },
     }),

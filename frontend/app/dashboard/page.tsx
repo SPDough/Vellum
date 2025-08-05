@@ -2,14 +2,12 @@
 
 import React from 'react';
 import NextLayout from '@/components/Layout/NextLayout';
-import Agents from '@/pages/Agents';
+import Dashboard from '@/pages/Dashboard';
 
-export const dynamic = 'force-dynamic';
-
-export default function AgentsPage() {
+export default function DashboardPage() {
   return (
     <NextLayout>
-      <Agents />
+      <Dashboard />
     </NextLayout>
   );
 }
