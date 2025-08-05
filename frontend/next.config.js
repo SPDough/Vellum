@@ -18,14 +18,12 @@ const nextConfig = {
     
     return config;
   },
+  // For production deployment, we need to handle React Query SSR properly
+  // For now, keeping build validation disabled until we refactor data fetching
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
     ignoreBuildErrors: true,
   },
 };
