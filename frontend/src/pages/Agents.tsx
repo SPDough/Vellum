@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react';
 import {
   Box,
@@ -43,7 +45,7 @@ import {
   TrendingUp as MetricsIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { agentService } from '@/services/agentService';
 import { Agent, AgentCreateRequest, AgentType, AgentStatus } from '@/types/agent';
@@ -86,46 +88,38 @@ const Agents: React.FC<AgentsProps> = () => {
   const queryClient = useQueryClient();
 
   // Fetch agents
-  const { data: agents, isLoading: agentsLoading } = useQuery<Agent[]>(
-    'agents',
-    () => agentService.listAgents(),
-    {
-      refetchInterval: 30000,
-    }
-  );
+  const { data: agents, isLoading: agentsLoading } = useQuery<Agent[]>({
+    queryKey: ['agents'],
+    queryFn: () => agentService.listAgents(),
+    refetchInterval: 30000,
+  });
 
   // Fetch agent templates
-  const { data: templates } = useQuery(
-    'agent-templates',
-    () => agentService.listTemplates()
-  );
+  const { data: templates } = useQuery({
+    queryKey: ['agent-templates'],
+    queryFn: () => agentService.listTemplates(),
+  });
 
   // Create agent mutation
-  const createAgentMutation = useMutation(
-    (request: AgentCreateRequest) => agentService.createAgent(request),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('agents');
-        setCreateAgentOpen(false);
-        resetForm();
-      },
-    }
-  );
+  const createAgentMutation = useMutation({
+    mutationFn: (request: AgentCreateRequest) => agentService.createAgent(request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
+      setCreateAgentOpen(false);
+      resetForm();
+    },
+  });
 
   // Activate/Deactivate agent mutations
-  const activateAgentMutation = useMutation(
-    (agentId: string) => agentService.activateAgent(agentId),
-    {
-      onSuccess: () => queryClient.invalidateQueries('agents'),
-    }
-  );
+  const activateAgentMutation = useMutation({
+    mutationFn: (agentId: string) => agentService.activateAgent(agentId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['agents'] }),
+  });
 
-  const deactivateAgentMutation = useMutation(
-    (agentId: string) => agentService.deactivateAgent(agentId),
-    {
-      onSuccess: () => queryClient.invalidateQueries('agents'),
-    }
-  );
+  const deactivateAgentMutation = useMutation({
+    mutationFn: (agentId: string) => agentService.deactivateAgent(agentId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['agents'] }),
+  });
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -618,9 +612,9 @@ const Agents: React.FC<AgentsProps> = () => {
           <Button 
             variant="contained" 
             onClick={handleCreateAgent}
-            disabled={createAgentMutation.isLoading || !agentFormData.name || !agentFormData.description}
+            disabled={createAgentMutation.isPending || !agentFormData.name || !agentFormData.description}
           >
-            {createAgentMutation.isLoading ? 'Creating...' : 'Create Agent'}
+            {createAgentMutation.isPending ? 'Creating...' : 'Create Agent'}
           </Button>
         </DialogActions>
       </Dialog>

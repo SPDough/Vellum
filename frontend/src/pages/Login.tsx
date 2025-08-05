@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Box,
   Card,
@@ -18,14 +18,17 @@ const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   
   const { login, isAuthenticated } = useAuthStore();
-  const location = useLocation();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   
-  const from = location.state?.from?.pathname || '/';
+  const from = searchParams.get('from') || '/';
 
   // Redirect if already authenticated
-  if (isAuthenticated) {
-    return <Navigate to={from} replace />;
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push(from);
+    }
+  }, [isAuthenticated, router, from]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

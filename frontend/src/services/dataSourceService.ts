@@ -114,17 +114,17 @@ class DataSourceService {
 
     const url = searchParams.toString() ? `${this.baseUrl}?${searchParams}` : this.baseUrl;
     const response = await api.get<DataSourceConfiguration[]>(url);
-    return response.data;
+    return response;
   }
 
   async getDataSource(configId: string): Promise<DataSourceConfiguration> {
     const response = await api.get<DataSourceConfiguration>(`${this.baseUrl}/${configId}`);
-    return response.data;
+    return response;
   }
 
   async createDataSource(data: DataSourceConfigurationCreate): Promise<DataSourceConfiguration> {
     const response = await api.post<DataSourceConfiguration>(this.baseUrl, data);
-    return response.data;
+    return response;
   }
 
   async updateDataSource(
@@ -132,7 +132,7 @@ class DataSourceService {
     data: DataSourceConfigurationUpdate
   ): Promise<DataSourceConfiguration> {
     const response = await api.put<DataSourceConfiguration>(`${this.baseUrl}/${configId}`, data);
-    return response.data;
+    return response;
   }
 
   async deleteDataSource(configId: string): Promise<void> {
@@ -141,7 +141,7 @@ class DataSourceService {
 
   async testDataSource(testRequest: DataSourceTestRequest): Promise<DataSourceTestResponse> {
     const response = await api.post<DataSourceTestResponse>(`${this.baseUrl}/test`, testRequest);
-    return response.data;
+    return response;
   }
 
   async executeDataPull(
@@ -159,7 +159,7 @@ class DataSourceService {
         },
       }
     );
-    return response.data;
+    return response;
   }
 
   async getExecutionHistory(
@@ -175,19 +175,19 @@ class DataSourceService {
       : `${this.baseUrl}/${configId}/executions`;
 
     const response = await api.get<DataPullExecution[]>(url);
-    return response.data;
+    return response;
   }
 
   async getDataSourceStatus(configId: string): Promise<DataSourceStatus> {
     const response = await api.get<DataSourceStatus>(`${this.baseUrl}/${configId}/status`);
-    return response.data;
+    return response;
   }
 
   async toggleDataSource(configId: string): Promise<{ message: string; is_active: boolean }> {
     const response = await api.post<{ message: string; is_active: boolean }>(
       `${this.baseUrl}/${configId}/toggle`
     );
-    return response.data;
+    return response;
   }
 
   // Utility methods for common operations

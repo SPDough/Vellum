@@ -42,7 +42,7 @@ const DataSourceTestDialog: React.FC<DataSourceTestDialogProps> = ({ open, onClo
         processing_config: config.processing_config,
         sample_size: sampleSize,
       }),
-    onSuccess: (result) => {
+    onSuccess: (result: any) => {
       setTestResult(result);
     },
   });

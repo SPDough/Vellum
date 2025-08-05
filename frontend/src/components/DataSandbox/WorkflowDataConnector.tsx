@@ -32,7 +32,7 @@ import {
   Visibility as ViewIcon,
   Download as ExportIcon,
 } from '@mui/icons-material';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { workflowService } from '@/services/workflowService';
 import { dataSandboxService } from '@/services/dataSandboxService';
@@ -51,33 +51,30 @@ const WorkflowDataConnector: React.FC<WorkflowDataConnectorProps> = ({ onDataSou
   const queryClient = useQueryClient();
 
   // Fetch workflows
-  const { data: workflows } = useQuery(
-    'workflows',
-    () => workflowService.listWorkflows()
-  );
+  const { data: workflows } = useQuery({
+    queryKey: ['workflows'],
+    queryFn: () => workflowService.listWorkflows(),
+  });
 
   // Fetch recent workflow outputs
-  const { data: workflowOutputs } = useQuery(
-    'workflow-outputs',
-    () => dataSandboxService.getWorkflowOutputs({ limit: 20 }),
-    {
-      refetchInterval: 10000,
-    }
-  );
+  const { data: workflowOutputs } = useQuery({
+    queryKey: ['workflow-outputs'],
+    queryFn: () => dataSandboxService.getWorkflowOutputs({ limit: 20 }),
+    refetchInterval: 10000,
+  });
 
   // Create data source from workflow
-  const createDataSourceMutation = useMutation(
-    ({ workflowId, outputName, name }: { workflowId: string; outputName: string; name: string }) =>
+  const createDataSourceMutation = useMutation({
+    mutationFn: ({ workflowId, outputName, name }: { workflowId: string; outputName: string; name: string }) =>
       dataSandboxService.createDataSourceFromWorkflow(workflowId, outputName).then(source => ({
         ...source,
         name: name || source.name,
       })),
-    {
-      onSuccess: (dataSource) => {
-        queryClient.invalidateQueries(['data-sources']);
-        onDataSourceCreated?.(dataSource);
-        setConnectDialogOpen(false);
-        resetForm();
+    onSuccess: (dataSource) => {
+      queryClient.invalidateQueries({ queryKey: ['data-sources'] });
+      onDataSourceCreated?.(dataSource);
+      setConnectDialogOpen(false);
+      resetForm();
       },
     }
   );
@@ -301,9 +298,9 @@ const WorkflowDataConnector: React.FC<WorkflowDataConnectorProps> = ({ onDataSou
           <Button 
             variant="contained" 
             onClick={handleConnect}
-            disabled={!selectedWorkflowId || !selectedOutputName || createDataSourceMutation.isLoading}
+            disabled={!selectedWorkflowId || !selectedOutputName || createDataSourceMutation.isPending}
           >
-            {createDataSourceMutation.isLoading ? 'Connecting...' : 'Connect'}
+            {createDataSourceMutation.isPending ? 'Connecting...' : 'Connect'}
           </Button>
         </DialogActions>
       </Dialog>

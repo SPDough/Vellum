@@ -23,7 +23,7 @@ import {
   Refresh as RefreshIcon,
   Search as SearchIcon,
 } from '@mui/icons-material';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 
 import { knowledgeGraphService, GraphVisualizationData, GraphNode, GraphEdge } from '@/services/knowledgeGraphService';
 
@@ -62,18 +62,16 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
 
   // Fetch graph data
-  const { data: graphData, isLoading, error, refetch } = useQuery<GraphVisualizationData>(
-    ['graph-visualization', centerEntityId, selectedEntityTypes],
-    () => knowledgeGraphService.getGraphVisualization({
+  const { data: graphData, isLoading, error, refetch } = useQuery<GraphVisualizationData>({
+    queryKey: ['graph-visualization', centerEntityId, selectedEntityTypes],
+    queryFn: () => knowledgeGraphService.getGraphVisualization({
       center_entity_id: centerEntityId,
       entity_types: selectedEntityTypes.length > 0 ? selectedEntityTypes : undefined,
       depth: 2,
       limit: 100
     }),
-    {
-      refetchInterval: 30000, // Refresh every 30 seconds
-    }
-  );
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
 
   const availableEntityTypes = [
     'Account', 'Security', 'Trade', 'Position', 'MCPServer', 

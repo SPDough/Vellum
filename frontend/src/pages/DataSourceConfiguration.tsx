@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import {
   Box,
   Card,
@@ -14,24 +16,14 @@ import {
   Paper,
   Chip,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Switch,
-  FormControlLabel,
   Tabs,
   Tab,
-  Grid,
   Alert,
   CircularProgress,
   Tooltip,
   Menu,
+  MenuItem,
+  Switch,
   ListItemText,
   ListItemIcon,
 } from '@mui/material';
@@ -40,7 +32,6 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   PlayArrow as PlayIcon,
-  Pause as PauseIcon,
   History as HistoryIcon,
   Settings as SettingsIcon,
   Science as TestIcon,
@@ -283,12 +274,12 @@ const DataSourceConfiguration: React.FC<DataSourceConfigurationProps> = () => {
                 </TableHead>
                 <TableBody>
                   {dataSources
-                    .filter((config) => {
+                    .filter((config: any) => {
                       if (selectedTab === 1) return config.is_active;
                       if (selectedTab === 2) return config.schedule_type !== 'MANUAL';
                       return true;
                     })
-                    .map((config) => (
+                    .map((config: any) => (
                       <TableRow key={config.id} hover>
                         <TableCell>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

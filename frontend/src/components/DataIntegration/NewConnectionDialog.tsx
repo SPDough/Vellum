@@ -63,6 +63,22 @@ const predefinedProviders = [
     logo: '📈',
     capabilities: ['Market Data', 'Fundamentals', 'Estimates', 'News'],
   },
+  {
+    id: 'blackrock-aladdin',
+    name: 'BlackRock Aladdin',
+    type: DataProviderType.PORTFOLIO_MANAGEMENT,
+    description: 'Comprehensive portfolio management and risk analytics platform',
+    logo: '⚫',
+    capabilities: ['Portfolios', 'Risk Analytics', 'Performance', 'Orders', 'Benchmarks', 'Exposures'],
+  },
+  {
+    id: 'charles-river-crims',
+    name: 'Charles River CRIMS',
+    type: DataProviderType.PORTFOLIO_MANAGEMENT,
+    description: 'Investment management system for order and portfolio management',
+    logo: '🌊',
+    capabilities: ['Order Management', 'Portfolios', 'Compliance', 'Allocations', 'Performance', 'Risk Metrics'],
+  },
 ];
 
 const NewConnectionDialog: React.FC<NewConnectionDialogProps> = ({
@@ -162,7 +178,7 @@ const NewConnectionDialog: React.FC<NewConnectionDialogProps> = ({
           Add New Data Connection
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Connect to a custodian or market data provider via MCP
+          Connect to custodians, market data providers, or portfolio management systems via MCP
         </Typography>
       </DialogTitle>
 

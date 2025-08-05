@@ -26,7 +26,15 @@ interface AuthConfig {
   simple: AuthProvider;
 }
 
-export const AuthProviderSelector: React.FC = () => {
+interface AuthProviderSelectorProps {
+  onProviderChange: (provider: string) => void;
+  currentProvider: string;
+}
+
+export const AuthProviderSelector: React.FC<AuthProviderSelectorProps> = ({ 
+  onProviderChange: _, 
+  currentProvider: __
+}) => {
   const [authConfig, setAuthConfig] = useState<AuthConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { Box, CircularProgress } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -13,7 +13,18 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredRole 
 }) => {
   const { isAuthenticated, user, loading } = useAuth();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      // Redirect to login page with return url
+      router.push(`/login?from=${encodeURIComponent(pathname)}`);
+    } else if (!loading && requiredRole && user?.role !== requiredRole && user?.role !== 'admin') {
+      // User doesn't have required role
+      router.push('/unauthorized');
+    }
+  }, [isAuthenticated, loading, requiredRole, user?.role, router, pathname]);
 
   if (loading) {
     return (
@@ -31,13 +42,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (!isAuthenticated) {
-    // Redirect to login page with return url
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return null; // Will redirect via useEffect
   }
 
   if (requiredRole && user?.role !== requiredRole && user?.role !== 'admin') {
-    // User doesn't have required role
-    return <Navigate to="/unauthorized" replace />;
+    return null; // Will redirect via useEffect
   }
 
   return <>{children}</>;
