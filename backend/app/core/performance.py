@@ -442,6 +442,7 @@ def rate_limit(max_calls: int, time_window: int = 60):
     """Decorator to rate limit function calls"""
 
     call_times: Dict[str, List[float]] = {}
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -468,6 +469,5 @@ def rate_limit(max_calls: int, time_window: int = 60):
             return func(*args, **kwargs)
 
         return wrapper
-
 
     return decorator

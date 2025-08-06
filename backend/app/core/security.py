@@ -423,6 +423,7 @@ def hash_password(password: str) -> str:
     """Hash a password using bcrypt"""
     return str(pwd_context.hash(password))
 
+
 def get_password_hash(password: str) -> str:
     """Get password hash (alias for hash_password)"""
     return pwd_context.hash(password)

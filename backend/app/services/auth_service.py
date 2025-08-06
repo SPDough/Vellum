@@ -262,7 +262,6 @@ class AuthService:
             "expires_in": self.access_token_expire_minutes * 60,
         }
 
-
     def logout_user(
         self, session_token: str, ip_address: str = None, user_agent: str = None
     ) -> bool:
@@ -422,7 +421,6 @@ class AuthService:
         resource_permissions = user_permissions.get(resource, [])
 
         return action in resource_permissions
-
 
     def _log_audit(
         self,

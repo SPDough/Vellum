@@ -4,7 +4,6 @@ Base service classes and interfaces for Otomeshon Banking Platform
 
 import uuid
 from abc import ABC, abstractmethod
-
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -456,6 +455,5 @@ class BankingComplianceService(TransactionalService[T]):
 
         except Exception as e:
             return OperationResult(
-
                 success=False, errors=[f"Failed to retrieve audit trail: {str(e)}"]
             )

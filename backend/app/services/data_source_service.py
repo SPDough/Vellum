@@ -45,30 +45,31 @@ class DataSourceService(BaseService):
         super().__init__(db_session)
         self.mcp_service = mcp_service
 
-    
     # Implement abstract methods from BaseService
     async def create(self, data: Any, context: Optional[Any] = None) -> Any:
         """Create method required by BaseService - delegates to create_configuration"""
         if isinstance(data, DataSourceConfigurationCreate):
             return await self.create_configuration(data)
         raise NotImplementedError("Unsupported data type for create")
-    
+
     async def get_by_id(self, entity_id: str, context: Optional[Any] = None) -> Any:
         """Get by ID method required by BaseService - delegates to get_configuration"""
         return await self.get_configuration(entity_id)
-    
-    async def update(self, entity_id: str, data: Any, context: Optional[Any] = None) -> Any:
+
+    async def update(
+        self, entity_id: str, data: Any, context: Optional[Any] = None
+    ) -> Any:
         """Update method required by BaseService - delegates to update_configuration"""
         if isinstance(data, DataSourceConfigurationUpdate):
             return await self.update_configuration(entity_id, data)
         raise NotImplementedError("Unsupported data type for update")
-    
+
     async def delete(self, entity_id: str, context: Optional[Any] = None) -> Any:
         """Delete method required by BaseService - delegates to delete_configuration"""
         success = await self.delete_configuration(entity_id)
         from app.services.base import OperationResult
+
         return OperationResult(success=success, data=success)
-    
 
     async def create_configuration(
         self, config_data: DataSourceConfigurationCreate
@@ -279,7 +280,11 @@ class DataSourceService(BaseService):
 
             # Store data if output to sandbox is enabled
             output_location = None
-            if config.output_to_sandbox and data is not None and config.output_table_name:
+            if (
+                config.output_to_sandbox
+                and data is not None
+                and config.output_table_name
+            ):
                 output_location = await self._store_data_in_sandbox(
                     data, config.output_table_name
                 )
@@ -396,7 +401,7 @@ class DataSourceService(BaseService):
                     key_value = api_config.auth_config.get("key")
                     if key_value:
                         headers[key_name] = key_value
-            
+
             response = await client.request(
                 method=api_config.method,
                 url=api_config.url,
