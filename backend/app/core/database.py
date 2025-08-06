@@ -18,7 +18,7 @@ settings = get_settings()
 
 # PostgreSQL setup
 engine = create_async_engine(
-    settings.database_url,
+    settings.database_url.replace("postgresql://", "postgresql+psycopg://"),
     echo=True if settings.log_level == "DEBUG" else False,
     pool_pre_ping=True,
     pool_recycle=300,
