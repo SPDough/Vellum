@@ -10,8 +10,17 @@ from httpx import AsyncClient
 from unittest.mock import patch, Mock
 
 # Add parent directory for shared test utilities
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from test_utils import assert_health_response
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+try:
+    from test_utils import assert_health_response
+except ImportError:
+    # Fallback if import fails
+    def assert_health_response(response, expected_status_code=200):
+        assert response.status_code == expected_status_code
+        data = response.json()
+        assert "active_connections" in data
+        assert "messages_sent" in data
+        assert "last_activity" in data
 
 
 @pytest.mark.integration
