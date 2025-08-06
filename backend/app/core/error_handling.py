@@ -146,7 +146,7 @@ def create_error_response(
     status_code: int,
     message: str,
     error_type: str = "error",
-    details: Dict[str, Any] = None
+    details: Optional[Dict[str, Any]] = None
 ) -> JSONResponse:
     """Create a standardized error response."""
     content = {
@@ -165,9 +165,9 @@ def create_error_response(
 
 def validate_banking_operation(
     operation_type: str,
-    amount: float = None,
-    currency: str = None,
-    customer_id: str = None
+    amount: Optional[float] = None,
+    currency: Optional[str] = None,
+    customer_id: Optional[str] = None
 ):
     """Validate banking operation parameters and raise appropriate errors."""
     if operation_type not in ["deposit", "withdrawal", "transfer", "query"]:

@@ -30,7 +30,8 @@ jobs:
     - name: Install dependencies
       run: |
         npm cache clean --force
-        npm ci --legacy-peer-deps
+        rm -rf node_modules package-lock.json
+        npm install --legacy-peer-deps
 
     - name: Run type checking
       run: npm run type-check

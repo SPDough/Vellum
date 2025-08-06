@@ -76,7 +76,7 @@ class AuthService:
         except jwt.PyJWTError:
             return None
 
-    def authenticate_user(self, email: str, password: str, ip_address: str = None, user_agent: str = None) -> Optional[Dict[str, Any]]:
+    def authenticate_user(self, email: str, password: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Authenticate user with email and password"""
 
         # Get user

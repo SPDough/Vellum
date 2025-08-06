@@ -2,7 +2,7 @@
 Service factory implementation for Otomeshon Banking Platform
 """
 
-from typing import Dict, Type, Optional
+from typing import Dict, Type, Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.interfaces import (
@@ -28,7 +28,7 @@ class ServiceFactory(IServiceFactory):
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
         self.settings = get_settings()
-        self._service_cache: Dict[str, any] = {}
+        self._service_cache: Dict[str, Any] = {}
 
     def create_trade_service(self) -> ITradeService:
         """Create trade service instance"""
