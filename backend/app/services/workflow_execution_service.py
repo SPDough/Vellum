@@ -64,8 +64,8 @@ class WorkflowNodeConfig:
     name: str
     description: str
     config: Dict[str, Any]
-    dependencies: List[str] = None
-    conditions: Dict[str, Any] = None
+    dependencies: Optional[List[str]] = None
+    conditions: Optional[Dict[str, Any]] = None
     timeout_seconds: int = 300
     retry_count: int = 3
 
@@ -107,9 +107,9 @@ class NodeExecutionResult:
     input_data: Dict[str, Any]
     output_data: Dict[str, Any]
     error_message: Optional[str] = None
-    alerts: List[Dict[str, Any]] = None
-    metadata: Dict[str, Any] = None
 
+    alerts: Optional[List[Dict[str, Any]]] = None
+    metadata: Optional[Dict[str, Any]] = None
     def to_dict(self) -> Dict[str, Any]:
         result = asdict(self)
         # Convert datetime objects to ISO strings
@@ -386,7 +386,7 @@ class WorkflowExecutionService:
         Returns:
             WorkflowExecutionResult: Complete execution results
         """
-        execution_id = str(uuid.uuid4())
+        execution_id: str = str(uuid.uuid4())
         start_time = datetime.now()
 
         logger.info(
@@ -466,7 +466,7 @@ class WorkflowExecutionService:
         executed_nodes = set()
 
         # Find entry point
-        current_node_id = config.entry_point
+
 
         while current_node_id:
             node_config = next(
@@ -481,6 +481,7 @@ class WorkflowExecutionService:
                     dep for dep in node_config.dependencies if dep not in executed_nodes
                 ]
                 if missing_deps:
+
                     logger.warning(
                         f"Missing dependencies for node {current_node_id}: {missing_deps}"
                     )
@@ -489,22 +490,27 @@ class WorkflowExecutionService:
             # Execute node
             node_result = await self._execute_node(node_config, current_data)
             execution_result.node_results.append(node_result)
-            executed_nodes.add(current_node_id)
 
+            executed_nodes.add(next_node_id)
             # Update current data with node output
             current_data.update(node_result.output_data)
 
             # Check if node failed and should stop execution
             if node_result.status == NodeExecutionStatus.FAILED:
+
                 raise Exception(
                     f"Node {current_node_id} failed: {node_result.error_message}"
                 )
 
+                raise Exception(f"Node {next_node_id} failed: {node_result.error_message}")
+            
             # Find next node (simplified - just execute all in order for now)
+
             remaining_nodes = [
                 n for n in config.nodes if n.node_id not in executed_nodes
             ]
             current_node_id = remaining_nodes[0].node_id if remaining_nodes else None
+
 
         execution_result.final_output = current_data
 

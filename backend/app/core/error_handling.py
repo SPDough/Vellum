@@ -5,6 +5,7 @@ Provides secure error responses that don't leak sensitive information.
 
 import logging
 import traceback
+
 from typing import Any, Dict
 
 from fastapi import HTTPException, Request, status
@@ -210,5 +211,6 @@ def setup_secure_logging():
 
     banking_logger = logging.getLogger("banking")
     banking_logger.setLevel(logging.INFO)
+
 
     return {"security": security_logger, "banking": banking_logger}

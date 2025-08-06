@@ -286,8 +286,10 @@ class CacheManager:
     """Simple in-memory cache with TTL support"""
 
     def __init__(self, default_ttl: int = 300):  # 5 minutes default
-        self.cache: dict[str, Any] = {}
-        self.ttl_map: dict[str, float] = {}
+
+        self.cache: Dict[str, Any] = {}
+        self.ttl_map: Dict[str, float] = {}
+
         self.default_ttl = default_ttl
 
     def get(self, key: str) -> Optional[Any]:
@@ -438,8 +440,8 @@ def cache_result(ttl: int = 300, key_func: Optional[Callable] = None):
 
 def rate_limit(max_calls: int, time_window: int = 60):
     """Decorator to rate limit function calls"""
-    call_times: dict[str, list[float]] = {}
 
+    call_times: Dict[str, List[float]] = {}
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -466,5 +468,6 @@ def rate_limit(max_calls: int, time_window: int = 60):
             return func(*args, **kwargs)
 
         return wrapper
+
 
     return decorator

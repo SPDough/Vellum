@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 class LangchainDataWorkflowService(BaseService):
     """Service for executing data workflows using Langchain."""
 
+
     def __init__(
         self,
         data_source_service: DataSourceService,
@@ -468,8 +469,8 @@ class LangchainDataWorkflowService(BaseService):
                 if isinstance(data, list):
                     df = pd.DataFrame(data)
                 else:
-                    df = data.copy()
 
+                    df = data.copy() if data is not None and hasattr(data, 'copy') else data
                 # Apply processing if configured
                 if config.processing_config:
                     df = await self.data_source_service._process_data(
@@ -589,5 +590,6 @@ class LangchainDataWorkflowService(BaseService):
         return await self.execute_data_workflow(
             config,
             prompt,
+
             f"Focus on {insight_type} insights. Provide actionable recommendations.",
         )

@@ -461,10 +461,10 @@ class DataSandboxService:
                 return b""
 
             df = pd.DataFrame(data)
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+            buffer = io.BytesIO()
+            with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
                 df.to_excel(writer, index=False, sheet_name="Data")
-            return output.getvalue()
+            return buffer.getvalue()
 
         else:
             raise HTTPException(

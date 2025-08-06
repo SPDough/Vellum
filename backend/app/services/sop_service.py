@@ -425,6 +425,7 @@ class SOPExecutionService:
 
         # Add decision point results if applicable
         if step_template.get("is_decision_point", False):
+
             output_data.update(
                 {
                     "decision_made": "proceed",
