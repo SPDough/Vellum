@@ -222,11 +222,12 @@ class ProcessAutomationSuggestion(BaseModel):
     prerequisites: List[str]
 
 
-
 # Enhanced SOP Execution Models
+
 
 class SOPExecutionStatus(str):
     """Status of SOP Execution"""
+
     NOT_STARTED = "not_started"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -237,6 +238,7 @@ class SOPExecutionStatus(str):
 
 class SOPStepExecutionStatus(str):
     """Status of individual SOP step execution"""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -247,6 +249,7 @@ class SOPStepExecutionStatus(str):
 
 class SOPExecution(Base):
     """SOP execution tracking table"""
+
     __tablename__ = "sop_executions"
 
     id = Column(String, primary_key=True)
@@ -287,6 +290,7 @@ class SOPExecution(Base):
 
 class SOPStepExecution(Base):
     """Individual step execution tracking"""
+
     __tablename__ = "sop_step_executions"
 
     id = Column(String, primary_key=True)
@@ -322,8 +326,10 @@ class SOPStepExecution(Base):
 
 # Pydantic models for SOP execution
 
+
 class SOPExecutionCreate(BaseModel):
     """Model for creating SOP execution"""
+
     sop_document_id: str
     execution_name: str
     initiated_by: str
@@ -334,6 +340,7 @@ class SOPExecutionCreate(BaseModel):
 
 class SOPExecutionUpdate(BaseModel):
     """Model for updating SOP execution"""
+
     status: Optional[str] = None
     assigned_to: Optional[str] = None
     current_step_id: Optional[str] = None
@@ -343,6 +350,7 @@ class SOPExecutionUpdate(BaseModel):
 
 class SOPExecutionResponse(BaseModel):
     """SOP execution response model"""
+
     id: str
     sop_document_id: str
     execution_name: str
@@ -365,6 +373,7 @@ class SOPExecutionResponse(BaseModel):
 
 class SOPStepExecutionCreate(BaseModel):
     """Model for creating step execution"""
+
     sop_execution_id: str
     step_id: str
     started_by: str
@@ -373,6 +382,7 @@ class SOPStepExecutionCreate(BaseModel):
 
 class SOPStepExecutionUpdate(BaseModel):
     """Model for updating step execution"""
+
     status: Optional[str] = None
     output_data: Optional[Dict[str, Any]] = None
     validation_results: Optional[Dict[str, Any]] = None
@@ -382,6 +392,7 @@ class SOPStepExecutionUpdate(BaseModel):
 
 class SOPStepExecutionResponse(BaseModel):
     """Step execution response model"""
+
     id: str
     sop_execution_id: str
     step_id: str
@@ -401,6 +412,7 @@ class SOPStepExecutionResponse(BaseModel):
 
 class SOPExecutionSummary(BaseModel):
     """Summary of SOP execution with key metrics"""
+
     execution_id: str
     sop_title: str
     status: str
@@ -449,7 +461,7 @@ Applies to all equity trades processed through the custodian platform.
                     "step_description": "Validate trade details against market data and client limits",
                     "is_automated": True,
                     "estimated_duration_minutes": 5,
-                    "automation_tool": "Rules Engine"
+                    "automation_tool": "Rules Engine",
                 },
                 {
                     "step_number": 2,
@@ -457,7 +469,7 @@ Applies to all equity trades processed through the custodian platform.
                     "step_description": "Generate and send trade confirmation to counterparty",
                     "is_automated": True,
                     "estimated_duration_minutes": 10,
-                    "automation_tool": "LangGraph"
+                    "automation_tool": "LangGraph",
                 },
                 {
                     "step_number": 3,
@@ -465,7 +477,7 @@ Applies to all equity trades processed through the custodian platform.
                     "step_description": "Prepare and send settlement instructions",
                     "is_manual": True,
                     "estimated_duration_minutes": 15,
-                    "is_decision_point": True
+                    "is_decision_point": True,
                 },
                 {
                     "step_number": 4,
@@ -473,9 +485,9 @@ Applies to all equity trades processed through the custodian platform.
                     "step_description": "Monitor and confirm settlement completion",
                     "is_automated": True,
                     "estimated_duration_minutes": 30,
-                    "automation_tool": "Monitoring System"
-                }
-            ]
+                    "automation_tool": "Monitoring System",
+                },
+            ],
         }
 
     @staticmethod
@@ -510,14 +522,14 @@ All corporate actions affecting client holdings.
                     "step_title": "Corporate Action Notification",
                     "step_description": "Receive and validate corporate action announcement",
                     "is_automated": True,
-                    "estimated_duration_minutes": 5
+                    "estimated_duration_minutes": 5,
                 },
                 {
                     "step_number": 2,
                     "step_title": "Client Notification",
                     "step_description": "Notify affected clients of corporate action",
                     "is_automated": True,
-                    "estimated_duration_minutes": 15
+                    "estimated_duration_minutes": 15,
                 },
                 {
                     "step_number": 3,
@@ -525,16 +537,16 @@ All corporate actions affecting client holdings.
                     "step_description": "Process client elections and instructions",
                     "is_manual": True,
                     "estimated_duration_minutes": 45,
-                    "is_decision_point": True
+                    "is_decision_point": True,
                 },
                 {
                     "step_number": 4,
                     "step_title": "Calculate Entitlements",
                     "step_description": "Calculate client entitlements and process payments",
                     "is_automated": True,
-                    "estimated_duration_minutes": 20
-                }
-            ]
+                    "estimated_duration_minutes": 20,
+                },
+            ],
         }
 
     @staticmethod
@@ -542,5 +554,5 @@ All corporate actions affecting client holdings.
         """Get all available SOP templates"""
         return {
             "TRADE_SETTLEMENT": SOPTemplateLibrary.get_trade_settlement_template(),
-            "CORPORATE_ACTIONS": SOPTemplateLibrary.get_corporate_actions_template()
+            "CORPORATE_ACTIONS": SOPTemplateLibrary.get_corporate_actions_template(),
         }

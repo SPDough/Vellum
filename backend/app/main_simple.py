@@ -5,6 +5,7 @@ Simple FastAPI server for local development and testing
 
 import json
 import logging
+import os
 import random
 import uuid
 from datetime import datetime, timedelta
@@ -13,11 +14,10 @@ from typing import Any, Dict, List, Optional
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-
 from pydantic import BaseModel, EmailStr
+
 from app.schemas import UserResponse
-import uvicorn
-import os
+
 
 # Simple data models
 class DataRecord(BaseModel):
@@ -41,6 +41,7 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+
 class LoginResponse(BaseModel):
     access_token: str
     refresh_token: str
@@ -48,13 +49,16 @@ class LoginResponse(BaseModel):
     expires_in: int
     user: Dict[str, Any]
 
+
 # UserResponse now imported from app.schemas
+
 
 class AuthConfigResponse(BaseModel):
     current_provider: str
     available_providers: List[str]
     keycloak_available: bool
     endpoints: Dict[str, str]
+
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -81,14 +85,14 @@ sample_data: List[DataRecord] = []
 
 # Import secure authentication and validation
 from app.core.auth_config import auth_config
-from app.core.validation import InputValidator, ValidationError
 from app.core.error_handling import EnhancedErrorHandler, setup_secure_logging
+from app.core.validation import InputValidator, ValidationError
 
 # Configure secure logging
 loggers = setup_secure_logging()
 logger = logging.getLogger(__name__)
-security_logger = loggers['security']
-banking_logger = loggers['banking']
+security_logger = loggers["security"]
+banking_logger = loggers["banking"]
 
 
 def generate_sample_data() -> None:
@@ -133,9 +137,10 @@ async def root():
             "health": "/health",
             "docs": "/docs",
             "auth": "/api/auth/*",
-            "data_sandbox": "/api/v1/data-sandbox/*"
-        }
+            "data_sandbox": "/api/v1/data-sandbox/*",
+        },
     }
+
 
 # Health check endpoint
 @app.get("/health")
@@ -176,14 +181,16 @@ async def login(login_data: LoginRequest):
             "email": user.email,
             "full_name": user.full_name,
             "role": user.role,
-            "department": user.department
-        }
+            "department": user.department,
+        },
     )
+
 
 @app.post("/api/auth/logout")
 async def logout():
     """Simple logout endpoint"""
     return {"message": "Successfully logged out"}
+
 
 @app.get("/api/auth/me", response_model=UserResponse)
 async def get_current_user():
@@ -200,8 +207,9 @@ async def get_current_user():
         username=user.username,
         full_name=user.full_name,
         role=user.role,
-        department=user.department
+        department=user.department,
     )
+
 
 @app.get("/api/auth/config", response_model=AuthConfigResponse)
 async def get_auth_config():
@@ -219,9 +227,10 @@ async def get_auth_config():
             "login": "/api/auth/login",
             "logout": "/api/auth/logout",
             "me": "/api/auth/me",
-            "config": "/api/auth/config"
-        }
+            "config": "/api/auth/config",
+        },
     )
+
 
 @app.get("/api/auth/providers")
 async def get_auth_providers():
@@ -238,23 +247,33 @@ async def get_auth_providers():
             "name": "Simple JWT Authentication",
             "description": "Basic email/password with JWT tokens",
             "demo_accounts": [
-                {"email": "admin@otomeshon.ai", "role": "admin", "note": "Use environment DEMO_ADMIN_PASSWORD"},
-                {"email": "analyst@otomeshon.ai", "role": "analyst", "note": "Use environment DEMO_ANALYST_PASSWORD"}
-            ]
+                {
+                    "email": "admin@otomeshon.ai",
+                    "role": "admin",
+                    "note": "Use environment DEMO_ADMIN_PASSWORD",
+                },
+                {
+                    "email": "analyst@otomeshon.ai",
+                    "role": "analyst",
+                    "note": "Use environment DEMO_ANALYST_PASSWORD",
+                },
+            ],
         },
         "keycloak": {
             "name": "Keycloak OIDC",
             "description": "Enterprise authentication via Keycloak",
             "available": keycloak_available,
-            "realm_url": os.getenv("KEYCLOAK_URL", "http://localhost:8080") + "/realms/oto",
+            "realm_url": os.getenv("KEYCLOAK_URL", "http://localhost:8080")
+            + "/realms/oto",
             "client_id": "Otomeshon-CustodianPortal",
             "demo_accounts": [
                 {"email": "admin@otomeshon.ai", "role": "admin"},
                 {"email": "manager@otomeshon.ai", "role": "manager"},
-                {"email": "analyst@otomeshon.ai", "role": "analyst"}
-            ]
-        }
+                {"email": "analyst@otomeshon.ai", "role": "analyst"},
+            ],
+        },
     }
+
 
 # Data Sandbox API endpoints
 @app.get("/api/v1/data-sandbox/records")
@@ -281,7 +300,9 @@ async def get_records(
         if source:
             filtered_data = [r for r in filtered_data if r.source == source]
         if data_type:
-            filtered_data = [r for r in filtered_data if r.data.get("type") == data_type]
+            filtered_data = [
+                r for r in filtered_data if r.data.get("type") == data_type
+            ]
 
         # Pagination
         start_idx = (page - 1) * page_size
@@ -309,7 +330,9 @@ async def filter_records(request: FilterRequest) -> Dict[str, Any]:
 
     try:
         # Validate pagination parameters
-        page, page_size = InputValidator.validate_pagination(request.page, request.page_size)
+        page, page_size = InputValidator.validate_pagination(
+            request.page, request.page_size
+        )
 
         filtered_data = sample_data
 
@@ -332,7 +355,9 @@ async def filter_records(request: FilterRequest) -> Dict[str, Any]:
                 elif key == "date_to":
                     try:
                         date_to = datetime.fromisoformat(value.replace("Z", "+00:00"))
-                        filtered_data = [r for r in filtered_data if r.timestamp <= date_to]
+                        filtered_data = [
+                            r for r in filtered_data if r.timestamp <= date_to
+                        ]
                     except Exception as e:
                         logger.warning(f"Date filtering error: {e}")
 

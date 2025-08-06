@@ -2,14 +2,14 @@
 Performance optimization and monitoring utilities for Otomeshon Banking Platform
 """
 
-import time
 import asyncio
 import functools
-from typing import Dict, List, Optional, Any, Callable
-from datetime import datetime, timedelta
-from contextlib import asynccontextmanager
-import statistics
 import gc
+import statistics
+import time
+from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
+from typing import Any, Callable, Dict, List, Optional
 
 import structlog
 from sqlalchemy import event
@@ -43,11 +43,13 @@ class PerformanceMonitor:
 
     def record_db_query_time(self, query: str, duration_ms: float):
         """Record database query time"""
-        self.db_query_times.append({
-            'query': query[:100],  # Truncate long queries
-            'duration_ms': duration_ms,
-            'timestamp': datetime.utcnow()
-        })
+        self.db_query_times.append(
+            {
+                "query": query[:100],  # Truncate long queries
+                "duration_ms": duration_ms,
+                "timestamp": datetime.utcnow(),
+            }
+        )
 
         # Keep only last 500 queries
         if len(self.db_query_times) > 500:
@@ -67,45 +69,53 @@ class PerformanceMonitor:
         uptime_seconds = current_time - self.start_time
 
         summary = {
-            'uptime_seconds': uptime_seconds,
-            'uptime_human': str(timedelta(seconds=int(uptime_seconds))),
-            'total_requests': sum(self.api_call_counts.values()),
-            'total_errors': sum(self.error_counts.values()),
-            'requests_per_second': sum(self.api_call_counts.values()) / uptime_seconds if uptime_seconds > 0 else 0,
-            'error_rate': sum(self.error_counts.values()) / sum(self.api_call_counts.values()) if self.api_call_counts else 0
+            "uptime_seconds": uptime_seconds,
+            "uptime_human": str(timedelta(seconds=int(uptime_seconds))),
+            "total_requests": sum(self.api_call_counts.values()),
+            "total_errors": sum(self.error_counts.values()),
+            "requests_per_second": (
+                sum(self.api_call_counts.values()) / uptime_seconds
+                if uptime_seconds > 0
+                else 0
+            ),
+            "error_rate": (
+                sum(self.error_counts.values()) / sum(self.api_call_counts.values())
+                if self.api_call_counts
+                else 0
+            ),
         }
 
         # Response time statistics
         if self.response_times:
-            summary['response_times'] = {
-                'avg_ms': statistics.mean(self.response_times),
-                'median_ms': statistics.median(self.response_times),
-                'p95_ms': self._percentile(self.response_times, 95),
-                'p99_ms': self._percentile(self.response_times, 99),
-                'min_ms': min(self.response_times),
-                'max_ms': max(self.response_times)
+            summary["response_times"] = {
+                "avg_ms": statistics.mean(self.response_times),
+                "median_ms": statistics.median(self.response_times),
+                "p95_ms": self._percentile(self.response_times, 95),
+                "p99_ms": self._percentile(self.response_times, 99),
+                "min_ms": min(self.response_times),
+                "max_ms": max(self.response_times),
             }
 
         # Database query statistics
         if self.db_query_times:
-            query_durations = [q['duration_ms'] for q in self.db_query_times]
-            summary['database_queries'] = {
-                'total_queries': len(self.db_query_times),
-                'avg_duration_ms': statistics.mean(query_durations),
-                'median_duration_ms': statistics.median(query_durations),
-                'p95_duration_ms': self._percentile(query_durations, 95),
-                'slowest_queries': sorted(self.db_query_times, key=lambda x: x['duration_ms'], reverse=True)[:5]
+            query_durations = [q["duration_ms"] for q in self.db_query_times]
+            summary["database_queries"] = {
+                "total_queries": len(self.db_query_times),
+                "avg_duration_ms": statistics.mean(query_durations),
+                "median_duration_ms": statistics.median(query_durations),
+                "p95_duration_ms": self._percentile(query_durations, 95),
+                "slowest_queries": sorted(
+                    self.db_query_times, key=lambda x: x["duration_ms"], reverse=True
+                )[:5],
             }
 
         # Top endpoints by call count
-        summary['top_endpoints'] = sorted(
-            self.api_call_counts.items(),
-            key=lambda x: x[1],
-            reverse=True
+        summary["top_endpoints"] = sorted(
+            self.api_call_counts.items(), key=lambda x: x[1], reverse=True
         )[:10]
 
         # Error breakdown
-        summary['error_breakdown'] = dict(self.error_counts)
+        summary["error_breakdown"] = dict(self.error_counts)
 
         return summary
 
@@ -131,6 +141,7 @@ performance_monitor = PerformanceMonitor()
 
 def performance_timing(func_name: Optional[str] = None):
     """Decorator to measure function execution time"""
+
     def decorator(func):
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):
@@ -147,7 +158,7 @@ def performance_timing(func_name: Optional[str] = None):
                     logger.warning(
                         "Slow operation detected",
                         function=name,
-                        duration_ms=duration_ms
+                        duration_ms=duration_ms,
                     )
 
         @functools.wraps(func)
@@ -165,10 +176,11 @@ def performance_timing(func_name: Optional[str] = None):
                     logger.warning(
                         "Slow operation detected",
                         function=name,
-                        duration_ms=duration_ms
+                        duration_ms=duration_ms,
                     )
 
         return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
+
     return decorator
 
 
@@ -195,11 +207,15 @@ class DatabasePerformanceMonitor:
         """Setup SQLAlchemy event listeners for query monitoring"""
 
         @event.listens_for(engine, "before_cursor_execute")
-        def receive_before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+        def receive_before_cursor_execute(
+            conn, cursor, statement, parameters, context, executemany
+        ):
             context._query_start_time = time.time()
 
         @event.listens_for(engine, "after_cursor_execute")
-        def receive_after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+        def receive_after_cursor_execute(
+            conn, cursor, statement, parameters, context, executemany
+        ):
             total = time.time() - context._query_start_time
             duration_ms = total * 1000
 
@@ -211,16 +227,18 @@ class DatabasePerformanceMonitor:
 
             # Log slow queries (> 100ms)
             if duration_ms > 100:
-                self.slow_queries.append({
-                    'statement': statement,
-                    'duration_ms': duration_ms,
-                    'timestamp': datetime.utcnow()
-                })
+                self.slow_queries.append(
+                    {
+                        "statement": statement,
+                        "duration_ms": duration_ms,
+                        "timestamp": datetime.utcnow(),
+                    }
+                )
 
                 logger.warning(
                     "Slow database query detected",
                     duration_ms=duration_ms,
-                    statement=statement[:200]  # Truncate long statements
+                    statement=statement[:200],  # Truncate long statements
                 )
 
                 # Keep only last 100 slow queries
@@ -234,19 +252,20 @@ class MemoryMonitor:
     @staticmethod
     def get_memory_stats() -> Dict[str, Any]:
         """Get current memory statistics"""
-        import psutil
         import os
+
+        import psutil
 
         process = psutil.Process(os.getpid())
         memory_info = process.memory_info()
 
         return {
-            'rss_mb': memory_info.rss / 1024 / 1024,  # Resident Set Size
-            'vms_mb': memory_info.vms / 1024 / 1024,  # Virtual Memory Size
-            'percent': process.memory_percent(),
-            'available_mb': psutil.virtual_memory().available / 1024 / 1024,
-            'gc_counts': gc.get_count(),
-            'gc_stats': gc.get_stats() if hasattr(gc, 'get_stats') else None
+            "rss_mb": memory_info.rss / 1024 / 1024,  # Resident Set Size
+            "vms_mb": memory_info.vms / 1024 / 1024,  # Virtual Memory Size
+            "percent": process.memory_percent(),
+            "available_mb": psutil.virtual_memory().available / 1024 / 1024,
+            "gc_counts": gc.get_count(),
+            "gc_stats": gc.get_stats() if hasattr(gc, "get_stats") else None,
         }
 
     @staticmethod
@@ -257,9 +276,9 @@ class MemoryMonitor:
         after_counts = gc.get_count()
 
         return {
-            'objects_collected': collected,
-            'before_counts': before_counts,
-            'after_counts': after_counts
+            "objects_collected": collected,
+            "before_counts": before_counts,
+            "after_counts": after_counts,
         }
 
 
@@ -316,8 +335,7 @@ class CacheManager:
         """Remove expired cache entries"""
         current_time = time.time()
         expired_keys = [
-            key for key, expiry in self.ttl_map.items()
-            if current_time > expiry
+            key for key, expiry in self.ttl_map.items() if current_time > expiry
         ]
 
         for key in expired_keys:
@@ -329,9 +347,11 @@ class CacheManager:
         """Get cache statistics"""
         self._cleanup_expired()
         return {
-            'total_keys': len(self.cache),
-            'memory_estimate_mb': len(str(self.cache)) / 1024 / 1024,
-            'hit_rate': getattr(self, '_hit_rate', 0.0)  # Would need to track hits/misses
+            "total_keys": len(self.cache),
+            "memory_estimate_mb": len(str(self.cache)) / 1024 / 1024,
+            "hit_rate": getattr(
+                self, "_hit_rate", 0.0
+            ),  # Would need to track hits/misses
         }
 
 
@@ -345,21 +365,21 @@ class ConnectionPoolMonitor:
         """Record connection pool statistics"""
         try:
             stats = {
-                'size': pool.size(),
-                'checked_in': pool.checkedin(),
-                'checked_out': pool.checkedout(),
-                'overflow': pool.overflow(),
-                'timestamp': datetime.utcnow()
+                "size": pool.size(),
+                "checked_in": pool.checkedin(),
+                "checked_out": pool.checkedout(),
+                "overflow": pool.overflow(),
+                "timestamp": datetime.utcnow(),
             }
 
             self.pool_stats[pool_name] = stats
 
             # Log warnings for pool exhaustion
-            if stats['checked_out'] >= stats['size'] * 0.8:  # 80% utilization
+            if stats["checked_out"] >= stats["size"] * 0.8:  # 80% utilization
                 logger.warning(
                     "High database connection pool utilization",
                     pool_name=pool_name,
-                    utilization=stats['checked_out'] / stats['size'] * 100
+                    utilization=stats["checked_out"] / stats["size"] * 100,
                 )
 
         except Exception as e:
@@ -375,6 +395,7 @@ connection_pool_monitor = ConnectionPoolMonitor()
 # Performance optimization decorators
 def cache_result(ttl: int = 300, key_func: Optional[Callable] = None):
     """Decorator to cache function results"""
+
     def decorator(func):
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):
@@ -413,6 +434,7 @@ def cache_result(ttl: int = 300, key_func: Optional[Callable] = None):
             return result
 
         return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
+
     return decorator
 
 
@@ -431,17 +453,21 @@ def rate_limit(max_calls: int, time_window: int = 60):
 
             # Remove old calls outside time window
             call_times[func_key] = [
-                t for t in call_times[func_key]
-                if current_time - t < time_window
+                t for t in call_times[func_key] if current_time - t < time_window
             ]
 
             # Check rate limit
             if len(call_times[func_key]) >= max_calls:
-                raise Exception(f"Rate limit exceeded: {max_calls} calls per {time_window}s")
+                raise Exception(
+                    f"Rate limit exceeded: {max_calls} calls per {time_window}s"
+                )
 
             # Record this call
             call_times[func_key].append(current_time)
 
             return func(*args, **kwargs)
+
         return wrapper
+
+
     return decorator

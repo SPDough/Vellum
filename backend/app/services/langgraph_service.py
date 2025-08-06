@@ -200,8 +200,12 @@ class TradeValidationNode:
                 "data": {
                     **state.get("data", {}),
                     "validation_results": validation_results,
-                    "validated_trades": [r for r in validation_results if r["status"] == "VALID"],
-                    "failed_trades": [r for r in validation_results if r["status"] == "INVALID"],
+                    "validated_trades": [
+                        r for r in validation_results if r["status"] == "VALID"
+                    ],
+                    "failed_trades": [
+                        r for r in validation_results if r["status"] == "INVALID"
+                    ],
                 },
                 "messages": state.get("messages", [])
                 + [
@@ -214,14 +218,17 @@ class TradeValidationNode:
                 ],
             }
 
-            logger.info(f"Trade validation completed: {len(validation_results)} trades processed")
+            logger.info(
+                f"Trade validation completed: {len(validation_results)} trades processed"
+            )
             return new_state
 
         except Exception as e:
             logger.error(f"Trade validation node failed: {e}")
             return {
                 **state,
-                "errors": state.get("errors", []) + [f"Trade validation failed: {str(e)}"],
+                "errors": state.get("errors", [])
+                + [f"Trade validation failed: {str(e)}"],
             }
 
     async def _validate_trade(self, trade: Dict[str, Any]) -> Dict[str, Any]:
@@ -249,7 +256,7 @@ class TradeValidationNode:
             "trade_id": trade_id,
             "status": "VALID" if not issues else "INVALID",
             "issues": issues,
-            "validated_at": datetime.utcnow().isoformat()
+            "validated_at": datetime.utcnow().isoformat(),
         }
 
 

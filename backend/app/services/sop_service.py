@@ -6,19 +6,27 @@ Integrates with the workflow execution system and provides step-by-step guidance
 """
 
 import asyncio
+import logging
 import uuid
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple
-import logging
+from typing import Any, Dict, List, Optional, Tuple
 
 from app.models.sop import (
-    SOPDocument, SOPStep, SOPExecution, SOPStepExecution,
-    SOPExecutionStatus, SOPStepExecutionStatus, SOPTemplateLibrary,
-    SOPExecutionCreate, SOPExecutionResponse, SOPStepExecutionResponse,
-    SOPExecutionSummary
+    SOPDocument,
+    SOPExecution,
+    SOPExecutionCreate,
+    SOPExecutionResponse,
+    SOPExecutionStatus,
+    SOPExecutionSummary,
+    SOPStep,
+    SOPStepExecution,
+    SOPStepExecutionResponse,
+    SOPStepExecutionStatus,
+    SOPTemplateLibrary,
 )
 
 logger = logging.getLogger(__name__)
+
 
 class SOPExecutionService:
     """Service for managing SOP execution and step tracking"""
@@ -38,7 +46,7 @@ class SOPExecutionService:
         execution_name: str,
         initiated_by: str,
         context_data: Optional[Dict[str, Any]] = None,
-        assigned_to: Optional[str] = None
+        assigned_to: Optional[str] = None,
     ) -> SOPExecutionResponse:
         """Create a new SOP execution instance"""
 
@@ -50,8 +58,7 @@ class SOPExecutionService:
 
         # Calculate estimated duration
         estimated_duration = sum(
-            step.get("estimated_duration_minutes", 0)
-            for step in sop_template["steps"]
+            step.get("estimated_duration_minutes", 0) for step in sop_template["steps"]
         )
 
         # Create execution record
@@ -66,10 +73,12 @@ class SOPExecutionService:
             context_data=context_data or {},
             completed_steps=[],
             failed_steps=[],
-            requires_approval=any(step.get("is_decision_point", False) for step in sop_template["steps"]),
+            requires_approval=any(
+                step.get("is_decision_point", False) for step in sop_template["steps"]
+            ),
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
-            execution_log=[]
+            execution_log=[],
         )
 
         self.active_executions[execution_id] = execution
@@ -78,7 +87,7 @@ class SOPExecutionService:
         await self._log_execution_event(
             execution_id,
             "EXECUTION_CREATED",
-            f"SOP execution created for template {sop_id}"
+            f"SOP execution created for template {sop_id}",
         )
 
         logger.info(f"Created SOP execution {execution_id} for template {sop_id}")
@@ -92,10 +101,12 @@ class SOPExecutionService:
             assigned_to=execution.assigned_to,  # type: ignore
             estimated_duration_minutes=execution.estimated_duration_minutes,  # type: ignore
             requires_approval=execution.requires_approval,  # type: ignore
-            created_at=execution.created_at  # type: ignore
+            created_at=execution.created_at,  # type: ignore
         )
 
-    async def start_sop_execution(self, execution_id: str, started_by: str) -> SOPExecutionResponse:
+    async def start_sop_execution(
+        self, execution_id: str, started_by: str
+    ) -> SOPExecutionResponse:
         """Start executing an SOP"""
 
         if execution_id not in self.active_executions:
@@ -117,9 +128,7 @@ class SOPExecutionService:
         execution.current_step_id = f"step_{first_step['step_number']}"
 
         await self._log_execution_event(
-            execution_id,
-            "EXECUTION_STARTED",
-            f"SOP execution started by {started_by}"
+            execution_id, "EXECUTION_STARTED", f"SOP execution started by {started_by}"
         )
 
         logger.info(f"Started SOP execution {execution_id}")
@@ -132,7 +141,7 @@ class SOPExecutionService:
         step_number: int,
         executed_by: str,
         input_data: Optional[Dict[str, Any]] = None,
-        execution_notes: Optional[str] = None
+        execution_notes: Optional[str] = None,
     ) -> SOPStepExecutionResponse:
         """Execute a single step of an SOP"""
 
@@ -144,8 +153,7 @@ class SOPExecutionService:
 
         # Find the step
         step_template = next(
-            (s for s in sop_template["steps"] if s["step_number"] == step_number),
-            None
+            (s for s in sop_template["steps"] if s["step_number"] == step_number), None
         )
 
         if not step_template:
@@ -167,22 +175,18 @@ class SOPExecutionService:
             input_data=input_data or {},
             execution_notes=execution_notes,
             created_at=start_time,
-            updated_at=start_time
+            updated_at=start_time,
         )
 
         try:
             # Execute step based on type
             if step_template.get("is_automated", False):
                 output_data = await self._execute_automated_step(
-                    step_template,
-                    input_data or {},
-                    execution.context_data
+                    step_template, input_data or {}, execution.context_data
                 )
             else:
                 output_data = await self._execute_manual_step(
-                    step_template,
-                    input_data or {},
-                    execution_notes
+                    step_template, input_data or {}, execution_notes
                 )
 
             # Complete the step
@@ -197,7 +201,9 @@ class SOPExecutionService:
 
             # Update execution progress
             execution.completed_steps.append(step_id)
-            execution.current_step_id = self._get_next_step_id(sop_template, step_number)
+            execution.current_step_id = self._get_next_step_id(
+                sop_template, step_number
+            )
             execution.updated_at = end_time
 
             # Check if execution is complete
@@ -211,7 +217,7 @@ class SOPExecutionService:
             await self._log_execution_event(
                 execution_id,
                 "STEP_COMPLETED",
-                f"Step {step_number} ({step_template['step_title']}) completed by {executed_by}"
+                f"Step {step_number} ({step_template['step_title']}) completed by {executed_by}",
             )
 
             logger.info(f"Completed step {step_number} in execution {execution_id}")
@@ -227,12 +233,12 @@ class SOPExecutionService:
             execution.updated_at = datetime.utcnow()
 
             await self._log_execution_event(
-                execution_id,
-                "STEP_FAILED",
-                f"Step {step_number} failed: {str(e)}"
+                execution_id, "STEP_FAILED", f"Step {step_number} failed: {str(e)}"
             )
 
-            logger.error(f"Step {step_number} failed in execution {execution_id}: {str(e)}")
+            logger.error(
+                f"Step {step_number} failed in execution {execution_id}: {str(e)}"
+            )
 
             raise
 
@@ -248,7 +254,7 @@ class SOPExecutionService:
             execution_notes=step_execution.execution_notes,
             error_message=step_execution.error_message,
             retry_count=step_execution.retry_count,
-            created_at=step_execution.created_at
+            created_at=step_execution.created_at,
         )
 
     async def get_execution_status(self, execution_id: str) -> SOPExecutionResponse:
@@ -263,7 +269,9 @@ class SOPExecutionService:
         # Calculate completion percentage
         total_steps = len(sop_template["steps"])
         completed_steps = len(execution.completed_steps)
-        completion_percentage = (completed_steps / total_steps * 100) if total_steps > 0 else 0
+        completion_percentage = (
+            (completed_steps / total_steps * 100) if total_steps > 0 else 0
+        )
 
         return SOPExecutionResponse(
             id=execution.id,
@@ -280,7 +288,7 @@ class SOPExecutionService:
             completion_percentage=completion_percentage,
             requires_approval=execution.requires_approval,
             approval_status=execution.approval_status,
-            created_at=execution.created_at
+            created_at=execution.created_at,
         )
 
     async def get_execution_summary(self, execution_id: str) -> SOPExecutionSummary:
@@ -295,15 +303,21 @@ class SOPExecutionService:
         total_steps = len(sop_template["steps"])
         completed_steps = len(execution.completed_steps)
         failed_steps = len(execution.failed_steps)
-        progress_percentage = (completed_steps / total_steps * 100) if total_steps > 0 else 0
+        progress_percentage = (
+            (completed_steps / total_steps * 100) if total_steps > 0 else 0
+        )
 
         # Calculate estimated time remaining
         remaining_steps = total_steps - completed_steps
-        avg_step_duration = sum(
-            s.get("estimated_duration_minutes", 0)
-            for s in sop_template["steps"]
-        ) / total_steps if total_steps > 0 else 0
-        estimated_time_remaining = int(remaining_steps * avg_step_duration) if remaining_steps > 0 else None
+        avg_step_duration = (
+            sum(s.get("estimated_duration_minutes", 0) for s in sop_template["steps"])
+            / total_steps
+            if total_steps > 0
+            else 0
+        )
+        estimated_time_remaining = (
+            int(remaining_steps * avg_step_duration) if remaining_steps > 0 else None
+        )
 
         # Check for risk alerts
         risk_alerts = []
@@ -322,7 +336,7 @@ class SOPExecutionService:
             progress_percentage=progress_percentage,
             estimated_time_remaining_minutes=estimated_time_remaining,
             compliance_status="COMPLIANT" if failed_steps == 0 else "NON_COMPLIANT",
-            risk_alerts=risk_alerts
+            risk_alerts=risk_alerts,
         )
 
     async def get_active_executions(self) -> List[SOPExecutionResponse]:
@@ -330,7 +344,10 @@ class SOPExecutionService:
 
         active_executions = []
         for execution_id, execution in self.active_executions.items():
-            if execution.status in [SOPExecutionStatus.IN_PROGRESS, SOPExecutionStatus.REQUIRES_APPROVAL]:
+            if execution.status in [
+                SOPExecutionStatus.IN_PROGRESS,
+                SOPExecutionStatus.REQUIRES_APPROVAL,
+            ]:
                 status_response = await self.get_execution_status(execution_id)
                 active_executions.append(status_response)
 
@@ -340,7 +357,7 @@ class SOPExecutionService:
         self,
         step_template: Dict[str, Any],
         input_data: Dict[str, Any],
-        context_data: Dict[str, Any]
+        context_data: Dict[str, Any],
     ) -> Dict[str, Any]:
         """Execute an automated step using appropriate automation tool"""
 
@@ -355,28 +372,36 @@ class SOPExecutionService:
             "execution_method": "automated",
             "step_result": "completed",
             "processing_time_ms": 100,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
         # Add tool-specific results
         if automation_tool == "Rules Engine":
-            output_data.update({
-                "rules_executed": ["validation_rule_1", "limit_check_rule"],
-                "rules_passed": True,
-                "alerts_generated": []
-            })
+            output_data.update(
+                {
+                    "rules_executed": ["validation_rule_1", "limit_check_rule"],
+                    "rules_passed": True,
+                    "alerts_generated": [],
+                }
+            )
         elif automation_tool == "LangGraph":
-            output_data.update({
-                "agent_response": f"Successfully processed {step_title}",
-                "confidence_score": 0.95,
-                "documents_generated": [f"{step_title.lower().replace(' ', '_')}_document.pdf"]
-            })
+            output_data.update(
+                {
+                    "agent_response": f"Successfully processed {step_title}",
+                    "confidence_score": 0.95,
+                    "documents_generated": [
+                        f"{step_title.lower().replace(' ', '_')}_document.pdf"
+                    ],
+                }
+            )
         elif automation_tool == "Monitoring System":
-            output_data.update({
-                "monitoring_status": "active",
-                "alerts_count": 0,
-                "system_health": "healthy"
-            })
+            output_data.update(
+                {
+                    "monitoring_status": "active",
+                    "alerts_count": 0,
+                    "system_health": "healthy",
+                }
+            )
 
         logger.info(f"Automated step executed: {step_title} using {automation_tool}")
         return output_data
@@ -385,7 +410,7 @@ class SOPExecutionService:
         self,
         step_template: Dict[str, Any],
         input_data: Dict[str, Any],
-        execution_notes: Optional[str]
+        execution_notes: Optional[str],
     ) -> Dict[str, Any]:
         """Execute a manual step with user guidance"""
 
@@ -395,32 +420,39 @@ class SOPExecutionService:
             "execution_method": "manual",
             "step_result": "completed",
             "user_notes": execution_notes or "Step completed manually",
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }
 
         # Add decision point results if applicable
         if step_template.get("is_decision_point", False):
-            output_data.update({
-                "decision_made": "proceed",
-                "decision_rationale": execution_notes or "Standard processing",
-                "requires_review": "True"
-            })
+
+            output_data.update(
+                {
+                    "decision_made": "proceed",
+                    "decision_rationale": execution_notes or "Standard processing",
+                    "requires_review": True,
+                }
+            )
 
         logger.info(f"Manual step executed: {step_title}")
         return output_data
 
-    def _get_next_step_id(self, sop_template: Dict[str, Any], current_step_number: int) -> Optional[str]:
+    def _get_next_step_id(
+        self, sop_template: Dict[str, Any], current_step_number: int
+    ) -> Optional[str]:
         """Get the ID of the next step to execute"""
 
         next_step_number = current_step_number + 1
         next_step = next(
             (s for s in sop_template["steps"] if s["step_number"] == next_step_number),
-            None
+            None,
         )
 
         return f"step_{next_step['step_number']}" if next_step else None
 
-    async def _log_execution_event(self, execution_id: str, event_type: str, message: str):
+    async def _log_execution_event(
+        self, execution_id: str, event_type: str, message: str
+    ):
         """Log an event in the execution log"""
 
         if execution_id in self.active_executions:
@@ -428,17 +460,20 @@ class SOPExecutionService:
             if execution.execution_log is None:
                 execution.execution_log = []
 
-            execution.execution_log.append({
-                "timestamp": datetime.utcnow().isoformat(),
-                "event_type": event_type,
-                "message": message
-            })
+            execution.execution_log.append(
+                {
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "event_type": event_type,
+                    "message": message,
+                }
+            )
 
             execution.updated_at = datetime.utcnow()
 
 
 # Global service instance
 _sop_service = None
+
 
 def get_sop_service() -> SOPExecutionService:
     """Get the global SOP service instance"""

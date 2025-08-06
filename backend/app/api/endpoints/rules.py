@@ -7,30 +7,44 @@ compliance checks, and settlement processing.
 """
 
 from datetime import datetime
-from typing import Dict, List, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
-from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
 
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
+from app.api.endpoints.auth_unified import get_current_user
 from app.core.database import get_db
-from app.services.drools_service import get_drools_service, DroolsService, RuleFact, RuleResult
 from app.models.trade import Trade
 from app.models.user import User
-from app.api.endpoints.auth_unified import get_current_user
+from app.services.drools_service import (
+    DroolsService,
+    RuleFact,
+    RuleResult,
+    get_drools_service,
+)
 
 router = APIRouter(prefix="/rules", tags=["Rules Engine"])
 
 # Pydantic models for request/response
 
+
 class RuleExecutionRequest(BaseModel):
     """Request model for rule execution"""
+
     rule_set: str = Field(..., description="Name of the rule set to execute")
-    facts: List[Dict[str, Any]] = Field(..., description="Facts to evaluate against rules")
-    timeout_seconds: int = Field(default=30, ge=1, le=300, description="Execution timeout")
+    facts: List[Dict[str, Any]] = Field(
+        ..., description="Facts to evaluate against rules"
+    )
+    timeout_seconds: int = Field(
+        default=30, ge=1, le=300, description="Execution timeout"
+    )
+
 
 class RuleExecutionResponse(BaseModel):
     """Response model for rule execution results"""
+
     rule_name: str
     status: str
     facts_processed: int
@@ -39,38 +53,57 @@ class RuleExecutionResponse(BaseModel):
     execution_time_ms: float
     error_message: Optional[str] = None
 
+
 class TradeValidationRequest(BaseModel):
     """Request model for trade validation"""
+
     trade_id: int = Field(..., description="ID of the trade to validate")
+
 
 class RiskCheckRequest(BaseModel):
     """Request model for risk limit checking"""
+
     trade_id: int = Field(..., description="ID of the trade to check")
-    portfolio_data: Dict[str, Any] = Field(..., description="Portfolio positions and limits")
+    portfolio_data: Dict[str, Any] = Field(
+        ..., description="Portfolio positions and limits"
+    )
+
 
 class ComplianceCheckRequest(BaseModel):
     """Request model for compliance checking"""
+
     trade_id: int = Field(..., description="ID of the trade to check")
-    client_data: Dict[str, Any] = Field(..., description="Client information and compliance status")
+    client_data: Dict[str, Any] = Field(
+        ..., description="Client information and compliance status"
+    )
+
 
 class SettlementProcessingRequest(BaseModel):
     """Request model for settlement processing"""
+
     trade_id: int = Field(..., description="ID of the trade to settle")
-    settlement_data: Dict[str, Any] = Field(..., description="Settlement instructions and constraints")
+    settlement_data: Dict[str, Any] = Field(
+        ..., description="Settlement instructions and constraints"
+    )
+
 
 class RuleDeploymentRequest(BaseModel):
     """Request model for rule deployment"""
+
     rule_name: str = Field(..., description="Name of the rule set")
     rule_content: str = Field(..., description="DRL rule content")
 
+
 class RuleValidationRequest(BaseModel):
     """Request model for rule validation"""
+
     rule_content: str = Field(..., description="DRL rule content to validate")
+
 
 @router.get("/status", response_model=Dict[str, Any])
 async def get_rules_status(
     drools_service: DroolsService = Depends(get_drools_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Get status of the rules engine and deployed rules
@@ -85,19 +118,21 @@ async def get_rules_status(
                 "engine_status": "online" if drools_service.connected else "offline",
                 "timestamp": datetime.now().isoformat(),
                 "user": current_user.email,
-                "rules_status": status
+                "rules_status": status,
             }
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get rules status: {str(e)}"
+
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get rules status: {str(e)}",
         )
+
 
 @router.post("/execute", response_model=RuleExecutionResponse)
 async def execute_rules(
     request: RuleExecutionRequest,
     drools_service: DroolsService = Depends(get_drools_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Execute rules against provided facts
@@ -116,7 +151,7 @@ async def execute_rules(
                 fact_type=fact_data.get("fact_type", "Unknown"),
                 fact_id=fact_data.get("fact_id", f"fact_{i}"),
                 data=fact_data.get("data", {}),
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
             rule_facts.append(rule_fact)
 
@@ -124,7 +159,7 @@ async def execute_rules(
             result = await drools_service.execute_rules(
                 rule_set=request.rule_set,
                 facts=rule_facts,
-                timeout_seconds=request.timeout_seconds
+                timeout_seconds=request.timeout_seconds,
             )
 
         return RuleExecutionResponse(**result.to_dict())
@@ -132,15 +167,16 @@ async def execute_rules(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Rule execution failed: {str(e)}"
+            detail=f"Rule execution failed: {str(e)}",
         )
+
 
 @router.post("/validate-trade", response_model=RuleExecutionResponse)
 async def validate_trade(
     request: TradeValidationRequest,
     db: Session = Depends(get_db),
     drools_service: DroolsService = Depends(get_drools_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Execute trade validation rules against a specific trade
@@ -157,7 +193,7 @@ async def validate_trade(
         if not trade:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Trade {request.trade_id} not found"
+                detail=f"Trade {request.trade_id} not found",
             )
 
         async with drools_service:
@@ -170,15 +206,16 @@ async def validate_trade(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Trade validation failed: {str(e)}"
+            detail=f"Trade validation failed: {str(e)}",
         )
+
 
 @router.post("/check-risk", response_model=RuleExecutionResponse)
 async def check_risk_limits(
     request: RiskCheckRequest,
     db: Session = Depends(get_db),
     drools_service: DroolsService = Depends(get_drools_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Execute risk management rules for a trade
@@ -195,11 +232,13 @@ async def check_risk_limits(
         if not trade:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Trade {request.trade_id} not found"
+                detail=f"Trade {request.trade_id} not found",
             )
 
         async with drools_service:
-            result = await drools_service.check_risk_limits(trade, request.portfolio_data)
+            result = await drools_service.check_risk_limits(
+                trade, request.portfolio_data
+            )
 
         return RuleExecutionResponse(**result.to_dict())
 
@@ -208,15 +247,16 @@ async def check_risk_limits(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Risk check failed: {str(e)}"
+            detail=f"Risk check failed: {str(e)}",
         )
+
 
 @router.post("/check-compliance", response_model=RuleExecutionResponse)
 async def check_compliance(
     request: ComplianceCheckRequest,
     db: Session = Depends(get_db),
     drools_service: DroolsService = Depends(get_drools_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Execute compliance rules for a trade
@@ -233,7 +273,7 @@ async def check_compliance(
         if not trade:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Trade {request.trade_id} not found"
+                detail=f"Trade {request.trade_id} not found",
             )
 
         async with drools_service:
@@ -246,15 +286,16 @@ async def check_compliance(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Compliance check failed: {str(e)}"
+            detail=f"Compliance check failed: {str(e)}",
         )
+
 
 @router.post("/process-settlement", response_model=RuleExecutionResponse)
 async def process_settlement(
     request: SettlementProcessingRequest,
     db: Session = Depends(get_db),
     drools_service: DroolsService = Depends(get_drools_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Execute settlement processing rules
@@ -271,11 +312,13 @@ async def process_settlement(
         if not trade:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Trade {request.trade_id} not found"
+                detail=f"Trade {request.trade_id} not found",
             )
 
         async with drools_service:
-            result = await drools_service.process_settlement_rules(trade, request.settlement_data)
+            result = await drools_service.process_settlement_rules(
+                trade, request.settlement_data
+            )
 
         return RuleExecutionResponse(**result.to_dict())
 
@@ -284,14 +327,15 @@ async def process_settlement(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Settlement processing failed: {str(e)}"
+            detail=f"Settlement processing failed: {str(e)}",
         )
+
 
 @router.post("/deploy")
 async def deploy_rules(
     request: RuleDeploymentRequest,
     drools_service: DroolsService = Depends(get_drools_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Deploy new rules to the Drools runtime
@@ -307,13 +351,12 @@ async def deploy_rules(
         if current_user.role not in ["admin", "manager"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions to deploy rules"
+                detail="Insufficient permissions to deploy rules",
             )
 
         async with drools_service:
             success = await drools_service.deploy_rules(
-                rule_content=request.rule_content,
-                rule_name=request.rule_name
+                rule_content=request.rule_content, rule_name=request.rule_name
             )
 
         if success:
@@ -321,12 +364,12 @@ async def deploy_rules(
                 "status": "success",
                 "message": f"Rules '{request.rule_name}' deployed successfully",
                 "deployed_by": current_user.email,
-                "deployment_time": datetime.now().isoformat()
+                "deployment_time": datetime.now().isoformat(),
             }
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Rule deployment failed"
+                detail="Rule deployment failed",
             )
 
     except HTTPException:
@@ -334,15 +377,16 @@ async def deploy_rules(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Rule deployment error: {str(e)}"
+            detail=f"Rule deployment error: {str(e)}",
         )
+
 
 @router.post("/deploy-file")
 async def deploy_rules_from_file(
     rule_name: str,
     file: UploadFile = File(..., description="DRL rule file"),
     drools_service: DroolsService = Depends(get_drools_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Deploy rules from uploaded DRL file
@@ -359,24 +403,23 @@ async def deploy_rules_from_file(
         if current_user.role not in ["admin", "manager"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions to deploy rules"
+                detail="Insufficient permissions to deploy rules",
             )
 
         # Validate file type
-        if not file.filename.endswith('.drl'):
+        if not file.filename.endswith(".drl"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="File must be a .drl file"
+                detail="File must be a .drl file",
             )
 
         # Read file content
         rule_content = await file.read()
-        rule_content_str = rule_content.decode('utf-8')
+        rule_content_str = rule_content.decode("utf-8")
 
         async with drools_service:
             success = await drools_service.deploy_rules(
-                rule_content=rule_content_str,
-                rule_name=rule_name
+                rule_content=rule_content_str, rule_name=rule_name
             )
 
         if success:
@@ -384,12 +427,12 @@ async def deploy_rules_from_file(
                 "status": "success",
                 "message": f"Rules '{rule_name}' deployed from file '{file.filename}'",
                 "deployed_by": current_user.email,
-                "deployment_time": datetime.now().isoformat()
+                "deployment_time": datetime.now().isoformat(),
             }
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Rule deployment failed"
+                detail="Rule deployment failed",
             )
 
     except HTTPException:
@@ -397,14 +440,15 @@ async def deploy_rules_from_file(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Rule deployment error: {str(e)}"
+            detail=f"Rule deployment error: {str(e)}",
         )
+
 
 @router.post("/validate", response_model=Dict[str, Any])
 async def validate_rule_syntax(
     request: RuleValidationRequest,
     drools_service: DroolsService = Depends(get_drools_service),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Validate DRL rule syntax without deploying
@@ -417,24 +461,25 @@ async def validate_rule_syntax(
     """
     try:
         async with drools_service:
-            validation_result = await drools_service.validate_rule_syntax(request.rule_content)
+            validation_result = await drools_service.validate_rule_syntax(
+                request.rule_content
+            )
 
         return {
             **validation_result,
             "validated_by": current_user.email,
-            "validation_time": datetime.now().isoformat()
+            "validation_time": datetime.now().isoformat(),
         }
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Rule validation failed: {str(e)}"
+            detail=f"Rule validation failed: {str(e)}",
         )
 
+
 @router.get("/templates")
-async def get_rule_templates(
-    current_user: User = Depends(get_current_user)
-):
+async def get_rule_templates(current_user: User = Depends(get_current_user)):
     """
     Get predefined rule templates for custodian banking operations
 
@@ -467,7 +512,7 @@ rule "Settlement Date Validation"
         $trade.setStatus("VALIDATION_FAILED");
         insert(new ValidationError("Invalid settlement date", $trade.getTradeId()));
 end
-                """
+                """,
             },
             "risk-management": {
                 "name": "Risk Management Rules",
@@ -495,7 +540,7 @@ rule "Concentration Risk"
         $trade.setRequiresRiskReview(true);
         insert(new RiskAlert("Concentration limit exceeded", $trade.getTradeId()));
 end
-                """
+                """,
             },
             "compliance-checks": {
                 "name": "Compliance Rules",
@@ -523,28 +568,26 @@ rule "AML Screening"
         $trade.setRequiresAmlReview(true);
         insert(new ComplianceAlert("AML review required", $trade.getTradeId()));
 end
-                """
-            }
+                """,
+            },
         }
 
         return {
             "templates": templates,
             "total_templates": len(templates),
             "requested_by": current_user.email,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get rule templates: {str(e)}"
+            detail=f"Failed to get rule templates: {str(e)}",
         )
 
 
 @router.get("/catalog")
-async def get_rules_catalog(
-    current_user: User = Depends(get_current_user)
-):
+async def get_rules_catalog(current_user: User = Depends(get_current_user)):
     """
     Get catalog of all available Drools rules
 
@@ -562,18 +605,25 @@ async def get_rules_catalog(
                         "description": "Flags trades exceeding $1M for approval",
                         "salience": 100,
                         "trigger_condition": "tradeValue > $1,000,000",
-                        "actions": ["Set requires approval", "Set priority to HIGH", "Create alert"],
+                        "actions": [
+                            "Set requires approval",
+                            "Set priority to HIGH",
+                            "Create alert",
+                        ],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "93-106"
+                        "line_range": "93-106",
                     },
                     {
                         "name": "Settlement Date Validation",
                         "description": "Ensures settlement date is not before trade date",
                         "salience": 90,
                         "trigger_condition": "settlementDate < tradeDate",
-                        "actions": ["Set status to VALIDATION_FAILED", "Create validation error"],
+                        "actions": [
+                            "Set status to VALIDATION_FAILED",
+                            "Create validation error",
+                        ],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "108-119"
+                        "line_range": "108-119",
                     },
                     {
                         "name": "Weekend Settlement Check",
@@ -582,18 +632,21 @@ async def get_rules_catalog(
                         "trigger_condition": "settlementDate on weekend",
                         "actions": ["Create weekend settlement alert"],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "121-133"
+                        "line_range": "121-133",
                     },
                     {
                         "name": "Zero Price Validation",
                         "description": "Validates trade price is greater than zero",
                         "salience": 85,
                         "trigger_condition": "price <= 0",
-                        "actions": ["Set status to VALIDATION_FAILED", "Create validation error"],
+                        "actions": [
+                            "Set status to VALIDATION_FAILED",
+                            "Create validation error",
+                        ],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "135-146"
-                    }
-                ]
+                        "line_range": "135-146",
+                    },
+                ],
             },
             "risk_management": {
                 "category": "Risk Management",
@@ -604,29 +657,40 @@ async def get_rules_catalog(
                         "description": "Monitors portfolio exposure against limits",
                         "salience": 75,
                         "trigger_condition": "totalExposure + tradeValue > exposureLimit",
-                        "actions": ["Set status to RISK_LIMIT_EXCEEDED", "Require risk review", "Create risk alert"],
+                        "actions": [
+                            "Set status to RISK_LIMIT_EXCEEDED",
+                            "Require risk review",
+                            "Create risk alert",
+                        ],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "152-169"
+                        "line_range": "152-169",
                     },
                     {
                         "name": "Concentration Risk Check",
                         "description": "Monitors security concentration limits",
                         "salience": 70,
                         "trigger_condition": "securityExposure > concentrationLimit",
-                        "actions": ["Require risk review", "Create concentration risk alert"],
+                        "actions": [
+                            "Require risk review",
+                            "Create concentration risk alert",
+                        ],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "171-185"
+                        "line_range": "171-185",
                     },
                     {
                         "name": "Overnight Risk Limit",
                         "description": "Special approval for large trades outside business hours",
                         "salience": 65,
                         "trigger_condition": "tradeValue > $5M AND outside business hours",
-                        "actions": ["Require approval", "Set priority to HIGH", "Create overnight risk alert"],
+                        "actions": [
+                            "Require approval",
+                            "Set priority to HIGH",
+                            "Create overnight risk alert",
+                        ],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "187-201"
-                    }
-                ]
+                        "line_range": "187-201",
+                    },
+                ],
             },
             "compliance": {
                 "category": "Compliance & KYC",
@@ -637,9 +701,12 @@ async def get_rules_catalog(
                         "description": "Verifies client KYC approval status",
                         "salience": 95,
                         "trigger_condition": "client kycStatus != APPROVED",
-                        "actions": ["Set status to COMPLIANCE_HOLD", "Create compliance alert"],
+                        "actions": [
+                            "Set status to COMPLIANCE_HOLD",
+                            "Create compliance alert",
+                        ],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "207-220"
+                        "line_range": "207-220",
                     },
                     {
                         "name": "AML High Risk Screening",
@@ -648,7 +715,7 @@ async def get_rules_catalog(
                         "trigger_condition": "tradeValue > $10K AND amlRiskRating = HIGH",
                         "actions": ["Require AML review", "Create compliance alert"],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "222-235"
+                        "line_range": "222-235",
                     },
                     {
                         "name": "Stale KYC Review",
@@ -657,18 +724,21 @@ async def get_rules_catalog(
                         "trigger_condition": "lastReviewDate > 1 year ago",
                         "actions": ["Require approval", "Create stale KYC alert"],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "237-251"
+                        "line_range": "237-251",
                     },
                     {
                         "name": "Sanctioned Country Check",
                         "description": "Blocks trades from sanctioned countries",
                         "salience": 100,
                         "trigger_condition": "client from sanctioned country",
-                        "actions": ["Set status to COMPLIANCE_BLOCKED", "Create sanctions alert"],
+                        "actions": [
+                            "Set status to COMPLIANCE_BLOCKED",
+                            "Create sanctions alert",
+                        ],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "253-267"
-                    }
-                ]
+                        "line_range": "253-267",
+                    },
+                ],
             },
             "settlement": {
                 "category": "Settlement & Operations",
@@ -679,9 +749,12 @@ async def get_rules_catalog(
                         "description": "Verifies sufficient cash for settlement",
                         "salience": 70,
                         "trigger_condition": "availableCash < tradeValue",
-                        "actions": ["Require approval", "Create insufficient cash alert"],
+                        "actions": [
+                            "Require approval",
+                            "Create insufficient cash alert",
+                        ],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "273-288"
+                        "line_range": "273-288",
                     },
                     {
                         "name": "Settlement Cutoff Time",
@@ -690,18 +763,21 @@ async def get_rules_catalog(
                         "trigger_condition": "currentTime > cutoffTime",
                         "actions": ["Create settlement cutoff alert"],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "290-303"
+                        "line_range": "290-303",
                     },
                     {
                         "name": "Corporate Action Pending",
                         "description": "Identifies securities with pending corporate actions",
                         "salience": 75,
                         "trigger_condition": "hasPendingCorporateAction = true",
-                        "actions": ["Require approval", "Create corporate action alert"],
+                        "actions": [
+                            "Require approval",
+                            "Create corporate action alert",
+                        ],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "305-318"
-                    }
-                ]
+                        "line_range": "305-318",
+                    },
+                ],
             },
             "market_timing": {
                 "category": "Market Hours & Timing",
@@ -714,7 +790,7 @@ async def get_rules_catalog(
                         "trigger_condition": "!isMarketOpen",
                         "actions": ["Create outside market hours alert"],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "324-336"
+                        "line_range": "324-336",
                     },
                     {
                         "name": "High Frequency Trading Detection",
@@ -723,9 +799,9 @@ async def get_rules_catalog(
                         "trigger_condition": ">=10 trades per day from same counterparty",
                         "actions": ["Require approval", "Create HFT detection alert"],
                         "file": "custodian-banking-rules.drl",
-                        "line_range": "338-355"
-                    }
-                ]
+                        "line_range": "338-355",
+                    },
+                ],
             },
             "pricing": {
                 "category": "Pricing & Valuation",
@@ -736,21 +812,28 @@ async def get_rules_catalog(
                         "description": "Calculates equity prices using market data and adjustments",
                         "salience": 50,
                         "trigger_condition": "Equity pricing request with market data",
-                        "actions": ["Calculate base price", "Apply adjustments", "Set calculated price"],
+                        "actions": [
+                            "Calculate base price",
+                            "Apply adjustments",
+                            "Set calculated price",
+                        ],
                         "file": "equity-pricing-rules.drl",
-                        "line_range": "1-45"
+                        "line_range": "1-45",
                     },
                     {
                         "name": "Fair Value Adjustment",
                         "description": "Applies fair value adjustments to equity prices",
                         "salience": 40,
                         "trigger_condition": "Price variance > threshold",
-                        "actions": ["Calculate adjustment", "Apply fair value correction"],
+                        "actions": [
+                            "Calculate adjustment",
+                            "Apply fair value correction",
+                        ],
                         "file": "equity-pricing-rules.drl",
-                        "line_range": "47-65"
-                    }
-                ]
-            }
+                        "line_range": "47-65",
+                    },
+                ],
+            },
         }
 
         # Calculate summary statistics
@@ -762,26 +845,25 @@ async def get_rules_catalog(
             "summary": {
                 "total_rules": total_rules,
                 "total_categories": categories_count,
-                "categories": list(catalog.keys())
+                "categories": list(catalog.keys()),
             },
             "metadata": {
                 "requested_by": current_user.email,
                 "timestamp": datetime.now().isoformat(),
-                "version": "1.0.0"
-            }
+                "version": "1.0.0",
+            },
         }
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get rules catalog: {str(e)}"
+            detail=f"Failed to get rules catalog: {str(e)}",
         )
 
 
 @router.get("/catalog/{category}")
 async def get_rules_by_category(
-    category: str,
-    current_user: User = Depends(get_current_user)
+    category: str, current_user: User = Depends(get_current_user)
 ):
     """
     Get rules for a specific category
@@ -800,7 +882,7 @@ async def get_rules_by_category(
         if category not in catalog:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Category '{category}' not found"
+                detail=f"Category '{category}' not found",
             )
 
         return {
@@ -808,7 +890,7 @@ async def get_rules_by_category(
             "rules": catalog[category],
             "count": len(catalog[category]["rules"]),
             "requested_by": current_user.email,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     except HTTPException:
@@ -816,7 +898,7 @@ async def get_rules_by_category(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get category rules: {str(e)}"
+            detail=f"Failed to get category rules: {str(e)}",
         )
 
 
@@ -824,7 +906,7 @@ async def get_rules_by_category(
 async def search_rules(
     query: str,
     category: Optional[str] = None,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Search rules by name, description, or trigger condition
@@ -851,18 +933,18 @@ async def search_rules(
 
             for rule in cat_data["rules"]:
                 # Search in name, description, and trigger condition
-                searchable_text = " ".join([
-                    rule["name"],
-                    rule["description"],
-                    rule["trigger_condition"]
-                ]).lower()
+                searchable_text = " ".join(
+                    [rule["name"], rule["description"], rule["trigger_condition"]]
+                ).lower()
 
                 if query_lower in searchable_text:
-                    matching_rules.append({
-                        **rule,
-                        "category": cat_name,
-                        "category_name": cat_data["category"]
-                    })
+                    matching_rules.append(
+                        {
+                            **rule,
+                            "category": cat_name,
+                            "category_name": cat_data["category"],
+                        }
+                    )
 
         return {
             "query": query,
@@ -870,11 +952,12 @@ async def search_rules(
             "results": matching_rules,
             "count": len(matching_rules),
             "searched_by": current_user.email,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Search failed: {str(e)}"
+
+            detail=f"Search failed: {str(e)}",
         )

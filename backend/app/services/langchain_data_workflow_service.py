@@ -5,15 +5,17 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
-from langchain.agents import AgentExecutor, create_pandas_dataframe_agent, initialize_agent
+from langchain.agents import (
+    AgentExecutor,
+    create_pandas_dataframe_agent,
+    initialize_agent,
+)
 from langchain.agents.agent_types import AgentType
 from langchain.schema import BaseMessage, HumanMessage, SystemMessage
 from langchain.sql_database import SQLDatabase
 from langchain_community.agent_toolkits import create_sql_agent
 from langchain_openai import ChatOpenAI
 from sqlalchemy import create_engine
-
-from app.tools.docker_python_repl import create_docker_python_repl_tool
 
 from app.models.data_source import (
     DataSourceConfiguration,
@@ -22,6 +24,7 @@ from app.models.data_source import (
 )
 from app.services.base import BaseService
 from app.services.data_source_service import DataSourceService
+from app.tools.docker_python_repl import create_docker_python_repl_tool
 
 logger = logging.getLogger(__name__)
 
@@ -29,33 +32,16 @@ logger = logging.getLogger(__name__)
 class LangchainDataWorkflowService(BaseService):
     """Service for executing data workflows using Langchain."""
 
-    
-    # Implement abstract methods from BaseService
-    async def create(self, data: Any, context: Optional[Any] = None) -> Any:
-        """Create method required by BaseService"""
-        raise NotImplementedError("Create not implemented for LangchainDataWorkflowService")
-    
-    async def get_by_id(self, entity_id: str, context: Optional[Any] = None) -> Any:
-        """Get by ID method required by BaseService"""
-        raise NotImplementedError("Get by ID not implemented for LangchainDataWorkflowService")
-    
-    async def update(self, entity_id: str, data: Any, context: Optional[Any] = None) -> Any:
-        """Update method required by BaseService"""
-        raise NotImplementedError("Update not implemented for LangchainDataWorkflowService")
-    
-    async def delete(self, entity_id: str, context: Optional[Any] = None) -> Any:
-        """Delete method required by BaseService"""
-        raise NotImplementedError("Delete not implemented for LangchainDataWorkflowService")
-    """Service for executing data workflows using Langchain."""
-    
-    def __init__(self, data_source_service: DataSourceService, openai_api_key: str, repl_service_url: str = "http://localhost:8001"):
+
+    def __init__(
+        self,
+        data_source_service: DataSourceService,
+        openai_api_key: str,
+        repl_service_url: str = "http://localhost:8001",
+    ):
         self.data_source_service = data_source_service
         self.repl_service_url = repl_service_url
-        self.llm = ChatOpenAI(
-            api_key=openai_api_key,
-            model="gpt-4",
-            temperature=0
-        )
+        self.llm = ChatOpenAI(api_key=openai_api_key, model="gpt-4", temperature=0)
         # Initialize Docker Python REPL tool
         self.python_repl_tool = create_docker_python_repl_tool(repl_service_url)
 
@@ -63,7 +49,7 @@ class LangchainDataWorkflowService(BaseService):
         self,
         config: DataSourceConfiguration,
         workflow_prompt: str,
-        custom_instructions: Optional[str] = None
+        custom_instructions: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Execute a data workflow using Langchain agents.
@@ -80,10 +66,11 @@ class LangchainDataWorkflowService(BaseService):
             start_time = datetime.utcnow()
 
             # Pull data from source
-            logger.info(f"Pulling data from {config.data_source_type} source: {config.name}")
+            logger.info(
+                f"Pulling data from {config.data_source_type} source: {config.name}"
+            )
             raw_data = await self.data_source_service._pull_data(
-                DataSourceType(config.data_source_type),
-                config.source_config
+                DataSourceType(config.data_source_type), config.source_config
             )
 
             if not raw_data:
@@ -99,7 +86,9 @@ class LangchainDataWorkflowService(BaseService):
 
             # Apply basic processing if configured
             if config.processing_config:
-                df = await self.data_source_service._process_data(df, config.processing_config)
+                df = await self.data_source_service._process_data(
+                    df, config.processing_config
+                )
                 logger.info(f"After processing: {len(df)} records")
 
             # Execute Langchain workflow
@@ -113,11 +102,13 @@ class LangchainDataWorkflowService(BaseService):
             return {
                 "success": True,
                 "execution_time_seconds": execution_time,
-                "input_records": len(raw_data) if isinstance(raw_data, list) else len(raw_data),
+                "input_records": (
+                    len(raw_data) if isinstance(raw_data, list) else len(raw_data)
+                ),
                 "processed_records": len(df),
                 "workflow_results": workflow_results,
                 "data_schema": {col: str(dtype) for col, dtype in df.dtypes.items()},
-                "sample_data": df.head(10).to_dict('records') if not df.empty else [],
+                "sample_data": df.head(10).to_dict("records") if not df.empty else [],
             }
 
         except Exception as e:
@@ -125,14 +116,16 @@ class LangchainDataWorkflowService(BaseService):
             return {
                 "success": False,
                 "error_message": str(e),
-                "execution_time_seconds": (datetime.utcnow() - start_time).total_seconds(),
+                "execution_time_seconds": (
+                    datetime.utcnow() - start_time
+                ).total_seconds(),
             }
 
     async def execute_data_workflow_with_docker_repl(
         self,
         config: DataSourceConfiguration,
         workflow_prompt: str,
-        custom_instructions: Optional[str] = None
+        custom_instructions: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Execute a data workflow using Docker Python REPL for secure code execution.
@@ -146,10 +139,11 @@ class LangchainDataWorkflowService(BaseService):
                 raise ValueError("Docker Python REPL service is not available")
 
             # Pull data from source
-            logger.info(f"Pulling data from {config.data_source_type} source: {config.name}")
+            logger.info(
+                f"Pulling data from {config.data_source_type} source: {config.name}"
+            )
             raw_data = await self.data_source_service._pull_data(
-                DataSourceType(config.data_source_type),
-                config.source_config
+                DataSourceType(config.data_source_type), config.source_config
             )
 
             if not raw_data:
@@ -165,7 +159,9 @@ class LangchainDataWorkflowService(BaseService):
 
             # Apply basic processing if configured
             if config.processing_config:
-                df = await self.data_source_service._process_data(df, config.processing_config)
+                df = await self.data_source_service._process_data(
+                    df, config.processing_config
+                )
                 logger.info(f"After processing: {len(df)} records")
 
             # Execute workflow using Docker REPL agent
@@ -179,12 +175,14 @@ class LangchainDataWorkflowService(BaseService):
             return {
                 "success": True,
                 "execution_time_seconds": execution_time,
-                "input_records": len(raw_data) if isinstance(raw_data, list) else len(raw_data),
+                "input_records": (
+                    len(raw_data) if isinstance(raw_data, list) else len(raw_data)
+                ),
                 "processed_records": len(df),
                 "workflow_results": workflow_results,
                 "data_schema": {col: str(dtype) for col, dtype in df.dtypes.items()},
-                "sample_data": df.head(10).to_dict('records') if not df.empty else [],
-                "execution_method": "docker_repl"
+                "sample_data": df.head(10).to_dict("records") if not df.empty else [],
+                "execution_method": "docker_repl",
             }
 
         except Exception as e:
@@ -192,15 +190,17 @@ class LangchainDataWorkflowService(BaseService):
             return {
                 "success": False,
                 "error_message": str(e),
-                "execution_time_seconds": (datetime.utcnow() - start_time).total_seconds(),
-                "execution_method": "docker_repl"
+                "execution_time_seconds": (
+                    datetime.utcnow() - start_time
+                ).total_seconds(),
+                "execution_method": "docker_repl",
             }
 
     async def _execute_docker_repl_workflow(
         self,
         df: pd.DataFrame,
         workflow_prompt: str,
-        custom_instructions: Optional[str] = None
+        custom_instructions: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Execute workflow using Docker Python REPL agent."""
 
@@ -214,15 +214,15 @@ class LangchainDataWorkflowService(BaseService):
             verbose=True,
             return_intermediate_steps=True,
             max_iterations=10,
-            max_execution_time=300  # 5 minutes max
+            max_execution_time=300,  # 5 minutes max
         )
 
         # Convert DataFrame to JSON for injection into REPL
-        df_json = df.to_json(orient='records')
+        df_json = df.to_json(orient="records")
         df_info = {
-            'columns': list(df.columns),
-            'shape': df.shape,
-            'dtypes': {col: str(dtype) for col, dtype in df.dtypes.items()}
+            "columns": list(df.columns),
+            "shape": df.shape,
+            "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
         }
 
         # Build comprehensive prompt
@@ -270,16 +270,13 @@ class LangchainDataWorkflowService(BaseService):
 
         try:
             # Execute the agent
-            result = await asyncio.to_thread(
-                agent.invoke,
-                {"input": full_prompt}
-            )
+            result = await asyncio.to_thread(agent.invoke, {"input": full_prompt})
 
             return {
                 "agent_response": result.get("output", ""),
                 "intermediate_steps": result.get("intermediate_steps", []),
                 "execution_successful": True,
-                "tool_used": "docker_python_repl"
+                "tool_used": "docker_python_repl",
             }
 
         except Exception as e:
@@ -289,14 +286,14 @@ class LangchainDataWorkflowService(BaseService):
                 "intermediate_steps": [],
                 "execution_successful": False,
                 "error": str(e),
-                "tool_used": "docker_python_repl"
+                "tool_used": "docker_python_repl",
             }
 
     async def _execute_langchain_workflow(
         self,
         df: pd.DataFrame,
         workflow_prompt: str,
-        custom_instructions: Optional[str] = None
+        custom_instructions: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Execute the main Langchain workflow on the data."""
 
@@ -307,7 +304,7 @@ class LangchainDataWorkflowService(BaseService):
             agent_type=AgentType.OPENAI_FUNCTIONS,
             verbose=True,
             allow_dangerous_code=True,  # Enable for data analysis
-            return_intermediate_steps=True
+            return_intermediate_steps=True,
         )
 
         # Build the prompt
@@ -336,15 +333,12 @@ class LangchainDataWorkflowService(BaseService):
 
         try:
             # Execute the agent
-            result = await asyncio.to_thread(
-                agent.invoke,
-                {"input": full_prompt}
-            )
+            result = await asyncio.to_thread(agent.invoke, {"input": full_prompt})
 
             return {
                 "agent_response": result.get("output", ""),
                 "intermediate_steps": result.get("intermediate_steps", []),
-                "execution_successful": True
+                "execution_successful": True,
             }
 
         except Exception as e:
@@ -353,14 +347,14 @@ class LangchainDataWorkflowService(BaseService):
                 "agent_response": f"Error during analysis: {str(e)}",
                 "intermediate_steps": [],
                 "execution_successful": False,
-                "error": str(e)
+                "error": str(e),
             }
 
     async def create_sql_workflow(
         self,
         connection_string: str,
         query_prompt: str,
-        table_names: Optional[List[str]] = None
+        table_names: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Create a workflow that uses SQL database agent.
@@ -386,7 +380,7 @@ class LangchainDataWorkflowService(BaseService):
                 db=db,
                 agent_type=AgentType.OPENAI_FUNCTIONS,
                 verbose=True,
-                return_intermediate_steps=True
+                return_intermediate_steps=True,
             )
 
             # Build the prompt
@@ -406,10 +400,7 @@ class LangchainDataWorkflowService(BaseService):
             full_prompt = f"{system_prompt}\n\nUser question: {query_prompt}"
 
             # Execute the agent
-            result = await asyncio.to_thread(
-                sql_agent.invoke,
-                {"input": full_prompt}
-            )
+            result = await asyncio.to_thread(sql_agent.invoke, {"input": full_prompt})
 
             execution_time = (datetime.utcnow() - start_time).total_seconds()
 
@@ -418,7 +409,9 @@ class LangchainDataWorkflowService(BaseService):
                 "execution_time_seconds": execution_time,
                 "agent_response": result.get("output", ""),
                 "intermediate_steps": result.get("intermediate_steps", []),
-                "sql_queries_executed": self._extract_sql_queries(result.get("intermediate_steps", [])),
+                "sql_queries_executed": self._extract_sql_queries(
+                    result.get("intermediate_steps", [])
+                ),
             }
 
         except Exception as e:
@@ -426,7 +419,9 @@ class LangchainDataWorkflowService(BaseService):
             return {
                 "success": False,
                 "error_message": str(e),
-                "execution_time_seconds": (datetime.utcnow() - start_time).total_seconds(),
+                "execution_time_seconds": (
+                    datetime.utcnow() - start_time
+                ).total_seconds(),
             }
 
     def _extract_sql_queries(self, intermediate_steps: List) -> List[str]:
@@ -435,8 +430,8 @@ class LangchainDataWorkflowService(BaseService):
         for step in intermediate_steps:
             if isinstance(step, tuple) and len(step) >= 2:
                 action = step[0]
-                if hasattr(action, 'tool') and 'sql' in action.tool.lower():
-                    if hasattr(action, 'tool_input'):
+                if hasattr(action, "tool") and "sql" in action.tool.lower():
+                    if hasattr(action, "tool_input"):
                         queries.append(action.tool_input)
         return queries
 
@@ -444,7 +439,7 @@ class LangchainDataWorkflowService(BaseService):
         self,
         source_configs: List[DataSourceConfiguration],
         pipeline_instructions: str,
-        output_format: str = "dataframe"
+        output_format: str = "dataframe",
     ) -> Dict[str, Any]:
         """
         Create a workflow that processes data from multiple sources.
@@ -463,11 +458,12 @@ class LangchainDataWorkflowService(BaseService):
 
             # Pull data from all sources
             for i, config in enumerate(source_configs):
-                logger.info(f"Processing source {i+1}/{len(source_configs)}: {config.name}")
+                logger.info(
+                    f"Processing source {i+1}/{len(source_configs)}: {config.name}"
+                )
 
                 data = await self.data_source_service._pull_data(
-                    DataSourceType(config.data_source_type),
-                    config.source_config
+                    DataSourceType(config.data_source_type), config.source_config
                 )
 
                 if isinstance(data, list):
@@ -477,15 +473,19 @@ class LangchainDataWorkflowService(BaseService):
                     df = data.copy() if data is not None and hasattr(data, 'copy') else data
                 # Apply processing if configured
                 if config.processing_config:
-                    df = await self.data_source_service._process_data(df, config.processing_config)
+                    df = await self.data_source_service._process_data(
+                        df, config.processing_config
+                    )
 
                 datasets[f"dataset_{i+1}_{config.name.replace(' ', '_')}"] = df
 
             # Create a combined workflow prompt
-            dataset_info = "\n".join([
-                f"- {name}: {len(df)} records, columns: {list(df.columns)}"
-                for name, df in datasets.items()
-            ])
+            dataset_info = "\n".join(
+                [
+                    f"- {name}: {len(df)} records, columns: {list(df.columns)}"
+                    for name, df in datasets.items()
+                ]
+            )
 
             workflow_prompt = f"""
             You have access to the following datasets:
@@ -521,10 +521,10 @@ class LangchainDataWorkflowService(BaseService):
                     name: {
                         "records": len(df),
                         "columns": list(df.columns),
-                        "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()}
+                        "dtypes": {col: str(dtype) for col, dtype in df.dtypes.items()},
                     }
                     for name, df in datasets.items()
-                }
+                },
             }
 
         except Exception as e:
@@ -532,13 +532,13 @@ class LangchainDataWorkflowService(BaseService):
             return {
                 "success": False,
                 "error_message": str(e),
-                "execution_time_seconds": (datetime.utcnow() - start_time).total_seconds(),
+                "execution_time_seconds": (
+                    datetime.utcnow() - start_time
+                ).total_seconds(),
             }
 
     async def create_automated_insights_workflow(
-        self,
-        config: DataSourceConfiguration,
-        insight_type: str = "general"
+        self, config: DataSourceConfiguration, insight_type: str = "general"
     ) -> Dict[str, Any]:
         """
         Create an automated workflow that generates insights from data.
@@ -582,7 +582,7 @@ class LangchainDataWorkflowService(BaseService):
             3. Feature importance analysis
             4. Cluster identification
             5. Business rule discovery
-            """
+            """,
         }
 
         prompt = insight_prompts.get(insight_type, insight_prompts["general"])
@@ -590,5 +590,6 @@ class LangchainDataWorkflowService(BaseService):
         return await self.execute_data_workflow(
             config,
             prompt,
-            f"Focus on {insight_type} insights. Provide actionable recommendations."
+
+            f"Focus on {insight_type} insights. Provide actionable recommendations.",
         )

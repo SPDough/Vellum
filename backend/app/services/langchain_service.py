@@ -4,9 +4,9 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from langchain.schema import BaseMessage, HumanMessage, AIMessage, SystemMessage
-from langchain.schema.runnable import Runnable, RunnableSequence
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.schema import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain.schema.runnable import Runnable, RunnableSequence
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
@@ -47,21 +47,24 @@ class LangchainPositionAnalysisWorkflow:
                     self.llm = ChatAnthropic(
                         model="claude-3-haiku-20240307",
                         api_key=settings.anthropic_api_key,
-                        temperature=0.1
+                        temperature=0.1,
                     )
                 elif settings.openai_api_key:
                     self.llm = ChatOpenAI(
                         model="gpt-3.5-turbo",
                         api_key=settings.openai_api_key,
-                        temperature=0.1
+                        temperature=0.1,
                     )
                 else:
                     logger.warning("No LLM API keys configured")
                     return
 
             # Create the analysis prompt
-            prompt = ChatPromptTemplate.from_messages([
-                ("system", """You are a banking operations analyst specializing in position analysis.
+            prompt = ChatPromptTemplate.from_messages(
+                [
+                    (
+                        "system",
+                        """You are a banking operations analyst specializing in position analysis.
 
 Context: You are analyzing positions within a FIBO (Financial Industry Business Ontology) framework.
 Your role is to:
@@ -74,9 +77,11 @@ Guidelines:
 - Be concise and specific in your analysis
 - Focus on actionable insights
 - Consider risk management implications
-- Reference FIBO standards where applicable"""),
-
-                ("human", """Please analyze the following position data:
+- Reference FIBO standards where applicable""",
+                    ),
+                    (
+                        "human",
+                        """Please analyze the following position data:
 
 Position Data:
 {position_data}
@@ -88,8 +93,10 @@ Provide a structured analysis including:
 1. Risk Assessment
 2. Compliance Notes
 3. Recommendations
-4. Key Metrics Summary""")
-            ])
+4. Key Metrics Summary""",
+                    ),
+                ]
+            )
 
             # Create the chain
             self.chain = prompt | self.llm
@@ -112,7 +119,7 @@ Provide a structured analysis including:
                 return {
                     "error": "No position data provided",
                     "workflow_id": self.workflow_id,
-                    "status": "FAILED"
+                    "status": "FAILED",
                 }
 
             # Get FIBO context
@@ -124,10 +131,7 @@ Provide a structured analysis including:
             # Execute the chain
             result = await asyncio.to_thread(
                 self.chain.invoke,
-                {
-                    "position_data": formatted_positions,
-                    "fibo_context": fibo_context
-                }
+                {"position_data": formatted_positions, "fibo_context": fibo_context},
             )
 
             analysis_result = {
@@ -136,18 +140,20 @@ Provide a structured analysis including:
                 "status": "COMPLETED",
                 "input_data": input_data,
                 "analysis": {
-                    "llm_response": result.content if hasattr(result, 'content') else str(result),
-                    "model_used": getattr(self.llm, 'model_name', 'unknown'),
+                    "llm_response": (
+                        result.content if hasattr(result, "content") else str(result)
+                    ),
+                    "model_used": getattr(self.llm, "model_name", "unknown"),
                     "fibo_context": fibo_context,
                     "position_count": len(position_data),
-                    "analysis_timestamp": datetime.utcnow().isoformat()
+                    "analysis_timestamp": datetime.utcnow().isoformat(),
                 },
                 "execution_time": datetime.utcnow().isoformat(),
                 "metadata": {
                     "chain_type": "prompt_llm",
                     "workflow_name": self.name,
-                    "workflow_description": self.description
-                }
+                    "workflow_description": self.description,
+                },
             }
 
             logger.info(f"Langchain workflow completed: {self.workflow_id}")
@@ -160,10 +166,12 @@ Provide a structured analysis including:
                 "workflow_type": "LANGCHAIN",
                 "status": "FAILED",
                 "error": str(e),
-                "execution_time": datetime.utcnow().isoformat()
+                "execution_time": datetime.utcnow().isoformat(),
             }
 
-    async def _get_fibo_context(self, position_data: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def _get_fibo_context(
+        self, position_data: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Get FIBO ontology context for positions."""
         try:
             fibo_service = await get_fibo_service()
@@ -188,8 +196,8 @@ Provide a structured analysis including:
                     "PositionHolding",
                     "FinancialInstrument",
                     "Portfolio",
-                    "RiskMeasure"
-                ]
+                    "RiskMeasure",
+                ],
             }
 
         except Exception as e:
@@ -200,7 +208,8 @@ Provide a structured analysis including:
         """Format position data for LLM analysis."""
         formatted = []
         for i, pos in enumerate(positions[:10]):  # Limit for token efficiency
-            formatted.append(f"""
+            formatted.append(
+                f"""
 Position {i+1}:
 - ID: {pos.get('id', 'N/A')}
 - Security: {pos.get('security_id', 'N/A')}
@@ -209,10 +218,13 @@ Position {i+1}:
 - Currency: {pos.get('currency', 'USD')}
 - Type: {pos.get('position_type', 'LONG')}
 - Account: {pos.get('account_id', 'N/A')}
-""")
+"""
+            )
 
-        total_value = sum(pos.get('market_value', 0) for pos in positions)
-        summary = f"\nSummary: {len(positions)} positions, Total Value: ${total_value:,.2f}"
+        total_value = sum(pos.get("market_value", 0) for pos in positions)
+        summary = (
+            f"\nSummary: {len(positions)} positions, Total Value: ${total_value:,.2f}"
+        )
 
         return "\n".join(formatted) + summary
 
@@ -237,20 +249,23 @@ class LangchainTradeValidationWorkflow:
                     self.llm = ChatAnthropic(
                         model="claude-3-haiku-20240307",
                         api_key=settings.anthropic_api_key,
-                        temperature=0
+                        temperature=0,
                     )
                 elif settings.openai_api_key:
                     self.llm = ChatOpenAI(
                         model="gpt-3.5-turbo",
                         api_key=settings.openai_api_key,
-                        temperature=0
+                        temperature=0,
                     )
                 else:
                     logger.warning("No LLM API keys configured")
                     return
 
-            prompt = ChatPromptTemplate.from_messages([
-                ("system", """You are a trade validation specialist for banking operations.
+            prompt = ChatPromptTemplate.from_messages(
+                [
+                    (
+                        "system",
+                        """You are a trade validation specialist for banking operations.
 
 Your task is to validate trade data against standard banking rules and regulations:
 
@@ -262,9 +277,11 @@ VALIDATION RULES:
 5. Market Hours: Trades should occur during market hours
 6. Instrument Validation: Security ID must be valid format
 
-Respond with structured validation results in JSON format."""),
-
-                ("human", """Validate the following trade:
+Respond with structured validation results in JSON format.""",
+                    ),
+                    (
+                        "human",
+                        """Validate the following trade:
 
 Trade Data:
 {trade_data}
@@ -276,8 +293,10 @@ Provide validation results as JSON with:
 - valid: boolean
 - issues: array of validation issues
 - risk_level: LOW/MEDIUM/HIGH
-- recommendations: array of recommendations""")
-            ])
+- recommendations: array of recommendations""",
+                    ),
+                ]
+            )
 
             self.chain = prompt | self.llm
             logger.info(f"Trade validation chain setup completed: {self.workflow_id}")
@@ -299,7 +318,7 @@ Provide validation results as JSON with:
                 return {
                     "error": "No trade data provided",
                     "workflow_id": self.workflow_id,
-                    "status": "FAILED"
+                    "status": "FAILED",
                 }
 
             # Prepare validation context
@@ -308,7 +327,7 @@ Provide validation results as JSON with:
                 "max_trade_amount": 10000000,  # $10M
                 "valid_currencies": ["USD", "EUR", "GBP", "JPY", "CAD"],
                 "market_open": "09:30",
-                "market_close": "16:00"
+                "market_close": "16:00",
             }
 
             # Execute validation
@@ -316,8 +335,8 @@ Provide validation results as JSON with:
                 self.chain.invoke,
                 {
                     "trade_data": self._format_trade(trade_data),
-                    "validation_context": validation_context
-                }
+                    "validation_context": validation_context,
+                },
             )
 
             validation_result = {
@@ -326,16 +345,18 @@ Provide validation results as JSON with:
                 "status": "COMPLETED",
                 "input_data": input_data,
                 "validation": {
-                    "llm_response": result.content if hasattr(result, 'content') else str(result),
-                    "model_used": getattr(self.llm, 'model_name', 'unknown'),
+                    "llm_response": (
+                        result.content if hasattr(result, "content") else str(result)
+                    ),
+                    "model_used": getattr(self.llm, "model_name", "unknown"),
                     "validation_timestamp": datetime.utcnow().isoformat(),
-                    "context": validation_context
+                    "context": validation_context,
                 },
                 "execution_time": datetime.utcnow().isoformat(),
                 "metadata": {
                     "workflow_name": self.name,
-                    "workflow_description": self.description
-                }
+                    "workflow_description": self.description,
+                },
             }
 
             logger.info(f"Trade validation workflow completed: {self.workflow_id}")
@@ -348,7 +369,7 @@ Provide validation results as JSON with:
                 "workflow_type": "LANGCHAIN",
                 "status": "FAILED",
                 "error": str(e),
-                "execution_time": datetime.utcnow().isoformat()
+                "execution_time": datetime.utcnow().isoformat(),
             }
 
     def _format_trade(self, trade: Dict[str, Any]) -> str:
@@ -374,7 +395,7 @@ class LangchainService:
         self.workflows: Dict[str, Any] = {}
         self.workflow_templates = {
             "position_analysis": LangchainPositionAnalysisWorkflow,
-            "trade_validation": LangchainTradeValidationWorkflow
+            "trade_validation": LangchainTradeValidationWorkflow,
         }
         logger.info("Langchain service initialized")
 
@@ -406,7 +427,9 @@ class LangchainService:
             logger.error(f"Failed to create trade validation workflow: {e}")
             raise
 
-    async def execute_workflow(self, workflow_id: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_workflow(
+        self, workflow_id: str, input_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Execute a Langchain workflow."""
         try:
             if workflow_id not in self.workflows:
@@ -424,7 +447,7 @@ class LangchainService:
                 "workflow_id": workflow_id,
                 "status": "ERROR",
                 "error": str(e),
-                "execution_time": datetime.utcnow().isoformat()
+                "execution_time": datetime.utcnow().isoformat(),
             }
 
     async def get_workflow_info(self, workflow_id: str) -> Optional[Dict[str, Any]]:
@@ -435,11 +458,11 @@ class LangchainService:
         workflow = self.workflows[workflow_id]
         return {
             "workflow_id": workflow_id,
-            "name": getattr(workflow, 'name', 'Unknown'),
-            "description": getattr(workflow, 'description', ''),
+            "name": getattr(workflow, "name", "Unknown"),
+            "description": getattr(workflow, "description", ""),
             "status": "ACTIVE",
             "workflow_type": "LANGCHAIN",
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.utcnow().isoformat(),
         }
 
     def list_workflows(self) -> List[Dict[str, Any]]:
@@ -447,10 +470,10 @@ class LangchainService:
         return [
             {
                 "workflow_id": workflow_id,
-                "name": getattr(workflow, 'name', 'Unknown'),
-                "description": getattr(workflow, 'description', ''),
+                "name": getattr(workflow, "name", "Unknown"),
+                "description": getattr(workflow, "description", ""),
                 "status": "ACTIVE",
-                "workflow_type": "LANGCHAIN"
+                "workflow_type": "LANGCHAIN",
             }
             for workflow_id, workflow in self.workflows.items()
         ]
@@ -461,8 +484,10 @@ class LangchainService:
             {
                 "template_id": template_id,
                 "name": template_class.__name__,
-                "description": getattr(template_class, "__doc__", "No description available"),
-                "workflow_type": "LANGCHAIN"
+                "description": getattr(
+                    template_class, "__doc__", "No description available"
+                ),
+                "workflow_type": "LANGCHAIN",
             }
             for template_id, template_class in self.workflow_templates.items()
         ]

@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
-
 from fastapi import HTTPException
 from sqlalchemy import and_, asc, desc, func, or_, text
 from sqlalchemy.orm import Session
