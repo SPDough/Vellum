@@ -6,7 +6,6 @@ This script tests the DroolsService implementation and workflow nodes
 with mock data to verify the integration is working correctly.
 """
 
-import asyncio
 import json
 import sys
 import os
@@ -15,6 +14,17 @@ from decimal import Decimal
 
 # Add the app directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
+
+# Add the parent directory for shared test utilities
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from test_utils import (
+    create_sample_trade_data, 
+    create_sample_portfolio_data, 
+    create_sample_client_data,
+    create_sample_settlement_data,
+    run_test_with_error_handling,
+    run_async_test_main
+)
 
 from app.services.drools_service import DroolsService, RuleFact, RuleExecutionStatus
 from app.flows.rules_engine_node import (
@@ -26,66 +36,7 @@ from app.flows.rules_engine_node import (
     create_trade_processing_workflow
 )
 
-def create_sample_trade_data():
-    """Create sample trade data for testing"""
-    return {
-        "tradeId": "TRADE_001",
-        "tradeType": "EQUITY",
-        "counterpartyId": "CLIENT_001",
-        "securityId": "AAPL",
-        "quantity": 1000,
-        "price": 150.50,
-        "tradeValue": 150500.00,
-        "currency": "USD",
-        "tradeDate": date.today().isoformat(),
-        "settlementDate": (date.today()).isoformat(),
-        "status": "PENDING",
-        "portfolio": "PORTFOLIO_001",
-        "custodyAccount": "CUSTODY_001"
-    }
-
-def create_sample_portfolio_data():
-    """Create sample portfolio data for testing"""
-    return {
-        "portfolioId": "PORTFOLIO_001",
-        "totalExposure": 5000000.00,
-        "exposureLimit": 10000000.00,
-        "concentrationLimit": 1000000.00,
-        "availableCash": 2000000.00,
-        "securityExposures": {
-            "AAPL": 500000.00,
-            "MSFT": 300000.00,
-            "GOOGL": 400000.00
-        }
-    }
-
-def create_sample_client_data():
-    """Create sample client data for testing"""
-    return {
-        "clientId": "CLIENT_001",
-        "kycStatus": "APPROVED",
-        "amlRiskRating": "LOW",
-        "creditRating": "A",
-        "lastReviewDate": "2024-01-15",
-        "countryCode": "US",
-        "approvedInstruments": ["EQUITY", "BOND", "FX"],
-        "tradingLimits": {
-            "dailyLimit": 1000000.00,
-            "positionLimit": 5000000.00
-        }
-    }
-
-def create_sample_settlement_data():
-    """Create sample settlement data for testing"""
-    return {
-        "settlementId": "SETTLE_001",
-        "tradeId": "TRADE_001",
-        "cashRequired": 150500.00,
-        "securitiesRequired": 1000,
-        "settlementAgent": "DTC",
-        "instructionStatus": "PENDING",
-        "cutoffTime": "2024-07-20T16:00:00"
-    }
+# Sample data creation functions are now imported from test_utils
 
 class MockDroolsService(DroolsService):
     """Mock DroolsService for testing without Docker"""
@@ -470,23 +421,17 @@ async def main():
     print("Testing Drools rules engine integration for custodian banking operations")
     print(f"Test started at: {datetime.now()}")
     
-    try:
-        # Test basic DroolsService
-        await test_drools_service()
-        
-        # Test workflow nodes
-        await test_workflow_nodes()
-        
-        # Test high-value trade scenario
-        await test_high_value_trade()
-        
-        print("\n\n✅ All Tests Completed Successfully!")
-        print("🚀 Drools integration is ready for custodian banking operations")
-        
-    except Exception as e:
-        print(f"\n❌ Test failed with error: {str(e)}")
-        import traceback
-        traceback.print_exc()
+    # Test basic DroolsService
+    await test_drools_service()
+    
+    # Test workflow nodes
+    await test_workflow_nodes()
+    
+    # Test high-value trade scenario
+    await test_high_value_trade()
+    
+    print("\n\n✅ All Tests Completed Successfully!")
+    print("🚀 Drools integration is ready for custodian banking operations")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run_async_test_main(main)

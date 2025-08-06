@@ -7,10 +7,16 @@ external dependencies like httpx, py4j, or Docker.
 """
 
 import json
+import sys
+import os
 from datetime import datetime, date
 from dataclasses import dataclass, asdict
 from enum import Enum
 from typing import Dict, List, Any, Optional
+
+# Add the parent directory for shared test utilities
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from test_utils import run_test_with_error_handling
 
 # Mock implementations for testing
 
@@ -459,32 +465,27 @@ def test_rule_performance():
     print(f"   Average per Trade: {avg_execution_time:.1f}ms")
     print(f"   Throughput: {1000/avg_execution_time:.0f} trades/second")
 
-def main():
+async def main():
     """Main test function"""
     print("🏦 Otomeshon Custodian Portal - Drools Rules Engine Test")
     print("📅 " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     print("\nSimulating Drools rules execution for custodian banking operations...")
     
-    try:
-        # Test normal trade
-        test_normal_trade()
-        
-        # Test large trade
-        test_large_trade()
-        
-        # Test performance
-        test_rule_performance()
-        
-        print("\n" + "="*70)
-        print("✅ ALL TESTS COMPLETED SUCCESSFULLY!")
-        print("🚀 Drools integration logic verified and ready for deployment")
-        print("📝 Next steps: Deploy to Docker with real Kogito runtime")
-        print("="*70)
-        
-    except Exception as e:
-        print(f"\n❌ Test failed with error: {str(e)}")
-        import traceback
-        traceback.print_exc()
+    # Test normal trade
+    test_normal_trade()
+    
+    # Test large trade
+    test_large_trade()
+    
+    # Test performance
+    test_rule_performance()
+    
+    print("\n" + "="*70)
+    print("✅ ALL TESTS COMPLETED SUCCESSFULLY!")
+    print("🚀 Drools integration logic verified and ready for deployment")
+    print("📝 Next steps: Deploy to Docker with real Kogito runtime")
+    print("="*70)
 
 if __name__ == "__main__":
-    main()
+    from test_utils import run_async_test_main
+    run_async_test_main(main)

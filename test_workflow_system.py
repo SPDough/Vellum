@@ -4,9 +4,9 @@ Test script for the workflow management system.
 This tests the basic functionality without requiring external LLM dependencies.
 """
 
-import asyncio
 import json
 from typing import Dict, Any
+from test_utils import run_async_test_main
 
 
 class MockLangchainService:
@@ -198,7 +198,7 @@ async def test_workflow_management_system():
         "positions": [
             {
                 "id": "pos_001",
-                "security_id": "AAPL",
+                "security_id": "AAPL", 
                 "quantity": 1000,
                 "market_value": 150000,
                 "currency": "USD"
@@ -272,11 +272,12 @@ def test_frontend_compatibility():
     print("✅ Frontend compatibility verified")
 
 
-if __name__ == "__main__":
+async def main():
+    """Main test execution function"""
     print("🚀 Starting Workflow Management System Tests\n")
     
     # Run async tests
-    summary = asyncio.run(test_workflow_management_system())
+    summary = await test_workflow_management_system()
     
     # Run sync tests
     test_frontend_compatibility()
@@ -285,3 +286,7 @@ if __name__ == "__main__":
     print(json.dumps(summary, indent=2))
     
     print(f"\n✨ Test completed successfully!")
+
+
+if __name__ == "__main__":
+    run_async_test_main(main)

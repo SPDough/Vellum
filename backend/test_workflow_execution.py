@@ -6,7 +6,6 @@ Tests the complete workflow execution system including rules engine integration,
 agent workflows, and the unified execution service.
 """
 
-import asyncio
 import json
 import sys
 import os
@@ -14,6 +13,17 @@ from datetime import datetime, date
 
 # Add the app directory to Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
+
+# Add the parent directory for shared test utilities
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from test_utils import (
+    create_sample_trade_data, 
+    create_sample_portfolio_data, 
+    create_sample_client_data,
+    print_test_header,
+    print_test_completion,
+    run_async_test_main
+)
 
 from app.services.workflow_execution_service import (
     get_workflow_execution_service,
@@ -23,23 +33,7 @@ from app.services.workflow_execution_service import (
     WorkflowNodeConfig
 )
 
-def create_sample_trade_data():
-    """Create sample trade data for testing"""
-    return {
-        "tradeId": "TRADE_TEST_001",
-        "tradeType": "EQUITY",
-        "counterpartyId": "CLIENT_001",
-        "securityId": "AAPL",
-        "quantity": 1000,
-        "price": 150.50,
-        "tradeValue": 150500.00,
-        "currency": "USD",
-        "tradeDate": date.today().isoformat(),
-        "settlementDate": date.today().isoformat(),
-        "status": "PENDING",
-        "portfolio": "PORTFOLIO_001",
-        "custodyAccount": "CUSTODY_001"
-    }
+# Use shared sample data creation functions from test_utils
 
 def create_large_trade_data():
     """Create large trade that should trigger rules"""
@@ -59,31 +53,7 @@ def create_large_trade_data():
         "custodyAccount": "CUSTODY_001"
     }
 
-def create_sample_portfolio_data():
-    """Create sample portfolio data"""
-    return {
-        "portfolioId": "PORTFOLIO_001",
-        "totalExposure": 8500000.00,  # Close to limit
-        "exposureLimit": 10000000.00,
-        "concentrationLimit": 1000000.00,
-        "availableCash": 2000000.00,
-        "securityExposures": {
-            "AAPL": 500000.00,
-            "MSFT": 300000.00,
-            "GOOGL": 400000.00
-        }
-    }
-
-def create_sample_client_data():
-    """Create sample client data"""
-    return {
-        "clientId": "CLIENT_001",
-        "kycStatus": "APPROVED",
-        "amlRiskRating": "LOW",
-        "creditRating": "A",
-        "lastReviewDate": "2024-01-15",
-        "countryCode": "US"
-    }
+# Additional test data creation functions specific to this test
 
 def create_high_risk_client_data():
     """Create high-risk client data"""
@@ -134,8 +104,8 @@ async def test_trade_processing_workflow():
     
     # Prepare input data
     input_data = {
-        "trade_data": create_sample_trade_data(),
-        "portfolio_data": create_sample_portfolio_data(),
+        "trade_data": create_sample_trade_data(trade_id="TRADE_TEST_001"),
+        "portfolio_data": create_sample_portfolio_data(total_exposure=8500000.00),
         "client_data": create_sample_client_data(),
         "settlement_data": {}
     }
@@ -333,13 +303,14 @@ async def test_performance():
     # Create different trade scenarios
     test_scenarios = []
     for i in range(num_executions):
-        trade_data = create_sample_trade_data()
-        trade_data["tradeId"] = f"TRADE_PERF_{i+1:03d}"
-        trade_data["tradeValue"] = 100000 + (i * 200000)  # Varying sizes
+        trade_value = 100000 + (i * 200000)  # Varying sizes
         
         scenario = {
-            "trade_data": trade_data,
-            "portfolio_data": create_sample_portfolio_data(),
+            "trade_data": create_sample_trade_data(
+                trade_id=f"TRADE_PERF_{i+1:03d}", 
+                trade_value=trade_value
+            ),
+            "portfolio_data": create_sample_portfolio_data(total_exposure=8500000.00),
             "client_data": create_sample_client_data(),
             "settlement_data": {}
         }
@@ -402,8 +373,8 @@ async def test_active_executions():
     
     if trade_workflow:
         input_data = {
-            "trade_data": create_sample_trade_data(),
-            "portfolio_data": create_sample_portfolio_data(),
+            "trade_data": create_sample_trade_data(trade_id="TRADE_TEST_001"),
+            "portfolio_data": create_sample_portfolio_data(total_exposure=8500000.00),
             "client_data": create_sample_client_data()
         }
         
@@ -431,41 +402,35 @@ async def main():
     print(f"Test started at: {datetime.now()}")
     print()
     
-    try:
-        # Test workflow templates
-        templates = await test_workflow_templates()
-        
-        # Test normal trade processing
-        normal_result = await test_trade_processing_workflow()
-        
-        # Test large trade processing
-        large_result = await test_large_trade_processing()
-        
-        # Test exception handling
-        exception_result = await test_exception_handling_workflow()
-        
-        # Test performance
-        await test_performance()
-        
-        # Test active executions
-        await test_active_executions()
-        
-        print("\n" + "="*70)
-        print("✅ ALL WORKFLOW TESTS COMPLETED SUCCESSFULLY!")
-        print("🚀 Workflow execution system is ready for custodian banking operations")
-        print("📋 Available features:")
-        print("   • Rules-based workflow execution")
-        print("   • AI agent integration")
-        print("   • Hybrid workflow orchestration")
-        print("   • Real-time execution monitoring")
-        print("   • Comprehensive alerting system")
-        print("   • Performance optimization")
-        print("="*70)
-        
-    except Exception as e:
-        print(f"\n❌ Test failed with error: {str(e)}")
-        import traceback
-        traceback.print_exc()
+    # Test workflow templates
+    templates = await test_workflow_templates()
+    
+    # Test normal trade processing
+    normal_result = await test_trade_processing_workflow()
+    
+    # Test large trade processing
+    large_result = await test_large_trade_processing()
+    
+    # Test exception handling
+    exception_result = await test_exception_handling_workflow()
+    
+    # Test performance
+    await test_performance()
+    
+    # Test active executions
+    await test_active_executions()
+    
+    print("\n" + "="*70)
+    print("✅ ALL WORKFLOW TESTS COMPLETED SUCCESSFULLY!")
+    print("🚀 Workflow execution system is ready for custodian banking operations")
+    print("📋 Available features:")
+    print("   • Rules-based workflow execution")
+    print("   • AI agent integration")
+    print("   • Hybrid workflow orchestration")
+    print("   • Real-time execution monitoring")
+    print("   • Comprehensive alerting system")
+    print("   • Performance optimization")
+    print("="*70)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    run_async_test_main(main)

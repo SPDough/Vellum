@@ -1,7 +1,6 @@
-# Disabled - pylint checks are redundant with main CI/CD pipeline
-# name: Pylint
+name: Pylint
 
-# on: [push]
+on: [push]
 
 jobs:
   build:
