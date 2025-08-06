@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "otomeshon-frontend",
+  "buildCommand": "cd frontend && npm run build",
+  "devCommand": "cd frontend && npm run dev",
+  "installCommand": "cd frontend && npm install",
+  "framework": "nextjs",
+  "rootDirectory": "frontend",
+  "outputDirectory": "frontend/.next"
+}
