@@ -27,15 +27,6 @@ jobs:
       with:
         node-version: '20'
 
-    - name: Debug package.json
-      run: |
-        echo "=== Current directory ==="
-        pwd
-        echo "=== Contents of package.json ==="
-        cat package.json
-        echo "=== React version from package.json ==="
-        grep -E '"react":|"@mui/lab":' package.json
-        
     - name: Install dependencies
       run: |
         npm cache clean --force

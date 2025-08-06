@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 
 // Simple test component
@@ -9,8 +9,8 @@ function TestComponent() {
 
 describe('App Tests', () => {
   it('renders test component', () => {
-    render(<TestComponent />)
-    expect(screen.getByText('Hello Test World')).toBeInTheDocument()
+    const { getByText } = render(<TestComponent />)
+    expect(getByText('Hello Test World')).toBeInTheDocument()
   })
 
   it('basic math test', () => {
