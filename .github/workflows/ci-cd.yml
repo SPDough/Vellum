@@ -47,10 +47,7 @@ jobs:
       run: npm run lint
 
     - name: Run tests
-      run: |
-        # Skip tests temporarily due to Rollup native binary issue
-        echo "Skipping frontend tests due to Rollup native dependency issue"
-        echo "Tests will be re-enabled once the native binary issue is resolved"
+      run: npm run test:run
 
     - name: Build application
       run: npm run build
