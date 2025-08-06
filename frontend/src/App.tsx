@@ -4,12 +4,12 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
 import Layout from './components/Layout';
-import Positions from './pages/Positions';
-import Transactions from './pages/Transactions';
-import Reconciliation from './pages/Reconciliation';
-import WorkflowManagement from './pages/WorkflowManagement';
-import RulesCatalog from './pages/RulesCatalog';
-import DataSourceConfiguration from './pages/DataSourceConfiguration';
+import Positions from './components/pages/Positions';
+import Transactions from './components/pages/Transactions';
+import Reconciliation from './components/pages/Reconciliation';
+import WorkflowManagement from './components/pages/WorkflowManagement';
+import RulesCatalog from './components/pages/RulesCatalog';
+import DataSourceConfiguration from './components/pages/DataSourceConfiguration';
 
 const theme = createTheme({
   palette: {

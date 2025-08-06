@@ -2,7 +2,7 @@
 
 import React from 'react';
 import NextLayout from '@/components/Layout/NextLayout';
-import Positions from '@/pages/Positions';
+import Positions from '@/components/pages/Positions';
 
 export default function PositionsPage() {
   return (

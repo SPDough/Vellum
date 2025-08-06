@@ -2,7 +2,7 @@
 
 import React, { Suspense } from 'react';
 import { CircularProgress, Box } from '@mui/material';
-import Login from '@/pages/Login';
+import Login from '@/components/pages/Login';
 
 export const dynamic = 'force-dynamic';
 

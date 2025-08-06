@@ -44,36 +44,34 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM nginx:alpine as production
+FROM node:20-alpine as production
+
+WORKDIR /app
 
 # Install curl for health checks
 RUN apk add --no-cache curl
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/nginx.conf
-
 # Copy built application from build stage
-COPY --from=build /app/.next /usr/share/nginx/html
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
 
-# Create non-root user for nginx
-RUN addgroup -g 1001 -S nginx && \
-    adduser -S -D -H -u 1001 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
+# Create non-root user
+RUN addgroup -g 1001 -S nextjs && \
+    adduser -S nextjs -u 1001
 
-# Set proper permissions
-RUN chown -R nginx:nginx /usr/share/nginx/html && \
-    chown -R nginx:nginx /var/cache/nginx && \
-    chown -R nginx:nginx /var/log/nginx && \
-    chown -R nginx:nginx /etc/nginx/conf.d
+# Change ownership
+RUN chown -R nextjs:nextjs /app
 
 # Switch to non-root user
-USER nginx
+USER nextjs
 
 # Add health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:80/ || exit 1
+    CMD curl -f http://localhost:3000/ || exit 1
 
 # Expose port
-EXPOSE 80
+EXPOSE 3000
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start Next.js server
+CMD ["node", "server.js"]

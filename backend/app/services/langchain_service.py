@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class LangchainWorkflowState(BaseModel):
     """State model for Langchain workflows."""
-    
+
     messages: List[Dict[str, Any]] = []
     data: Dict[str, Any] = {}
     context: Dict[str, Any] = {}
@@ -29,7 +29,7 @@ class LangchainWorkflowState(BaseModel):
 
 class LangchainPositionAnalysisWorkflow:
     """Langchain workflow for position analysis using LLM."""
-    
+
     def __init__(self, llm: Any = None):
         self.workflow_id = str(uuid4())
         self.name = "Position Analysis Workflow"
@@ -37,7 +37,7 @@ class LangchainPositionAnalysisWorkflow:
         self.llm = llm
         self.chain = None
         self._setup_chain()
-    
+
     def _setup_chain(self):
         """Setup the Langchain workflow chain."""
         try:
@@ -58,11 +58,11 @@ class LangchainPositionAnalysisWorkflow:
                 else:
                     logger.warning("No LLM API keys configured")
                     return
-            
+
             # Create the analysis prompt
             prompt = ChatPromptTemplate.from_messages([
                 ("system", """You are a banking operations analyst specializing in position analysis.
-                
+
 Context: You are analyzing positions within a FIBO (Financial Industry Business Ontology) framework.
 Your role is to:
 1. Analyze position data for potential risks or anomalies
@@ -75,7 +75,7 @@ Guidelines:
 - Focus on actionable insights
 - Consider risk management implications
 - Reference FIBO standards where applicable"""),
-                
+
                 ("human", """Please analyze the following position data:
 
 Position Data:
@@ -90,23 +90,23 @@ Provide a structured analysis including:
 3. Recommendations
 4. Key Metrics Summary""")
             ])
-            
+
             # Create the chain
             self.chain = prompt | self.llm
             logger.info(f"Langchain workflow chain setup completed: {self.workflow_id}")
-            
+
         except Exception as e:
             logger.error(f"Failed to setup Langchain workflow: {e}")
             raise
-    
+
     async def execute(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute the position analysis workflow."""
         try:
             if not self.chain:
                 raise ValueError("Workflow chain not properly initialized")
-            
+
             logger.info(f"Executing Langchain workflow: {self.workflow_id}")
-            
+
             position_data = input_data.get("positions", [])
             if not position_data:
                 return {
@@ -114,13 +114,13 @@ Provide a structured analysis including:
                     "workflow_id": self.workflow_id,
                     "status": "FAILED"
                 }
-            
+
             # Get FIBO context
             fibo_context = await self._get_fibo_context(position_data)
-            
+
             # Prepare data for analysis
             formatted_positions = self._format_positions(position_data)
-            
+
             # Execute the chain
             result = await asyncio.to_thread(
                 self.chain.invoke,
@@ -129,7 +129,7 @@ Provide a structured analysis including:
                     "fibo_context": fibo_context
                 }
             )
-            
+
             analysis_result = {
                 "workflow_id": self.workflow_id,
                 "workflow_type": "LANGCHAIN",
@@ -149,26 +149,26 @@ Provide a structured analysis including:
                     "workflow_description": self.description
                 }
             }
-            
+
             logger.info(f"Langchain workflow completed: {self.workflow_id}")
             return analysis_result
-            
+
         except Exception as e:
             logger.error(f"Langchain workflow execution failed: {e}")
             return {
                 "workflow_id": self.workflow_id,
-                "workflow_type": "LANGCHAIN", 
+                "workflow_type": "LANGCHAIN",
                 "status": "FAILED",
                 "error": str(e),
                 "execution_time": datetime.utcnow().isoformat()
             }
-    
+
     async def _get_fibo_context(self, position_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Get FIBO ontology context for positions."""
         try:
             fibo_service = await get_fibo_service()
             neo4j_service = await get_neo4j_service()
-            
+
             # Get FIBO mappings for position types
             fibo_mappings = []
             for position in position_data[:5]:  # Limit for performance
@@ -179,23 +179,23 @@ Provide a structured analysis including:
                     )
                     if fibo_mapping:
                         fibo_mappings.append(fibo_mapping)
-            
+
             return {
                 "fibo_mappings_count": len(fibo_mappings),
                 "sample_mappings": fibo_mappings[:3],
                 "ontology_version": "FIBO 2023",
                 "relevant_concepts": [
                     "PositionHolding",
-                    "FinancialInstrument", 
+                    "FinancialInstrument",
                     "Portfolio",
                     "RiskMeasure"
                 ]
             }
-            
+
         except Exception as e:
             logger.warning(f"Failed to get FIBO context: {e}")
             return {"error": str(e), "fibo_available": False}
-    
+
     def _format_positions(self, positions: List[Dict[str, Any]]) -> str:
         """Format position data for LLM analysis."""
         formatted = []
@@ -210,16 +210,16 @@ Position {i+1}:
 - Type: {pos.get('position_type', 'LONG')}
 - Account: {pos.get('account_id', 'N/A')}
 """)
-        
+
         total_value = sum(pos.get('market_value', 0) for pos in positions)
         summary = f"\nSummary: {len(positions)} positions, Total Value: ${total_value:,.2f}"
-        
+
         return "\n".join(formatted) + summary
 
 
 class LangchainTradeValidationWorkflow:
     """Langchain workflow for trade validation using rule-based LLM analysis."""
-    
+
     def __init__(self, llm: Any = None):
         self.workflow_id = str(uuid4())
         self.name = "Trade Validation Workflow"
@@ -227,7 +227,7 @@ class LangchainTradeValidationWorkflow:
         self.llm = llm
         self.chain = None
         self._setup_chain()
-    
+
     def _setup_chain(self):
         """Setup the trade validation chain."""
         try:
@@ -248,7 +248,7 @@ class LangchainTradeValidationWorkflow:
                 else:
                     logger.warning("No LLM API keys configured")
                     return
-            
+
             prompt = ChatPromptTemplate.from_messages([
                 ("system", """You are a trade validation specialist for banking operations.
 
@@ -263,7 +263,7 @@ VALIDATION RULES:
 6. Instrument Validation: Security ID must be valid format
 
 Respond with structured validation results in JSON format."""),
-                
+
                 ("human", """Validate the following trade:
 
 Trade Data:
@@ -278,22 +278,22 @@ Provide validation results as JSON with:
 - risk_level: LOW/MEDIUM/HIGH
 - recommendations: array of recommendations""")
             ])
-            
+
             self.chain = prompt | self.llm
             logger.info(f"Trade validation chain setup completed: {self.workflow_id}")
-            
+
         except Exception as e:
             logger.error(f"Failed to setup trade validation chain: {e}")
             raise
-    
+
     async def execute(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute trade validation workflow."""
         try:
             if not self.chain:
                 raise ValueError("Validation chain not properly initialized")
-            
+
             logger.info(f"Executing trade validation workflow: {self.workflow_id}")
-            
+
             trade_data = input_data.get("trade", {})
             if not trade_data:
                 return {
@@ -301,7 +301,7 @@ Provide validation results as JSON with:
                     "workflow_id": self.workflow_id,
                     "status": "FAILED"
                 }
-            
+
             # Prepare validation context
             validation_context = {
                 "current_time": datetime.utcnow().isoformat(),
@@ -310,7 +310,7 @@ Provide validation results as JSON with:
                 "market_open": "09:30",
                 "market_close": "16:00"
             }
-            
+
             # Execute validation
             result = await asyncio.to_thread(
                 self.chain.invoke,
@@ -319,7 +319,7 @@ Provide validation results as JSON with:
                     "validation_context": validation_context
                 }
             )
-            
+
             validation_result = {
                 "workflow_id": self.workflow_id,
                 "workflow_type": "LANGCHAIN",
@@ -337,20 +337,20 @@ Provide validation results as JSON with:
                     "workflow_description": self.description
                 }
             }
-            
+
             logger.info(f"Trade validation workflow completed: {self.workflow_id}")
             return validation_result
-            
+
         except Exception as e:
             logger.error(f"Trade validation workflow failed: {e}")
             return {
                 "workflow_id": self.workflow_id,
                 "workflow_type": "LANGCHAIN",
-                "status": "FAILED", 
+                "status": "FAILED",
                 "error": str(e),
                 "execution_time": datetime.utcnow().isoformat()
             }
-    
+
     def _format_trade(self, trade: Dict[str, Any]) -> str:
         """Format trade data for validation."""
         return f"""
@@ -369,7 +369,7 @@ Trade Time: {trade.get('trade_time', 'N/A')}
 
 class LangchainService:
     """Service for managing Langchain workflows."""
-    
+
     def __init__(self):
         self.workflows: Dict[str, Any] = {}
         self.workflow_templates = {
@@ -377,47 +377,47 @@ class LangchainService:
             "trade_validation": LangchainTradeValidationWorkflow
         }
         logger.info("Langchain service initialized")
-    
+
     async def create_position_analysis_workflow(self) -> str:
         """Create a position analysis workflow."""
         try:
             workflow = LangchainPositionAnalysisWorkflow()
             workflow_id = workflow.workflow_id
             self.workflows[workflow_id] = workflow
-            
+
             logger.info(f"Created position analysis workflow: {workflow_id}")
             return workflow_id
-            
+
         except Exception as e:
             logger.error(f"Failed to create position analysis workflow: {e}")
             raise
-    
+
     async def create_trade_validation_workflow(self) -> str:
         """Create a trade validation workflow."""
         try:
             workflow = LangchainTradeValidationWorkflow()
             workflow_id = workflow.workflow_id
             self.workflows[workflow_id] = workflow
-            
+
             logger.info(f"Created trade validation workflow: {workflow_id}")
             return workflow_id
-            
+
         except Exception as e:
             logger.error(f"Failed to create trade validation workflow: {e}")
             raise
-    
+
     async def execute_workflow(self, workflow_id: str, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a Langchain workflow."""
         try:
             if workflow_id not in self.workflows:
                 raise ValueError(f"Workflow {workflow_id} not found")
-            
+
             workflow = self.workflows[workflow_id]
             result = await workflow.execute(input_data)
-            
+
             logger.info(f"Executed Langchain workflow: {workflow_id}")
             return result
-            
+
         except Exception as e:
             logger.error(f"Workflow execution failed: {e}")
             return {
@@ -426,12 +426,12 @@ class LangchainService:
                 "error": str(e),
                 "execution_time": datetime.utcnow().isoformat()
             }
-    
+
     async def get_workflow_info(self, workflow_id: str) -> Optional[Dict[str, Any]]:
         """Get information about a workflow."""
         if workflow_id not in self.workflows:
             return None
-        
+
         workflow = self.workflows[workflow_id]
         return {
             "workflow_id": workflow_id,
@@ -441,7 +441,7 @@ class LangchainService:
             "workflow_type": "LANGCHAIN",
             "created_at": datetime.utcnow().isoformat()
         }
-    
+
     def list_workflows(self) -> List[Dict[str, Any]]:
         """List all Langchain workflows."""
         return [
@@ -454,7 +454,7 @@ class LangchainService:
             }
             for workflow_id, workflow in self.workflows.items()
         ]
-    
+
     def get_available_templates(self) -> List[Dict[str, Any]]:
         """Get available workflow templates."""
         return [

@@ -46,7 +46,7 @@ class RiskLevel(Enum):
 @runtime_checkable
 class TradeValidationProtocol(Protocol):
     """Protocol for trade validation services"""
-    
+
     async def validate_trade(
         self,
         symbol: str,
@@ -57,7 +57,7 @@ class TradeValidationProtocol(Protocol):
     ) -> OperationResult:
         """Validate a trade before execution"""
         ...
-    
+
     async def check_position_limits(
         self,
         account: str,
@@ -72,7 +72,7 @@ class TradeValidationProtocol(Protocol):
 @runtime_checkable
 class SettlementProtocol(Protocol):
     """Protocol for trade settlement services"""
-    
+
     async def initiate_settlement(
         self,
         trade_id: str,
@@ -80,7 +80,7 @@ class SettlementProtocol(Protocol):
     ) -> OperationResult:
         """Initiate trade settlement process"""
         ...
-    
+
     async def confirm_settlement(
         self,
         trade_id: str,
@@ -93,7 +93,7 @@ class SettlementProtocol(Protocol):
 
 class ITradeService(ABC):
     """Abstract interface for trade services"""
-    
+
     @abstractmethod
     async def create_trade(
         self,
@@ -102,7 +102,7 @@ class ITradeService(ABC):
     ) -> OperationResult:
         """Create a new trade"""
         pass
-    
+
     @abstractmethod
     async def execute_trade_workflow(
         self,
@@ -111,7 +111,7 @@ class ITradeService(ABC):
     ) -> OperationResult:
         """Execute complete trade workflow"""
         pass
-    
+
     @abstractmethod
     async def get_trade_status(
         self,
@@ -127,7 +127,7 @@ class ITradeService(ABC):
 @runtime_checkable
 class SOPExecutionProtocol(Protocol):
     """Protocol for SOP execution services"""
-    
+
     async def start_execution(
         self,
         sop_id: str,
@@ -136,7 +136,7 @@ class SOPExecutionProtocol(Protocol):
     ) -> OperationResult:
         """Start SOP execution"""
         ...
-    
+
     async def execute_step(
         self,
         execution_id: str,
@@ -146,7 +146,7 @@ class SOPExecutionProtocol(Protocol):
     ) -> OperationResult:
         """Execute a specific SOP step"""
         ...
-    
+
     async def complete_execution(
         self,
         execution_id: str,
@@ -158,7 +158,7 @@ class SOPExecutionProtocol(Protocol):
 
 class ISOPService(ABC):
     """Abstract interface for SOP services"""
-    
+
     @abstractmethod
     async def create_sop_document(
         self,
@@ -167,7 +167,7 @@ class ISOPService(ABC):
     ) -> OperationResult:
         """Create a new SOP document"""
         pass
-    
+
     @abstractmethod
     async def get_sop_by_category(
         self,
@@ -176,7 +176,7 @@ class ISOPService(ABC):
     ) -> OperationResult:
         """Get SOPs by category"""
         pass
-    
+
     @abstractmethod
     async def execute_sop(
         self,
@@ -193,7 +193,7 @@ class ISOPService(ABC):
 @runtime_checkable
 class RiskCalculationProtocol(Protocol):
     """Protocol for risk calculation services"""
-    
+
     async def calculate_var(
         self,
         portfolio_id: str,
@@ -203,7 +203,7 @@ class RiskCalculationProtocol(Protocol):
     ) -> OperationResult:
         """Calculate Value at Risk"""
         ...
-    
+
     async def calculate_position_risk(
         self,
         position_data: Dict[str, Any],
@@ -215,7 +215,7 @@ class RiskCalculationProtocol(Protocol):
 
 class IRiskService(ABC):
     """Abstract interface for risk management services"""
-    
+
     @abstractmethod
     async def assess_trade_risk(
         self,
@@ -224,7 +224,7 @@ class IRiskService(ABC):
     ) -> OperationResult:
         """Assess risk for a trade"""
         pass
-    
+
     @abstractmethod
     async def monitor_portfolio_risk(
         self,
@@ -233,7 +233,7 @@ class IRiskService(ABC):
     ) -> OperationResult:
         """Monitor portfolio risk metrics"""
         pass
-    
+
     @abstractmethod
     async def check_risk_limits(
         self,
@@ -250,7 +250,7 @@ class IRiskService(ABC):
 @runtime_checkable
 class ComplianceCheckProtocol(Protocol):
     """Protocol for compliance checking services"""
-    
+
     async def check_aml_compliance(
         self,
         transaction_data: Dict[str, Any],
@@ -258,7 +258,7 @@ class ComplianceCheckProtocol(Protocol):
     ) -> OperationResult:
         """Check AML compliance"""
         ...
-    
+
     async def check_trading_rules(
         self,
         trade_data: Dict[str, Any],
@@ -270,7 +270,7 @@ class ComplianceCheckProtocol(Protocol):
 
 class IComplianceService(ABC):
     """Abstract interface for compliance services"""
-    
+
     @abstractmethod
     async def validate_kyc_status(
         self,
@@ -279,7 +279,7 @@ class IComplianceService(ABC):
     ) -> OperationResult:
         """Validate customer KYC status"""
         pass
-    
+
     @abstractmethod
     async def perform_compliance_check(
         self,
@@ -289,7 +289,7 @@ class IComplianceService(ABC):
     ) -> OperationResult:
         """Perform specific compliance check"""
         pass
-    
+
     @abstractmethod
     async def generate_compliance_report(
         self,
@@ -305,7 +305,7 @@ class IComplianceService(ABC):
 
 class IUserService(ABC):
     """Abstract interface for user management services"""
-    
+
     @abstractmethod
     async def authenticate_user(
         self,
@@ -314,7 +314,7 @@ class IUserService(ABC):
     ) -> OperationResult:
         """Authenticate user credentials"""
         pass
-    
+
     @abstractmethod
     async def authorize_action(
         self,
@@ -325,7 +325,7 @@ class IUserService(ABC):
     ) -> OperationResult:
         """Authorize user action on resource"""
         pass
-    
+
     @abstractmethod
     async def update_user_profile(
         self,
@@ -341,7 +341,7 @@ class IUserService(ABC):
 
 class IAuditService(ABC):
     """Abstract interface for audit services"""
-    
+
     @abstractmethod
     async def log_operation(
         self,
@@ -353,7 +353,7 @@ class IAuditService(ABC):
     ) -> None:
         """Log an operation for audit"""
         pass
-    
+
     @abstractmethod
     async def get_audit_trail(
         self,
@@ -363,7 +363,7 @@ class IAuditService(ABC):
     ) -> OperationResult:
         """Get audit trail for resource"""
         pass
-    
+
     @abstractmethod
     async def generate_audit_report(
         self,
@@ -379,7 +379,7 @@ class IAuditService(ABC):
 
 class IDataService(ABC):
     """Abstract interface for data management services"""
-    
+
     @abstractmethod
     async def store_data_record(
         self,
@@ -390,7 +390,7 @@ class IDataService(ABC):
     ) -> OperationResult:
         """Store a data record"""
         pass
-    
+
     @abstractmethod
     async def query_data(
         self,
@@ -405,7 +405,7 @@ class IDataService(ABC):
 
 class IWorkflowService(ABC):
     """Abstract interface for workflow execution services"""
-    
+
     @abstractmethod
     async def start_workflow(
         self,
@@ -415,7 +415,7 @@ class IWorkflowService(ABC):
     ) -> OperationResult:
         """Start a workflow execution"""
         pass
-    
+
     @abstractmethod
     async def get_workflow_status(
         self,
@@ -428,7 +428,7 @@ class IWorkflowService(ABC):
 
 class INotificationService(ABC):
     """Abstract interface for notification services"""
-    
+
     @abstractmethod
     async def send_notification(
         self,
@@ -439,7 +439,7 @@ class INotificationService(ABC):
     ) -> OperationResult:
         """Send a notification"""
         pass
-    
+
     @abstractmethod
     async def send_alert(
         self,
@@ -456,32 +456,32 @@ class INotificationService(ABC):
 
 class IServiceFactory(ABC):
     """Abstract factory for creating service instances"""
-    
+
     @abstractmethod
     def create_trade_service(self) -> ITradeService:
         """Create trade service instance"""
         pass
-    
+
     @abstractmethod
     def create_sop_service(self) -> ISOPService:
         """Create SOP service instance"""
         pass
-    
+
     @abstractmethod
     def create_risk_service(self) -> IRiskService:
         """Create risk service instance"""
         pass
-    
+
     @abstractmethod
     def create_compliance_service(self) -> IComplianceService:
         """Create compliance service instance"""
         pass
-    
+
     @abstractmethod
     def create_user_service(self) -> IUserService:
         """Create user service instance"""
         pass
-    
+
     @abstractmethod
     def create_audit_service(self) -> IAuditService:
         """Create audit service instance"""

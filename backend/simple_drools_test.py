@@ -7,10 +7,16 @@ external dependencies like httpx, py4j, or Docker.
 """
 
 import json
+import sys
+import os
 from datetime import datetime, date
 from dataclasses import dataclass, asdict
 from enum import Enum
 from typing import Dict, List, Any, Optional
+
+# Add the parent directory for shared test utilities
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from test_utils import run_test_with_error_handling
 
 # Mock implementations for testing
 
@@ -26,7 +32,7 @@ class RuleFact:
     fact_id: str
     data: Dict[str, Any]
     timestamp: datetime
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "factType": self.fact_type,
@@ -44,7 +50,7 @@ class RuleResult:
     actions_triggered: List[Dict[str, Any]]
     execution_time_ms: float
     error_message: Optional[str] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
@@ -135,17 +141,17 @@ def simulate_trade_validation_rules(trade_fact: RuleFact) -> RuleResult:
     """Simulate trade validation rules based on DRL logic"""
     rules_fired = []
     actions_triggered = []
-    
+
     trade_data = trade_fact.data
     trade_value = trade_data.get("tradeValue", 0)
     price = trade_data.get("price", 0)
     trade_date = trade_data.get("tradeDate", "")
     settlement_date = trade_data.get("settlementDate", "")
-    
+
     print(f"\n🔍 Evaluating Trade Validation Rules for {trade_data.get('tradeId')}")
     print(f"   Trade Value: ${trade_value:,.2f}")
     print(f"   Price: ${price}")
-    
+
     # Rule: Large Trade Alert (> $1M)
     if trade_value > 1000000:
         rules_fired.append("Large Trade Alert")
@@ -158,7 +164,7 @@ def simulate_trade_validation_rules(trade_fact: RuleFact) -> RuleResult:
             "timestamp": datetime.now().isoformat()
         })
         print(f"   🚨 RULE FIRED: Large Trade Alert")
-    
+
     # Rule: Zero Price Validation
     if price <= 0:
         rules_fired.append("Zero Price Validation")
@@ -170,7 +176,7 @@ def simulate_trade_validation_rules(trade_fact: RuleFact) -> RuleResult:
             "timestamp": datetime.now().isoformat()
         })
         print(f"   ❌ RULE FIRED: Zero Price Validation")
-    
+
     # Rule: Settlement Date Validation
     if settlement_date < trade_date:
         rules_fired.append("Settlement Date Validation")
@@ -182,9 +188,9 @@ def simulate_trade_validation_rules(trade_fact: RuleFact) -> RuleResult:
             "timestamp": datetime.now().isoformat()
         })
         print(f"   ❌ RULE FIRED: Invalid Settlement Date")
-    
+
     print(f"   ✅ Validation completed: {len(rules_fired)} rules fired")
-    
+
     return RuleResult(
         rule_name="trade-validation",
         status=RuleExecutionStatus.SUCCESS,
@@ -198,21 +204,21 @@ def simulate_risk_management_rules(trade_fact: RuleFact, portfolio_fact: RuleFac
     """Simulate risk management rules"""
     rules_fired = []
     actions_triggered = []
-    
+
     trade_data = trade_fact.data
     portfolio_data = portfolio_fact.data
-    
+
     trade_value = trade_data.get("tradeValue", 0)
     total_exposure = portfolio_data.get("totalExposure", 0)
     exposure_limit = portfolio_data.get("exposureLimit", 0)
     concentration_limit = portfolio_data.get("concentrationLimit", 0)
     security_id = trade_data.get("securityId", "")
-    
+
     print(f"\n🎯 Evaluating Risk Management Rules")
     print(f"   Current Exposure: ${total_exposure:,.2f}")
     print(f"   Exposure Limit: ${exposure_limit:,.2f}")
     print(f"   New Trade Value: ${trade_value:,.2f}")
-    
+
     # Rule: Position Limit Check
     if total_exposure + trade_value > exposure_limit:
         rules_fired.append("Position Limit Check")
@@ -225,12 +231,12 @@ def simulate_risk_management_rules(trade_fact: RuleFact, portfolio_fact: RuleFac
             "timestamp": datetime.now().isoformat()
         })
         print(f"   🚨 RULE FIRED: Position Limit Exceeded")
-    
+
     # Rule: Concentration Risk Check
     security_exposures = portfolio_data.get("securityExposures", {})
     current_security_exposure = security_exposures.get(security_id, 0)
     new_security_exposure = current_security_exposure + trade_value
-    
+
     if new_security_exposure > concentration_limit:
         rules_fired.append("Concentration Risk Check")
         actions_triggered.append({
@@ -242,7 +248,7 @@ def simulate_risk_management_rules(trade_fact: RuleFact, portfolio_fact: RuleFac
             "timestamp": datetime.now().isoformat()
         })
         print(f"   ⚠️  RULE FIRED: Concentration Risk for {security_id}")
-    
+
     # Rule: Overnight Risk Limit
     current_hour = datetime.now().hour
     if trade_value > 5000000 and (current_hour >= 17 or current_hour <= 8):
@@ -256,9 +262,9 @@ def simulate_risk_management_rules(trade_fact: RuleFact, portfolio_fact: RuleFac
             "timestamp": datetime.now().isoformat()
         })
         print(f"   🌙 RULE FIRED: Overnight Risk Alert")
-    
+
     print(f"   ✅ Risk check completed: {len(rules_fired)} rules fired")
-    
+
     return RuleResult(
         rule_name="risk-management",
         status=RuleExecutionStatus.SUCCESS,
@@ -272,21 +278,21 @@ def simulate_compliance_rules(trade_fact: RuleFact, client_fact: RuleFact) -> Ru
     """Simulate compliance rules"""
     rules_fired = []
     actions_triggered = []
-    
+
     trade_data = trade_fact.data
     client_data = client_fact.data
-    
+
     trade_value = trade_data.get("tradeValue", 0)
     kyc_status = client_data.get("kycStatus", "")
     aml_rating = client_data.get("amlRiskRating", "")
     last_review = client_data.get("lastReviewDate", "")
     country_code = client_data.get("countryCode", "")
-    
+
     print(f"\n🛡️  Evaluating Compliance Rules")
     print(f"   Client KYC Status: {kyc_status}")
     print(f"   AML Risk Rating: {aml_rating}")
     print(f"   Last Review: {last_review}")
-    
+
     # Rule: KYC Status Check
     if kyc_status != "APPROVED":
         rules_fired.append("KYC Status Check")
@@ -299,7 +305,7 @@ def simulate_compliance_rules(trade_fact: RuleFact, client_fact: RuleFact) -> Ru
             "timestamp": datetime.now().isoformat()
         })
         print(f"   ❌ RULE FIRED: KYC Status Check Failed")
-    
+
     # Rule: AML High Risk Screening
     if trade_value > 10000 and aml_rating == "HIGH":
         rules_fired.append("AML High Risk Screening")
@@ -312,7 +318,7 @@ def simulate_compliance_rules(trade_fact: RuleFact, client_fact: RuleFact) -> Ru
             "timestamp": datetime.now().isoformat()
         })
         print(f"   🚨 RULE FIRED: AML High Risk Screening")
-    
+
     # Rule: Stale KYC Review
     try:
         review_date = datetime.strptime(last_review, "%Y-%m-%d").date()
@@ -329,7 +335,7 @@ def simulate_compliance_rules(trade_fact: RuleFact, client_fact: RuleFact) -> Ru
             print(f"   ⚠️  RULE FIRED: Stale KYC Review")
     except ValueError:
         pass
-    
+
     # Rule: Sanctioned Country Check
     sanctioned_countries = ["IR", "KP", "SY", "CU"]
     if country_code in sanctioned_countries:
@@ -343,9 +349,9 @@ def simulate_compliance_rules(trade_fact: RuleFact, client_fact: RuleFact) -> Ru
             "timestamp": datetime.now().isoformat()
         })
         print(f"   🚫 RULE FIRED: Sanctioned Country Check")
-    
+
     print(f"   ✅ Compliance check completed: {len(rules_fired)} rules fired")
-    
+
     return RuleResult(
         rule_name="compliance-checks",
         status=RuleExecutionStatus.SUCCESS,
@@ -360,25 +366,25 @@ def test_normal_trade():
     print("\n" + "="*70)
     print("🔵 TEST 1: Normal Trade (Should Pass Most Rules)")
     print("="*70)
-    
+
     trade_data = create_sample_trade_data()
     portfolio_data = create_sample_portfolio_data()
     client_data = create_sample_client_data()
-    
+
     # Create facts
     trade_fact = RuleFact("Trade", "TRADE_001", trade_data, datetime.now())
     portfolio_fact = RuleFact("Portfolio", "PORTFOLIO_001", portfolio_data, datetime.now())
     client_fact = RuleFact("Client", "CLIENT_001", client_data, datetime.now())
-    
+
     # Run rule simulations
     validation_result = simulate_trade_validation_rules(trade_fact)
     risk_result = simulate_risk_management_rules(trade_fact, portfolio_fact)
     compliance_result = simulate_compliance_rules(trade_fact, client_fact)
-    
+
     # Summary
     total_rules = len(validation_result.rules_fired) + len(risk_result.rules_fired) + len(compliance_result.rules_fired)
     total_alerts = len(validation_result.actions_triggered) + len(risk_result.actions_triggered) + len(compliance_result.actions_triggered)
-    
+
     print(f"\n📊 NORMAL TRADE SUMMARY:")
     print(f"   Total Rules Fired: {total_rules}")
     print(f"   Total Alerts: {total_alerts}")
@@ -389,30 +395,30 @@ def test_large_trade():
     print("\n" + "="*70)
     print("🔴 TEST 2: Large High-Risk Trade (Should Trigger Multiple Rules)")
     print("="*70)
-    
+
     trade_data = create_large_trade_data()
     portfolio_data = create_sample_portfolio_data()
     client_data = create_high_risk_client_data()
-    
+
     # Create facts
     trade_fact = RuleFact("Trade", "TRADE_LARGE_001", trade_data, datetime.now())
     portfolio_fact = RuleFact("Portfolio", "PORTFOLIO_001", portfolio_data, datetime.now())
     client_fact = RuleFact("Client", "CLIENT_002", client_data, datetime.now())
-    
+
     # Run rule simulations
     validation_result = simulate_trade_validation_rules(trade_fact)
     risk_result = simulate_risk_management_rules(trade_fact, portfolio_fact)
     compliance_result = simulate_compliance_rules(trade_fact, client_fact)
-    
+
     # Summary
     total_rules = len(validation_result.rules_fired) + len(risk_result.rules_fired) + len(compliance_result.rules_fired)
     total_alerts = len(validation_result.actions_triggered) + len(risk_result.actions_triggered) + len(compliance_result.actions_triggered)
-    
+
     print(f"\n📊 LARGE TRADE SUMMARY:")
     print(f"   Total Rules Fired: {total_rules}")
     print(f"   Total Alerts: {total_alerts}")
     print(f"   Trade Status: {'✅ APPROVED' if total_alerts == 0 else '❌ REQUIRES MANUAL REVIEW'}")
-    
+
     # Show specific alerts
     print(f"\n🚨 ALERTS GENERATED:")
     all_alerts = validation_result.actions_triggered + risk_result.actions_triggered + compliance_result.actions_triggered
@@ -427,64 +433,59 @@ def test_rule_performance():
     print("\n" + "="*70)
     print("⚡ TEST 3: Rule Execution Performance")
     print("="*70)
-    
+
     # Test with multiple trades
     num_trades = 10
     total_execution_time = 0
-    
+
     print(f"\nTesting rule execution for {num_trades} trades...")
-    
+
     for i in range(num_trades):
         trade_data = create_sample_trade_data()
         trade_data["tradeId"] = f"TRADE_{i+1:03d}"
         trade_data["tradeValue"] = 100000 + (i * 50000)  # Varying trade sizes
-        
+
         trade_fact = RuleFact("Trade", trade_data["tradeId"], trade_data, datetime.now())
-        
+
         start_time = datetime.now()
         result = simulate_trade_validation_rules(trade_fact)
         end_time = datetime.now()
-        
+
         execution_time = (end_time - start_time).total_seconds() * 1000
         total_execution_time += execution_time
-        
+
         if i < 3:  # Show details for first few trades
             print(f"   Trade {i+1}: ${trade_data['tradeValue']:,.2f} -> {len(result.rules_fired)} rules fired ({execution_time:.1f}ms)")
-    
+
     avg_execution_time = total_execution_time / num_trades
-    
+
     print(f"\n📈 PERFORMANCE RESULTS:")
     print(f"   Total Trades Processed: {num_trades}")
     print(f"   Total Execution Time: {total_execution_time:.1f}ms")
     print(f"   Average per Trade: {avg_execution_time:.1f}ms")
     print(f"   Throughput: {1000/avg_execution_time:.0f} trades/second")
 
-def main():
+async def main():
     """Main test function"""
     print("🏦 Otomeshon Custodian Portal - Drools Rules Engine Test")
     print("📅 " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     print("\nSimulating Drools rules execution for custodian banking operations...")
-    
-    try:
-        # Test normal trade
-        test_normal_trade()
-        
-        # Test large trade
-        test_large_trade()
-        
-        # Test performance
-        test_rule_performance()
-        
-        print("\n" + "="*70)
-        print("✅ ALL TESTS COMPLETED SUCCESSFULLY!")
-        print("🚀 Drools integration logic verified and ready for deployment")
-        print("📝 Next steps: Deploy to Docker with real Kogito runtime")
-        print("="*70)
-        
-    except Exception as e:
-        print(f"\n❌ Test failed with error: {str(e)}")
-        import traceback
-        traceback.print_exc()
+
+    # Test normal trade
+    test_normal_trade()
+
+    # Test large trade
+    test_large_trade()
+
+    # Test performance
+    test_rule_performance()
+
+    print("\n" + "="*70)
+    print("✅ ALL TESTS COMPLETED SUCCESSFULLY!")
+    print("🚀 Drools integration logic verified and ready for deployment")
+    print("📝 Next steps: Deploy to Docker with real Kogito runtime")
+    print("="*70)
 
 if __name__ == "__main__":
-    main()
+    from test_utils import run_async_test_main
+    run_async_test_main(main)

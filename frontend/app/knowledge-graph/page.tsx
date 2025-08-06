@@ -1,6 +1,6 @@
 import React from 'react';
 import NextLayout from '@/components/Layout/NextLayout';
-import KnowledgeGraph from '@/pages/KnowledgeGraph';
+import KnowledgeGraph from '@/components/pages/KnowledgeGraph';
 
 // Disable static generation for this page
 export const dynamic = 'force-dynamic';

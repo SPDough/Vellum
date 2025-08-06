@@ -54,7 +54,7 @@ import {
   Upload,
   Add,
 } from '@mui/icons-material';
-import { rulesService, Rule, RulesCatalog, RuleCategory } from '../services/rulesService';
+import { rulesService, Rule, RulesCatalog, RuleCategory } from '../../services/rulesService';
 
 interface TabPanelProps {
   children?: React.ReactNode;

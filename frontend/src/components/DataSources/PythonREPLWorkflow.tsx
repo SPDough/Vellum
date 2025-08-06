@@ -36,14 +36,7 @@ import {
 import { useQuery, useMutation } from '@tanstack/react-query';
 import MonacoEditor from '@monaco-editor/react';
 
-// import { dataSourceService } from '@/services/dataSourceService'; // Unused import
-
-interface DataSourceConfiguration {
-  id: string;
-  name: string;
-  description?: string;
-  data_source_type: 'API' | 'MCP_SERVER' | 'WEB_SCRAPING';
-}
+import type { DataSourceConfiguration } from '@/services/dataSourceService';
 
 interface PythonREPLWorkflowProps {
   open: boolean;

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import NextLayout from '@/components/Layout/NextLayout';
-import Reconciliation from '@/pages/Reconciliation';
+import Reconciliation from '@/components/pages/Reconciliation';
 
 export default function ReconciliationPage() {
   return (

@@ -248,12 +248,12 @@ class SOPStepExecutionStatus(str):
 class SOPExecution(Base):
     """SOP execution tracking table"""
     __tablename__ = "sop_executions"
-    
+
     id = Column(String, primary_key=True)
     sop_document_id = Column(String, nullable=False, index=True)
     execution_name = Column(String, nullable=False)
     status = Column(String, default=SOPExecutionStatus.NOT_STARTED)
-    
+
     # Execution metadata
     initiated_by = Column(String, nullable=False)
     assigned_to = Column(String)
@@ -261,24 +261,24 @@ class SOPExecution(Base):
     end_time = Column(DateTime)
     estimated_duration_minutes = Column(Integer)
     actual_duration_minutes = Column(Integer)
-    
+
     # Context and data
     context_data = Column(JSON)  # Trade data, client info, etc.
     input_parameters = Column(JSON)
     final_output = Column(JSON)
-    
+
     # Progress tracking
     current_step_id = Column(String)
     completed_steps = Column(JSON)  # List of completed step IDs
     failed_steps = Column(JSON)  # List of failed step IDs
-    
+
     # Compliance and approval
     requires_approval = Column(Boolean, default=False)
     approval_status = Column(String)  # PENDING, APPROVED, REJECTED
     approval_notes = Column(Text)
     approved_by = Column(String)
     approved_at = Column(DateTime)
-    
+
     # Audit trail
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -288,34 +288,34 @@ class SOPExecution(Base):
 class SOPStepExecution(Base):
     """Individual step execution tracking"""
     __tablename__ = "sop_step_executions"
-    
+
     id = Column(String, primary_key=True)
     sop_execution_id = Column(String, nullable=False, index=True)
     step_id = Column(String, nullable=False)
     status = Column(String, default=SOPStepExecutionStatus.PENDING)
-    
+
     # Execution details
     started_by = Column(String)
     start_time = Column(DateTime)
     end_time = Column(DateTime)
     actual_duration_minutes = Column(Integer)
-    
+
     # Step results
     input_data = Column(JSON)
     output_data = Column(JSON)
     validation_results = Column(JSON)
     automation_results = Column(JSON)
-    
+
     # Notes and documentation
     execution_notes = Column(Text)
     documents_generated = Column(JSON)  # List of generated document paths
     approval_details = Column(JSON)
-    
+
     # Error handling
     error_message = Column(Text)
     retry_count = Column(Integer, default=0)
     max_retries = Column(Integer, default=3)
-    
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -358,7 +358,7 @@ class SOPExecutionResponse(BaseModel):
     requires_approval: bool
     approval_status: Optional[str] = None
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -394,7 +394,7 @@ class SOPStepExecutionResponse(BaseModel):
     error_message: Optional[str] = None
     retry_count: int
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
@@ -415,7 +415,7 @@ class SOPExecutionSummary(BaseModel):
 
 class SOPTemplateLibrary:
     """Library of pre-defined SOP templates for custodian banking"""
-    
+
     @staticmethod
     def get_trade_settlement_template() -> Dict[str, Any]:
         """Trade Settlement SOP Template"""
@@ -424,7 +424,7 @@ class SOPTemplateLibrary:
             "document_number": "SOP-TS-001",
             "version": "1.0",
             "category": "Trade Settlement",
-            "business_area": "Custody Operations", 
+            "business_area": "Custody Operations",
             "process_type": "Semi-Automated",
             "content": """
 # Equity Trade Settlement Procedure
@@ -477,13 +477,13 @@ Applies to all equity trades processed through the custodian platform.
                 }
             ]
         }
-    
+
     @staticmethod
     def get_corporate_actions_template() -> Dict[str, Any]:
         """Corporate Actions SOP Template"""
         return {
             "title": "Corporate Actions Processing",
-            "document_number": "SOP-CA-001", 
+            "document_number": "SOP-CA-001",
             "version": "1.0",
             "category": "Corporate Actions",
             "business_area": "Asset Servicing",
@@ -499,7 +499,7 @@ All corporate actions affecting client holdings.
 
 ## Procedure Steps
 1. Corporate Action Notification
-2. Client Notification 
+2. Client Notification
 3. Election Processing
 4. Entitlement Calculation
             """,

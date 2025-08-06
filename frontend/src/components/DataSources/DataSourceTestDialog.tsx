@@ -22,7 +22,8 @@ import {
 } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
 
-import { dataSourceService, DataSourceConfiguration, DataSourceTestResponse } from '@/services/dataSourceService';
+import { dataSourceService } from '@/services/dataSourceService';
+import type { DataSourceConfiguration, DataSourceTestResponse } from '@/services/dataSourceService';
 
 interface DataSourceTestDialogProps {
   open: boolean;

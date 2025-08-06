@@ -1,7 +1,7 @@
 """Initial banking schema
 
 Revision ID: 001
-Revises: 
+Revises:
 Create Date: 2024-11-27 14:00:00.000000
 
 """
@@ -18,10 +18,10 @@ depends_on = None
 
 def upgrade() -> None:
     """Create initial banking schema"""
-    
+
     # Create audit schema for compliance
     op.execute("CREATE SCHEMA IF NOT EXISTS audit")
-    
+
     # Users table
     op.create_table(
         'users',
@@ -46,13 +46,13 @@ def upgrade() -> None:
         sa.UniqueConstraint('email'),
         sa.UniqueConstraint('username')
     )
-    
+
     # Indexes for users
     op.create_index('ix_users_email', 'users', ['email'])
     op.create_index('ix_users_role', 'users', ['role'])
     op.create_index('ix_users_department', 'users', ['department'])
     op.create_index('ix_users_created_at', 'users', ['created_at'])
-    
+
     # SOP Documents table
     op.create_table(
         'sop_documents',
@@ -79,14 +79,14 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('document_number')
     )
-    
+
     # Indexes for SOP documents
     op.create_index('ix_sop_documents_title', 'sop_documents', ['title'])
     op.create_index('ix_sop_documents_category', 'sop_documents', ['category'])
     op.create_index('ix_sop_documents_business_area', 'sop_documents', ['business_area'])
     op.create_index('ix_sop_documents_process_type', 'sop_documents', ['process_type'])
     op.create_index('ix_sop_documents_status', 'sop_documents', ['status'])
-    
+
     # SOP Steps table
     op.create_table(
         'sop_steps',
@@ -107,11 +107,11 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
         sa.ForeignKeyConstraint(['sop_document_id'], ['sop_documents.id'], ondelete='CASCADE')
     )
-    
+
     # Indexes for SOP steps
     op.create_index('ix_sop_steps_sop_document_id', 'sop_steps', ['sop_document_id'])
     op.create_index('ix_sop_steps_step_number', 'sop_steps', ['step_number'])
-    
+
     # SOP Executions table
     op.create_table(
         'sop_executions',
@@ -142,13 +142,13 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
         sa.ForeignKeyConstraint(['sop_document_id'], ['sop_documents.id'])
     )
-    
+
     # Indexes for SOP executions
     op.create_index('ix_sop_executions_sop_document_id', 'sop_executions', ['sop_document_id'])
     op.create_index('ix_sop_executions_status', 'sop_executions', ['status'])
     op.create_index('ix_sop_executions_initiated_by', 'sop_executions', ['initiated_by'])
     op.create_index('ix_sop_executions_created_at', 'sop_executions', ['created_at'])
-    
+
     # Trades table
     op.create_table(
         'trades',
@@ -178,7 +178,7 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('trade_id')
     )
-    
+
     # Indexes for trades
     op.create_index('ix_trades_trade_id', 'trades', ['trade_id'])
     op.create_index('ix_trades_symbol', 'trades', ['symbol'])
@@ -187,7 +187,7 @@ def upgrade() -> None:
     op.create_index('ix_trades_status', 'trades', ['status'])
     op.create_index('ix_trades_counterparty', 'trades', ['counterparty'])
     op.create_index('ix_trades_account', 'trades', ['account'])
-    
+
     # Audit Log table (in audit schema for compliance)
     op.create_table(
         'audit_log',
@@ -209,14 +209,14 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
         schema='audit'
     )
-    
+
     # Indexes for audit log (critical for performance in compliance reporting)
     op.create_index('ix_audit_log_user_id', 'audit_log', ['user_id'], schema='audit')
     op.create_index('ix_audit_log_action', 'audit_log', ['action'], schema='audit')
     op.create_index('ix_audit_log_timestamp', 'audit_log', ['timestamp'], schema='audit')
     op.create_index('ix_audit_log_resource_type', 'audit_log', ['resource_type'], schema='audit')
     op.create_index('ix_audit_log_resource_id', 'audit_log', ['resource_id'], schema='audit')
-    
+
     # Data sandbox records table
     op.create_table(
         'data_records',
@@ -231,12 +231,12 @@ def upgrade() -> None:
         sa.Column('created_by', sa.String(255), nullable=True),
         sa.PrimaryKeyConstraint('id')
     )
-    
+
     # Indexes for data records
     op.create_index('ix_data_records_timestamp', 'data_records', ['timestamp'])
     op.create_index('ix_data_records_source', 'data_records', ['source'])
     op.create_index('ix_data_records_data_type', 'data_records', ['data_type'])
-    
+
     # Create triggers for updated_at columns
     op.execute("""
         CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -247,11 +247,11 @@ def upgrade() -> None:
         END;
         $$ language 'plpgsql';
     """)
-    
+
     # Apply triggers to tables with updated_at columns
     for table in ['users', 'sop_documents', 'sop_executions', 'trades']:
         op.execute(f"""
-            CREATE TRIGGER update_{table}_updated_at 
+            CREATE TRIGGER update_{table}_updated_at
             BEFORE UPDATE ON {table}
             FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
         """)
@@ -259,13 +259,13 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Drop all tables and schemas"""
-    
+
     # Drop triggers first
     for table in ['users', 'sop_documents', 'sop_executions', 'trades']:
         op.execute(f"DROP TRIGGER IF EXISTS update_{table}_updated_at ON {table}")
-    
+
     op.execute("DROP FUNCTION IF EXISTS update_updated_at_column()")
-    
+
     # Drop tables
     op.drop_table('data_records')
     op.drop_table('audit_log', schema='audit')
@@ -274,6 +274,6 @@ def downgrade() -> None:
     op.drop_table('sop_steps')
     op.drop_table('sop_documents')
     op.drop_table('users')
-    
+
     # Drop audit schema
     op.execute("DROP SCHEMA IF EXISTS audit CASCADE")

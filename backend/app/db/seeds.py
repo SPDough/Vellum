@@ -19,7 +19,7 @@ from app.core.security import get_password_hash
 
 class BankingSeedData:
     """Banking-specific seed data for development and testing"""
-    
+
     @staticmethod
     def get_sample_users() -> List[Dict[str, Any]]:
         """Generate sample banking users with realistic roles"""
@@ -36,7 +36,7 @@ class BankingSeedData:
                 "is_verified": True,
             },
             {
-                "email": "trader1@otomeshon.com", 
+                "email": "trader1@otomeshon.com",
                 "username": "trader1",
                 "full_name": "Alice Johnson",
                 "password": "TraderPass123!",
@@ -80,7 +80,7 @@ class BankingSeedData:
                 "is_verified": True,
             }
         ]
-    
+
     @staticmethod
     def get_sample_sop_documents() -> List[Dict[str, Any]]:
         """Generate sample SOP documents for banking operations"""
@@ -92,13 +92,13 @@ class BankingSeedData:
                 "version": "1.0",
                 "content": """
                 # Trade Settlement Standard Operating Procedure
-                
+
                 ## Purpose
                 This SOP defines the standard process for settling trades in the Otomeshon trading system.
-                
+
                 ## Scope
                 Applies to all equity trades executed through the platform.
-                
+
                 ## Process Steps
                 1. Trade Validation
                 2. Risk Assessment
@@ -120,19 +120,19 @@ class BankingSeedData:
             {
                 "id": str(uuid.uuid4()),
                 "title": "KYC Customer Onboarding",
-                "document_number": "SOP-002", 
+                "document_number": "SOP-002",
                 "version": "2.1",
                 "content": """
                 # Know Your Customer (KYC) Onboarding Procedure
-                
+
                 ## Purpose
                 Establishes requirements for customer identity verification and due diligence.
-                
+
                 ## Regulatory Framework
                 - BSA/AML Requirements
                 - Patriot Act Compliance
                 - FINRA Rules
-                
+
                 ## Process Steps
                 1. Customer Information Collection
                 2. Identity Verification
@@ -159,16 +159,16 @@ class BankingSeedData:
                 "version": "1.5",
                 "content": """
                 # Daily Risk Monitoring Procedure
-                
+
                 ## Purpose
                 Defines daily risk monitoring activities and escalation procedures.
-                
+
                 ## Key Risk Metrics
                 - Portfolio VaR (Value at Risk)
                 - Position Concentration
                 - Credit Exposure
                 - Market Risk Limits
-                
+
                 ## Monitoring Schedule
                 - Pre-market: 07:00 EST
                 - Intraday: Every 30 minutes during trading hours
@@ -186,14 +186,14 @@ class BankingSeedData:
                 "automation_percentage": 90.0,
             }
         ]
-    
+
     @staticmethod
     def get_sample_sop_steps() -> List[Dict[str, Any]]:
         """Generate sample SOP steps for the documents"""
         sop_docs = BankingSeedData.get_sample_sop_documents()
         trade_settlement_id = sop_docs[0]["id"]
         kyc_onboarding_id = sop_docs[1]["id"]
-        
+
         return [
             # Trade Settlement Steps
             {
@@ -261,13 +261,13 @@ class BankingSeedData:
                 "automation_confidence": 85.0,
             }
         ]
-    
+
     @staticmethod
     def get_sample_trades() -> List[Dict[str, Any]]:
         """Generate sample trades for testing"""
         base_date = date.today()
         settlement_date = base_date + timedelta(days=2)  # T+2 settlement
-        
+
         return [
             {
                 "id": str(uuid.uuid4()),
@@ -335,90 +335,90 @@ class BankingSeedData:
 
 class DatabaseSeeder:
     """Main seeder class for populating the database"""
-    
+
     def __init__(self):
         self.seed_data = BankingSeedData()
-    
+
     async def seed_users(self, session: AsyncSession) -> None:
         """Seed user data"""
         users_data = self.seed_data.get_sample_users()
-        
+
         for user_data in users_data:
             # Hash the password
             hashed_password = get_password_hash(user_data.pop("password"))
-            
+
             user = User(
                 **user_data,
                 hashed_password=hashed_password
             )
             session.add(user)
-        
+
         await session.commit()
         print(f"✓ Seeded {len(users_data)} users")
-    
+
     async def seed_sop_documents(self, session: AsyncSession) -> None:
         """Seed SOP documents and steps"""
         sop_docs_data = self.seed_data.get_sample_sop_documents()
         sop_steps_data = self.seed_data.get_sample_sop_steps()
-        
+
         # Create SOP documents
         for doc_data in sop_docs_data:
             sop_doc = SOPDocument(**doc_data)
             session.add(sop_doc)
-        
+
         await session.commit()
-        
+
         # Create SOP steps
         for step_data in sop_steps_data:
             sop_step = SOPStep(**step_data)
             session.add(sop_step)
-        
+
         await session.commit()
         print(f"✓ Seeded {len(sop_docs_data)} SOP documents with {len(sop_steps_data)} steps")
-    
+
     async def seed_trades(self, session: AsyncSession) -> None:
         """Seed sample trades"""
         trades_data = self.seed_data.get_sample_trades()
-        
+
         for trade_data in trades_data:
             trade = Trade(**trade_data)
             session.add(trade)
-        
+
         await session.commit()
         print(f"✓ Seeded {len(trades_data)} trades")
-    
+
     async def seed_all(self, session: AsyncSession) -> None:
         """Seed all data"""
         print("🌱 Starting database seeding...")
-        
+
         try:
             await self.seed_users(session)
             await self.seed_sop_documents(session)
             await self.seed_trades(session)
-            
+
             print("✅ Database seeding completed successfully!")
-            
+
         except Exception as e:
             await session.rollback()
             print(f"❌ Error during seeding: {e}")
             raise
-    
+
     async def clear_all_data(self, session: AsyncSession) -> None:
         """Clear all seeded data (for testing)"""
         print("🧹 Clearing all seeded data...")
-        
+
         try:
             # Clear in reverse order of dependencies
             await session.execute("DELETE FROM trades")
             await session.execute("DELETE FROM sop_steps")
-            await session.execute("DELETE FROM sop_executions") 
+            await session.execute("DELETE FROM sop_executions")
             await session.execute("DELETE FROM sop_documents")
             await session.execute("DELETE FROM users")
             await session.execute("DELETE FROM audit.audit_log")
-            
+
             await session.commit()
             print("✅ All data cleared successfully!")
-            
+
         except Exception as e:
             await session.rollback()
             print(f"❌ Error during data clearing: {e}")
@@ -428,7 +428,7 @@ class DatabaseSeeder:
 async def main():
     """Main seeding function"""
     seeder = DatabaseSeeder()
-    
+
     async for session in get_async_session():
         await seeder.seed_all(session)
         break

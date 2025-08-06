@@ -15,11 +15,11 @@ class DockerPythonREPLInput(BaseModel):
     """Input schema for Docker Python REPL tool."""
     code: str = Field(description="Python code to execute")
     variables: Optional[Dict[str, Any]] = Field(
-        default=None, 
+        default=None,
         description="Variables to inject into execution context"
     )
     timeout_seconds: Optional[int] = Field(
-        default=30, 
+        default=30,
         description="Execution timeout in seconds"
     )
 
@@ -27,11 +27,11 @@ class DockerPythonREPLInput(BaseModel):
 class DockerPythonREPLTool(BaseTool):
     """
     Custom Python REPL tool that executes code in a secure Docker container.
-    
+
     This tool provides a safe environment for executing Python code as part of
     LangChain workflows, with proper sandboxing and resource limits.
     """
-    
+
     name: str = "docker_python_repl"
     description: str = """
     Execute Python code in a secure Docker container. Use this tool when you need to:
@@ -41,32 +41,32 @@ class DockerPythonREPLTool(BaseTool):
     - Run statistical analysis
     - Process dates and times
     - Execute any Python logic
-    
-    The execution environment includes: pandas, numpy, matplotlib, seaborn, scipy, 
+
+    The execution environment includes: pandas, numpy, matplotlib, seaborn, scipy,
     scikit-learn, sympy, statsmodels, and standard Python libraries.
-    
+
     Input should be valid Python code as a string.
     """
     args_schema: Type[BaseModel] = DockerPythonREPLInput
     return_direct: bool = False
-    
+
     repl_service_url: str = Field(default="http://localhost:8001")
     timeout: int = Field(default=60)
-    
+
     def __init__(self, repl_service_url: str = "http://localhost:8001", **kwargs):
         super().__init__(**kwargs)
         self.repl_service_url = repl_service_url
-    
+
     async def _arun(
-        self, 
-        code: str, 
+        self,
+        code: str,
         variables: Optional[Dict[str, Any]] = None,
         timeout_seconds: Optional[int] = None,
         **kwargs
     ) -> str:
         """Async execution of Python code in Docker container."""
         execution_id = str(uuid.uuid4())
-        
+
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 # Prepare request
@@ -76,42 +76,42 @@ class DockerPythonREPLTool(BaseTool):
                     "timeout_seconds": timeout_seconds or 30,
                     "variables": variables
                 }
-                
+
                 logger.info(f"Executing Python code in Docker REPL: {execution_id}")
-                
+
                 # Execute code
                 response = await client.post(
                     f"{self.repl_service_url}/execute",
                     json=request_data
                 )
                 response.raise_for_status()
-                
+
                 result = response.json()
-                
+
                 if result["success"]:
                     output = result.get("output", "")
                     execution_time = result.get("execution_time_seconds", 0)
                     memory_usage = result.get("memory_usage_mb", 0)
                     variables_created = result.get("variables_created", [])
-                    
+
                     # Format response
                     response_parts = []
                     if output:
                         response_parts.append(f"Output:\n{output}")
-                    
+
                     if variables_created:
                         response_parts.append(f"Variables created: {', '.join(variables_created)}")
-                    
+
                     response_parts.append(
                         f"Execution completed in {execution_time:.2f}s "
                         f"(Memory: {memory_usage:.1f}MB)"
                     )
-                    
+
                     return "\n\n".join(response_parts)
                 else:
                     error = result.get("error", "Unknown error")
                     return f"Execution failed: {error}"
-                    
+
         except httpx.TimeoutException:
             logger.error(f"REPL execution {execution_id} timed out")
             return f"Execution timed out after {self.timeout} seconds"
@@ -121,10 +121,10 @@ class DockerPythonREPLTool(BaseTool):
         except Exception as e:
             logger.error(f"Error executing Python code: {str(e)}")
             return f"Error executing Python code: {str(e)}"
-    
+
     def _run(
-        self, 
-        code: str, 
+        self,
+        code: str,
         variables: Optional[Dict[str, Any]] = None,
         timeout_seconds: Optional[int] = None,
         **kwargs
@@ -153,7 +153,7 @@ class DockerPythonREPLTool(BaseTool):
             return asyncio.run(
                 self._arun(code, variables, timeout_seconds, **kwargs)
             )
-    
+
     async def check_service_health(self) -> bool:
         """Check if the REPL service is healthy."""
         try:
@@ -162,7 +162,7 @@ class DockerPythonREPLTool(BaseTool):
                 return response.status_code == 200
         except Exception:
             return False
-    
+
     async def get_service_capabilities(self) -> Dict[str, Any]:
         """Get REPL service capabilities."""
         try:
@@ -173,7 +173,7 @@ class DockerPythonREPLTool(BaseTool):
         except Exception as e:
             logger.error(f"Error getting service capabilities: {str(e)}")
             return {}
-    
+
     async def get_active_executions(self) -> Dict[str, Any]:
         """Get currently active executions."""
         try:
@@ -195,19 +195,19 @@ def create_docker_python_repl_tool(repl_service_url: str = "http://localhost:800
 # Example usage for testing
 if __name__ == "__main__":
     import asyncio
-    
+
     async def test_tool():
         tool = create_docker_python_repl_tool()
-        
+
         # Test health check
         healthy = await tool.check_service_health()
         print(f"Service healthy: {healthy}")
-        
+
         if healthy:
             # Test capabilities
             capabilities = await tool.get_service_capabilities()
             print(f"Capabilities: {json.dumps(capabilities, indent=2)}")
-            
+
             # Test code execution
             test_code = """
 # Test basic calculations
@@ -233,8 +233,8 @@ print(f"DataFrame shape: {df.shape}")
 result = f"Analysis complete: Mean A = {mean_a}, Sum B = {sum_b}"
 print(result)
 """
-            
+
             result = await tool._arun(test_code)
             print(f"Execution result:\n{result}")
-    
+
     asyncio.run(test_tool())

@@ -201,10 +201,10 @@ async def execute_trade_settlement_sop(
             context_data={"trade_data": trade_data},
             assigned_to=assigned_to
         )
-        
+
         # Start execution automatically
         started_execution = await sop_service.start_sop_execution(execution.id, initiated_by)
-        
+
         return started_execution
     except ValueError as e:
         raise HTTPException(
@@ -234,10 +234,10 @@ async def execute_corporate_actions_sop(
             context_data={"corporate_action_data": corporate_action_data},
             assigned_to=assigned_to
         )
-        
+
         # Start execution automatically
         started_execution = await sop_service.start_sop_execution(execution.id, initiated_by)
-        
+
         return started_execution
     except ValueError as e:
         raise HTTPException(
@@ -269,7 +269,7 @@ async def get_sop_categories():
             },
             {
                 "id": "client_onboarding",
-                "name": "Client Onboarding", 
+                "name": "Client Onboarding",
                 "description": "Complete onboarding process for new institutional clients",
                 "business_area": "Client Services"
             },
@@ -295,15 +295,15 @@ async def get_sop_metrics(
     """Get SOP execution metrics and statistics"""
     try:
         active_executions = await sop_service.get_active_executions()
-        
+
         # Calculate metrics
         total_active = len(active_executions)
         in_progress = len([e for e in active_executions if e.status == "in_progress"])
         requiring_approval = len([e for e in active_executions if e.status == "requires_approval"])
-        
+
         # Average completion time (mock data for now)
         avg_completion_minutes = 45
-        
+
         return {
             "metrics": {
                 "total_active_executions": total_active,
@@ -321,7 +321,7 @@ async def get_sop_metrics(
                     "duration_minutes": 35
                 },
                 {
-                    "timestamp": "2024-07-20T09:45:00Z", 
+                    "timestamp": "2024-07-20T09:45:00Z",
                     "event": "SOP execution started",
                     "sop_type": "Corporate Actions",
                     "estimated_duration_minutes": 85

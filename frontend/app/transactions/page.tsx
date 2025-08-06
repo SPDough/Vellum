@@ -2,7 +2,7 @@
 
 import React from 'react';
 import NextLayout from '@/components/Layout/NextLayout';
-import Transactions from '@/pages/Transactions';
+import Transactions from '@/components/pages/Transactions';
 
 export default function TransactionsPage() {
   return (

@@ -390,10 +390,10 @@ async def create_langchain_workflow(
             workflow_id = await langchain_service.create_trade_validation_workflow()
         else:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail=f"Unknown template type: {template_type}"
             )
-        
+
         return {
             "workflow_id": workflow_id,
             "workflow_type": "LANGCHAIN",
@@ -420,10 +420,10 @@ async def create_langgraph_workflow(
                 status_code=400,
                 detail=f"Unknown template type: {template_type}"
             )
-        
+
         return {
             "workflow_id": workflow_id,
-            "workflow_type": "LANGGRAPH", 
+            "workflow_type": "LANGGRAPH",
             "template_type": template_type,
             "status": "CREATED"
         }
@@ -447,7 +447,7 @@ async def execute_langchain_workflow(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/langgraph/{workflow_id}/execute") 
+@router.post("/langgraph/{workflow_id}/execute")
 async def execute_langgraph_workflow(
     workflow_id: str,
     execution_request: WorkflowExecutionRequest,
@@ -512,7 +512,7 @@ async def get_all_workflows_summary(
     langchain_workflows = langchain_service.list_workflows()
     langgraph_workflows = langgraph_service.list_workflows()
     standard_workflows = list(workflows_db.values())
-    
+
     return {
         "summary": {
             "total_workflows": len(langchain_workflows) + len(langgraph_workflows) + len(standard_workflows),

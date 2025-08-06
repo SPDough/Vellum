@@ -20,14 +20,14 @@ async def seed_database():
     """Seed the database with initial data"""
     print("🚀 Otomeshon Banking Platform - Database Seeding")
     print("=" * 50)
-    
+
     seeder = DatabaseSeeder()
-    
+
     try:
         async for session in get_async_session():
             await seeder.seed_all(session)
             break
-            
+
     except Exception as e:
         print(f"❌ Seeding failed: {e}")
         sys.exit(1)
@@ -36,14 +36,14 @@ async def seed_database():
 async def clear_database():
     """Clear all seeded data"""
     print("🧹 Clearing database...")
-    
+
     seeder = DatabaseSeeder()
-    
+
     try:
         async for session in get_async_session():
             await seeder.clear_all_data(session)
             break
-            
+
     except Exception as e:
         print(f"❌ Clearing failed: {e}")
         sys.exit(1)
@@ -53,7 +53,7 @@ def main():
     """Main entry point"""
     if len(sys.argv) > 1:
         command = sys.argv[1].lower()
-        
+
         if command == "clear":
             asyncio.run(clear_database())
         elif command == "seed":

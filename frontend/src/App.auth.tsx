@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginForm } from './components/Auth/LoginForm';
 import { ProtectedRoute } from './components/Auth/ProtectedRoute';
 import { UserMenu } from './components/Auth/UserMenu';
-import DataSandbox from './pages/DataSandbox';
+import DataSandbox from './components/pages/DataSandbox';
 
 // Custom theme
 const theme = createTheme({

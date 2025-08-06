@@ -25,7 +25,7 @@ class BankingOperationError(Exception):
 
 class EnhancedErrorHandler(BaseHTTPMiddleware):
     """Enhanced error handling middleware for banking operations."""
-    
+
     async def dispatch(self, request: Request, call_next):
         try:
             response = await call_next(request)
@@ -38,7 +38,7 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
             return await self.handle_banking_error(request, exc)
         except Exception as exc:
             return await self.handle_unexpected_error(request, exc)
-    
+
     async def handle_http_exception(self, request: Request, exc: HTTPException) -> JSONResponse:
         """Handle HTTP exceptions with secure error responses."""
         # Log the error for monitoring
@@ -51,7 +51,7 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                 "client_ip": request.client.host if request.client else "unknown"
             }
         )
-        
+
         return JSONResponse(
             status_code=exc.status_code,
             content={
@@ -63,7 +63,7 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                 }
             }
         )
-    
+
     async def handle_security_error(self, request: Request, exc: SecurityError) -> JSONResponse:
         """Handle security-related errors with appropriate logging."""
         # Security errors are always logged as warnings or errors
@@ -76,7 +76,7 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                 "error_type": "security_error"
             }
         )
-        
+
         # Return generic error message to not leak security information
         return JSONResponse(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -89,7 +89,7 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                 }
             }
         )
-    
+
     async def handle_banking_error(self, request: Request, exc: BankingOperationError) -> JSONResponse:
         """Handle banking operation errors with appropriate logging."""
         logger.error(
@@ -101,7 +101,7 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                 "error_type": "banking_error"
             }
         )
-        
+
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
@@ -113,7 +113,7 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                 }
             }
         )
-    
+
     async def handle_unexpected_error(self, request: Request, exc: Exception) -> JSONResponse:
         """Handle unexpected errors with secure logging."""
         # Log full traceback for debugging, but don't expose it
@@ -127,7 +127,7 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                 "traceback": traceback.format_exc()
             }
         )
-        
+
         # Return generic error message
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -156,10 +156,10 @@ def create_error_response(
             "type": error_type
         }
     }
-    
+
     if details:
         content["error"]["details"] = details
-    
+
     return JSONResponse(status_code=status_code, content=content)
 
 
@@ -172,17 +172,17 @@ def validate_banking_operation(
     """Validate banking operation parameters and raise appropriate errors."""
     if operation_type not in ["deposit", "withdrawal", "transfer", "query"]:
         raise BankingOperationError(f"Invalid operation type: {operation_type}")
-    
+
     if amount is not None:
         if amount <= 0:
             raise BankingOperationError("Amount must be positive")
-        
+
         if amount > 1000000:  # 1 million limit
             raise BankingOperationError("Amount exceeds transaction limit")
-    
+
     if currency and currency not in ["USD", "EUR", "GBP", "JPY", "CHF"]:
         raise BankingOperationError(f"Unsupported currency: {currency}")
-    
+
     if customer_id and not customer_id.startswith("CUST_"):
         raise BankingOperationError("Invalid customer ID format")
 
@@ -198,14 +198,14 @@ def setup_secure_logging():
             # In production, add secure file handler or external logging service
         ]
     )
-    
+
     # Configure specific loggers for security events
     security_logger = logging.getLogger('security')
     security_logger.setLevel(logging.WARNING)
-    
+
     banking_logger = logging.getLogger('banking')
     banking_logger.setLevel(logging.INFO)
-    
+
     return {
         'security': security_logger,
         'banking': banking_logger
