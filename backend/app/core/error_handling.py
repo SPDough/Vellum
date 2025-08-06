@@ -5,7 +5,7 @@ Provides secure error responses that don't leak sensitive information.
 
 import logging
 import traceback
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
