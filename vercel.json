@@ -1,4 +1,9 @@
 {
   "version": 2,
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "build": {
+    "env": {
+      "NEXT_BUILD": "1"
+    }
+  }
 }
