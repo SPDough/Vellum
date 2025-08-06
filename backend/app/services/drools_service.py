@@ -6,34 +6,38 @@ for custodian banking operations including trade validation, risk management,
 compliance checks, and exception handling.
 """
 
+import asyncio
 import json
 import logging
-import asyncio
-from typing import Dict, List, Any, Optional, Union
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
 from enum import Enum
+from typing import Any, Dict, List, Optional, Union
 
 import httpx
-from py4j.java_gateway import JavaGateway, GatewayParameters, CallbackServerParameters
+from py4j.java_gateway import CallbackServerParameters, GatewayParameters, JavaGateway
 from py4j.protocol import Py4JJavaError
 
 from app.core.config import get_settings
-from app.models.trade import Trade, TradeStatus, TradeType, ExceptionSeverity
+from app.models.trade import ExceptionSeverity, Trade, TradeStatus, TradeType
 from app.models.workflow import WorkflowExecution
 
 logger = logging.getLogger(__name__)
 
+
 class RuleExecutionStatus(str, Enum):
     """Rule execution status enumeration"""
+
     SUCCESS = "success"
     FAILED = "failed"
     TIMEOUT = "timeout"
     VALIDATION_ERROR = "validation_error"
 
+
 @dataclass
 class RuleFact:
     """Represents a fact object to be evaluated by rules"""
+
     fact_type: str
     fact_id: str
     data: Dict[str, Any]
@@ -44,12 +48,14 @@ class RuleFact:
             "factType": self.fact_type,
             "factId": self.fact_id,
             "data": self.data,
-            "timestamp": self.timestamp.isoformat()
+            "timestamp": self.timestamp.isoformat(),
         }
+
 
 @dataclass
 class RuleResult:
     """Represents the result of rule execution"""
+
     rule_name: str
     status: RuleExecutionStatus
     facts_processed: int
@@ -60,6 +66,7 @@ class RuleResult:
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+
 
 class DroolsService:
     """
@@ -80,8 +87,7 @@ class DroolsService:
 
         # HTTP client for REST API calls to Kogito
         self.http_client = httpx.AsyncClient(
-            timeout=httpx.Timeout(30.0),
-            limits=httpx.Limits(max_connections=10)
+            timeout=httpx.Timeout(30.0), limits=httpx.Limits(max_connections=10)
         )
 
     async def __aenter__(self):
@@ -130,10 +136,7 @@ class DroolsService:
         self.connected = False
 
     async def execute_rules(
-        self,
-        rule_set: str,
-        facts: List[RuleFact],
-        timeout_seconds: int = 30
+        self, rule_set: str, facts: List[RuleFact], timeout_seconds: int = 30
     ) -> RuleResult:
         """
         Execute rules against provided facts
@@ -158,17 +161,15 @@ class DroolsService:
                 "ruleSet": rule_set,
                 "executionContext": {
                     "timestamp": start_time.isoformat(),
-                    "source": "otomeshon-custodian-platform"
-                }
+                    "source": "otomeshon-custodian-platform",
+                },
             }
 
             # Execute rules via Kogito REST API
             execution_url = f"{self.drools_url}/rules/execute"
 
             response = await self.http_client.post(
-                execution_url,
-                json=facts_payload,
-                timeout=timeout_seconds
+                execution_url, json=facts_payload, timeout=timeout_seconds
             )
 
             execution_time = (datetime.now() - start_time).total_seconds() * 1000
@@ -182,10 +183,12 @@ class DroolsService:
                     facts_processed=len(facts),
                     rules_fired=result_data.get("rulesFired", []),
                     actions_triggered=result_data.get("actionsTriggered", []),
-                    execution_time_ms=execution_time
+                    execution_time_ms=execution_time,
                 )
             else:
-                error_msg = f"Rule execution failed: {response.status_code} - {response.text}"
+                error_msg = (
+                    f"Rule execution failed: {response.status_code} - {response.text}"
+                )
                 logger.error(error_msg)
 
                 return RuleResult(
@@ -195,7 +198,7 @@ class DroolsService:
                     rules_fired=[],
                     actions_triggered=[],
                     execution_time_ms=execution_time,
-                    error_message=error_msg
+                    error_message=error_msg,
                 )
 
         except asyncio.TimeoutError:
@@ -210,7 +213,7 @@ class DroolsService:
                 rules_fired=[],
                 actions_triggered=[],
                 execution_time_ms=execution_time,
-                error_message=error_msg
+                error_message=error_msg,
             )
 
         except Exception as e:
@@ -225,7 +228,7 @@ class DroolsService:
                 rules_fired=[],
                 actions_triggered=[],
                 execution_time_ms=execution_time,
-                error_message=error_msg
+                error_message=error_msg,
             )
 
     async def validate_trade(self, trade: Trade) -> RuleResult:
@@ -252,17 +255,21 @@ class DroolsService:
                 "tradeValue": float(trade.trade_value),
                 "currency": trade.currency,
                 "tradeDate": trade.trade_date.isoformat(),
-                "settlementDate": trade.settlement_date.isoformat() if trade.settlement_date else None,
+                "settlementDate": (
+                    trade.settlement_date.isoformat() if trade.settlement_date else None
+                ),
                 "status": trade.status.value,
                 "portfolio": trade.portfolio,
-                "custodyAccount": trade.custody_account
+                "custodyAccount": trade.custody_account,
             },
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
 
         return await self.execute_rules("trade-validation", [trade_fact])
 
-    async def check_risk_limits(self, trade: Trade, portfolio_data: Dict[str, Any]) -> RuleResult:
+    async def check_risk_limits(
+        self, trade: Trade, portfolio_data: Dict[str, Any]
+    ) -> RuleResult:
         """
         Execute risk management rules for a trade
 
@@ -282,21 +289,23 @@ class DroolsService:
                     "tradeValue": float(trade.trade_value),
                     "counterpartyId": trade.counterparty_id,
                     "securityId": trade.security_id,
-                    "portfolio": trade.portfolio
+                    "portfolio": trade.portfolio,
                 },
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             ),
             RuleFact(
                 fact_type="Portfolio",
                 fact_id=trade.portfolio,
                 data=portfolio_data,
-                timestamp=datetime.now()
-            )
+                timestamp=datetime.now(),
+            ),
         ]
 
         return await self.execute_rules("risk-management", facts)
 
-    async def check_compliance(self, trade: Trade, client_data: Dict[str, Any]) -> RuleResult:
+    async def check_compliance(
+        self, trade: Trade, client_data: Dict[str, Any]
+    ) -> RuleResult:
         """
         Execute compliance rules for a trade
 
@@ -316,21 +325,23 @@ class DroolsService:
                     "counterpartyId": trade.counterparty_id,
                     "tradeValue": float(trade.trade_value),
                     "currency": trade.currency,
-                    "tradeDate": trade.trade_date.isoformat()
+                    "tradeDate": trade.trade_date.isoformat(),
                 },
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             ),
             RuleFact(
                 fact_type="Client",
                 fact_id=trade.counterparty_id,
                 data=client_data,
-                timestamp=datetime.now()
-            )
+                timestamp=datetime.now(),
+            ),
         ]
 
         return await self.execute_rules("compliance-checks", facts)
 
-    async def process_settlement_rules(self, trade: Trade, settlement_data: Dict[str, Any]) -> RuleResult:
+    async def process_settlement_rules(
+        self, trade: Trade, settlement_data: Dict[str, Any]
+    ) -> RuleResult:
         """
         Execute settlement processing rules
 
@@ -349,17 +360,21 @@ class DroolsService:
                     "tradeId": trade.id,
                     "securityId": trade.security_id,
                     "quantity": float(trade.quantity),
-                    "settlementDate": trade.settlement_date.isoformat() if trade.settlement_date else None,
-                    "custodyAccount": trade.custody_account
+                    "settlementDate": (
+                        trade.settlement_date.isoformat()
+                        if trade.settlement_date
+                        else None
+                    ),
+                    "custodyAccount": trade.custody_account,
                 },
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             ),
             RuleFact(
                 fact_type="Settlement",
                 fact_id=f"settlement_{trade.id}",
                 data=settlement_data,
-                timestamp=datetime.now()
-            )
+                timestamp=datetime.now(),
+            ),
         ]
 
         return await self.execute_rules("settlement-processing", facts)
@@ -381,7 +396,7 @@ class DroolsService:
             payload = {
                 "ruleName": rule_name,
                 "ruleContent": rule_content,
-                "deploymentTime": datetime.now().isoformat()
+                "deploymentTime": datetime.now().isoformat(),
             }
 
             response = await self.http_client.post(deployment_url, json=payload)
@@ -390,7 +405,9 @@ class DroolsService:
                 logger.info(f"Successfully deployed rules: {rule_name}")
                 return True
             else:
-                logger.error(f"Rule deployment failed: {response.status_code} - {response.text}")
+                logger.error(
+                    f"Rule deployment failed: {response.status_code} - {response.text}"
+                )
                 return False
 
         except Exception as e:
@@ -431,7 +448,7 @@ class DroolsService:
 
             payload = {
                 "ruleContent": rule_content,
-                "validationTime": datetime.now().isoformat()
+                "validationTime": datetime.now().isoformat(),
             }
 
             response = await self.http_client.post(validation_url, json=payload)
@@ -441,17 +458,18 @@ class DroolsService:
             else:
                 return {
                     "valid": False,
-                    "errors": [f"Validation failed: {response.status_code} - {response.text}"]
+                    "errors": [
+                        f"Validation failed: {response.status_code} - {response.text}"
+                    ],
                 }
 
         except Exception as e:
-            return {
-                "valid": False,
-                "errors": [f"Validation error: {str(e)}"]
-            }
+            return {"valid": False, "errors": [f"Validation error: {str(e)}"]}
+
 
 # Singleton instance for dependency injection
 _drools_service_instance = None
+
 
 def get_drools_service() -> DroolsService:
     """Get singleton DroolsService instance"""

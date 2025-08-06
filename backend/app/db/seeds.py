@@ -2,19 +2,20 @@
 Database seeding utilities for Otomeshon Banking Platform
 """
 
-import uuid
-from datetime import datetime, date, timedelta
-from decimal import Decimal
-from typing import List, Dict, Any
 import asyncio
 import json
+import uuid
+from datetime import date, datetime, timedelta
+from decimal import Decimal
+from typing import Any, Dict, List
 
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.database import get_async_session
-from app.models.user import User
-from app.models.sop import SOPDocument, SOPStep, SOPExecution
-from app.models.trade import Trade
 from app.core.security import get_password_hash
+from app.models.sop import SOPDocument, SOPExecution, SOPStep
+from app.models.trade import Trade
+from app.models.user import User
 
 
 class BankingSeedData:
@@ -78,7 +79,7 @@ class BankingSeedData:
                 "position": "Senior Risk Manager",
                 "is_active": True,
                 "is_verified": True,
-            }
+            },
         ]
 
     @staticmethod
@@ -184,7 +185,7 @@ class BankingSeedData:
                 "status": "ACTIVE",
                 "is_automated": True,
                 "automation_percentage": 90.0,
-            }
+            },
         ]
 
     @staticmethod
@@ -259,7 +260,7 @@ class BankingSeedData:
                 "estimated_duration_minutes": 15,
                 "automation_tool": "IDVerifyPro",
                 "automation_confidence": 85.0,
-            }
+            },
         ]
 
     @staticmethod
@@ -289,18 +290,18 @@ class BankingSeedData:
                 "settlement_instructions": {
                     "delivery_method": "DTC",
                     "custodian": "State Street",
-                    "account_number": "123456789"
+                    "account_number": "123456789",
                 },
                 "compliance_checks": {
                     "aml_status": "PASSED",
                     "position_limit_check": "PASSED",
-                    "trading_halt_check": "PASSED"
+                    "trading_halt_check": "PASSED",
                 },
                 "risk_metrics": {
                     "var_impact": 2500.00,
                     "concentration_risk": "LOW",
-                    "credit_exposure": 150250.00
-                }
+                    "credit_exposure": 150250.00,
+                },
             },
             {
                 "id": str(uuid.uuid4()),
@@ -322,14 +323,14 @@ class BankingSeedData:
                 "settlement_instructions": {
                     "delivery_method": "DTC",
                     "custodian": "BNY Mellon",
-                    "account_number": "987654321"
+                    "account_number": "987654321",
                 },
                 "risk_metrics": {
                     "var_impact": -1500.00,
                     "concentration_risk": "MEDIUM",
-                    "credit_exposure": -140375.00
-                }
-            }
+                    "credit_exposure": -140375.00,
+                },
+            },
         ]
 
 
@@ -347,10 +348,7 @@ class DatabaseSeeder:
             # Hash the password
             hashed_password = get_password_hash(user_data.pop("password"))
 
-            user = User(
-                **user_data,
-                hashed_password=hashed_password
-            )
+            user = User(**user_data, hashed_password=hashed_password)
             session.add(user)
 
         await session.commit()
@@ -374,7 +372,9 @@ class DatabaseSeeder:
             session.add(sop_step)
 
         await session.commit()
-        print(f"✓ Seeded {len(sop_docs_data)} SOP documents with {len(sop_steps_data)} steps")
+        print(
+            f"✓ Seeded {len(sop_docs_data)} SOP documents with {len(sop_steps_data)} steps"
+        )
 
     async def seed_trades(self, session: AsyncSession) -> None:
         """Seed sample trades"""

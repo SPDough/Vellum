@@ -3,14 +3,16 @@ Secure authentication configuration module.
 Replaces hardcoded credentials with environment-based configuration.
 """
 
-import os
 import hashlib
-from typing import Dict, Any, Optional
+import os
+from typing import Any, Dict, Optional
+
 from pydantic import BaseModel, EmailStr
 
 
 class SecureUser(BaseModel):
     """Secure user model with hashed passwords."""
+
     id: int
     email: EmailStr
     username: str
@@ -46,7 +48,7 @@ class AuthConfig:
                 password_hash=self._hash_password(admin_password),
                 full_name="System Administrator",
                 role="admin",
-                department="IT"
+                department="IT",
             ),
             "analyst@otomeshon.ai": SecureUser(
                 id=2,
@@ -55,8 +57,8 @@ class AuthConfig:
                 password_hash=self._hash_password(analyst_password),
                 full_name="Data Analyst",
                 role="analyst",
-                department="Analytics"
-            )
+                department="Analytics",
+            ),
         }
 
     def get_users(self) -> Dict[str, SecureUser]:

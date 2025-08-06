@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.models.workflow import WorkflowExecution
-from app.services.langgraph_service import get_langgraph_service, LangGraphService
-from app.services.langchain_service import get_langchain_service, LangchainService
+from app.services.langchain_service import LangchainService, get_langchain_service
+from app.services.langgraph_service import LangGraphService, get_langgraph_service
 
 router = APIRouter()
 
@@ -363,7 +363,7 @@ async def validate_workflow(workflow_id: str) -> Dict[str, Any]:
 # Langchain and Langgraph specific endpoints
 @router.get("/langchain/list", response_model=List[Dict[str, Any]])
 async def list_langchain_workflows(
-    langchain_service: LangchainService = Depends(get_langchain_service)
+    langchain_service: LangchainService = Depends(get_langchain_service),
 ) -> List[Dict[str, Any]]:
     """List all Langchain workflows."""
     return langchain_service.list_workflows()
@@ -371,7 +371,7 @@ async def list_langchain_workflows(
 
 @router.get("/langgraph/list", response_model=List[Dict[str, Any]])
 async def list_langgraph_workflows(
-    langgraph_service: LangGraphService = Depends(get_langgraph_service)
+    langgraph_service: LangGraphService = Depends(get_langgraph_service),
 ) -> List[Dict[str, Any]]:
     """List all Langgraph workflows."""
     return langgraph_service.list_workflows()
@@ -380,7 +380,7 @@ async def list_langgraph_workflows(
 @router.post("/langchain/create/{template_type}")
 async def create_langchain_workflow(
     template_type: str,
-    langchain_service: LangchainService = Depends(get_langchain_service)
+    langchain_service: LangchainService = Depends(get_langchain_service),
 ) -> Dict[str, Any]:
     """Create a new Langchain workflow from template."""
     try:
@@ -390,15 +390,14 @@ async def create_langchain_workflow(
             workflow_id = await langchain_service.create_trade_validation_workflow()
         else:
             raise HTTPException(
-                status_code=400,
-                detail=f"Unknown template type: {template_type}"
+                status_code=400, detail=f"Unknown template type: {template_type}"
             )
 
         return {
             "workflow_id": workflow_id,
             "workflow_type": "LANGCHAIN",
             "template_type": template_type,
-            "status": "CREATED"
+            "status": "CREATED",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -407,7 +406,7 @@ async def create_langchain_workflow(
 @router.post("/langgraph/create/{template_type}")
 async def create_langgraph_workflow(
     template_type: str,
-    langgraph_service: LangGraphService = Depends(get_langgraph_service)
+    langgraph_service: LangGraphService = Depends(get_langgraph_service),
 ) -> Dict[str, Any]:
     """Create a new Langgraph workflow from template."""
     try:
@@ -417,15 +416,14 @@ async def create_langgraph_workflow(
             workflow_id = await langgraph_service.create_trade_validation_workflow()
         else:
             raise HTTPException(
-                status_code=400,
-                detail=f"Unknown template type: {template_type}"
+                status_code=400, detail=f"Unknown template type: {template_type}"
             )
 
         return {
             "workflow_id": workflow_id,
             "workflow_type": "LANGGRAPH",
             "template_type": template_type,
-            "status": "CREATED"
+            "status": "CREATED",
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -435,7 +433,7 @@ async def create_langgraph_workflow(
 async def execute_langchain_workflow(
     workflow_id: str,
     execution_request: WorkflowExecutionRequest,
-    langchain_service: LangchainService = Depends(get_langchain_service)
+    langchain_service: LangchainService = Depends(get_langchain_service),
 ) -> Dict[str, Any]:
     """Execute a Langchain workflow."""
     try:
@@ -451,7 +449,7 @@ async def execute_langchain_workflow(
 async def execute_langgraph_workflow(
     workflow_id: str,
     execution_request: WorkflowExecutionRequest,
-    langgraph_service: LangGraphService = Depends(get_langgraph_service)
+    langgraph_service: LangGraphService = Depends(get_langgraph_service),
 ) -> Dict[str, Any]:
     """Execute a Langgraph workflow."""
     try:
@@ -466,7 +464,7 @@ async def execute_langgraph_workflow(
 @router.get("/langchain/{workflow_id}/info")
 async def get_langchain_workflow_info(
     workflow_id: str,
-    langchain_service: LangchainService = Depends(get_langchain_service)
+    langchain_service: LangchainService = Depends(get_langchain_service),
 ) -> Dict[str, Any]:
     """Get information about a Langchain workflow."""
     workflow_info = await langchain_service.get_workflow_info(workflow_id)
@@ -478,7 +476,7 @@ async def get_langchain_workflow_info(
 @router.get("/langgraph/{workflow_id}/info")
 async def get_langgraph_workflow_info(
     workflow_id: str,
-    langgraph_service: LangGraphService = Depends(get_langgraph_service)
+    langgraph_service: LangGraphService = Depends(get_langgraph_service),
 ) -> Dict[str, Any]:
     """Get information about a Langgraph workflow."""
     workflow_info = await langgraph_service.get_workflow_info(workflow_id)
@@ -489,7 +487,7 @@ async def get_langgraph_workflow_info(
 
 @router.get("/templates/langchain")
 async def get_langchain_templates(
-    langchain_service: LangchainService = Depends(get_langchain_service)
+    langchain_service: LangchainService = Depends(get_langchain_service),
 ) -> List[Dict[str, Any]]:
     """Get available Langchain workflow templates."""
     return langchain_service.get_available_templates()
@@ -497,7 +495,7 @@ async def get_langchain_templates(
 
 @router.get("/templates/langgraph")
 async def get_langgraph_templates(
-    langgraph_service: LangGraphService = Depends(get_langgraph_service)
+    langgraph_service: LangGraphService = Depends(get_langgraph_service),
 ) -> List[Dict[str, Any]]:
     """Get available Langgraph workflow templates."""
     return langgraph_service.get_available_nodes()
@@ -506,7 +504,7 @@ async def get_langgraph_templates(
 @router.get("/all/summary")
 async def get_all_workflows_summary(
     langchain_service: LangchainService = Depends(get_langchain_service),
-    langgraph_service: LangGraphService = Depends(get_langgraph_service)
+    langgraph_service: LangGraphService = Depends(get_langgraph_service),
 ) -> Dict[str, Any]:
     """Get summary of all workflow types."""
     langchain_workflows = langchain_service.list_workflows()
@@ -515,10 +513,12 @@ async def get_all_workflows_summary(
 
     return {
         "summary": {
-            "total_workflows": len(langchain_workflows) + len(langgraph_workflows) + len(standard_workflows),
+            "total_workflows": len(langchain_workflows)
+            + len(langgraph_workflows)
+            + len(standard_workflows),
             "langchain_count": len(langchain_workflows),
             "langgraph_count": len(langgraph_workflows),
-            "standard_count": len(standard_workflows)
+            "standard_count": len(standard_workflows),
         },
         "langchain_workflows": langchain_workflows,
         "langgraph_workflows": langgraph_workflows,
@@ -527,12 +527,12 @@ async def get_all_workflows_summary(
                 "workflow_id": w["id"],
                 "name": w["name"],
                 "status": w["status"],
-                "workflow_type": "STANDARD"
+                "workflow_type": "STANDARD",
             }
             for w in standard_workflows
         ],
         "templates": {
             "langchain": langchain_service.get_available_templates(),
-            "langgraph": langgraph_service.get_available_nodes()
-        }
+            "langgraph": langgraph_service.get_available_nodes(),
+        },
     }

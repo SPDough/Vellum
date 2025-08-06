@@ -6,38 +6,47 @@ agent-based workflows for custodian banking operations. Combines Drools rules
 engine with LangGraph agent workflows for comprehensive automation.
 """
 
+import asyncio
 import json
 import logging
-import asyncio
 import uuid
-from typing import Dict, List, Any, Optional, Union, Callable
+from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
 from enum import Enum
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from app.services.drools_service import get_drools_service, RuleFact
-from app.flows.rules_engine_node import (
-    TradeValidationNode,
-    RiskCheckNode,
-    ComplianceCheckNode,
-    RulesEngineConfig,
-    create_initial_state
-)
-from app.models.workflow import WorkflowExecution, WorkflowNode, NodeType, WorkflowStatus
 from app.core.config import get_settings
+from app.flows.rules_engine_node import (
+    ComplianceCheckNode,
+    RiskCheckNode,
+    RulesEngineConfig,
+    TradeValidationNode,
+    create_initial_state,
+)
+from app.models.workflow import (
+    NodeType,
+    WorkflowExecution,
+    WorkflowNode,
+    WorkflowStatus,
+)
+from app.services.drools_service import RuleFact, get_drools_service
 
 logger = logging.getLogger(__name__)
 
+
 class WorkflowType(str, Enum):
     """Types of workflows supported"""
+
     RULES_BASED = "rules_based"
     AGENT_BASED = "agent_based"
     HYBRID = "hybrid"
     SEQUENTIAL = "sequential"
     PARALLEL = "parallel"
 
+
 class NodeExecutionStatus(str, Enum):
     """Status of individual node execution"""
+
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -45,9 +54,11 @@ class NodeExecutionStatus(str, Enum):
     SKIPPED = "skipped"
     WAITING_APPROVAL = "waiting_approval"
 
+
 @dataclass
 class WorkflowNodeConfig:
     """Configuration for a workflow node"""
+
     node_id: str
     node_type: str  # RULES_ENGINE, AGENT, TRANSFORM, DECISION, etc.
     name: str
@@ -61,9 +72,11 @@ class WorkflowNodeConfig:
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
+
 @dataclass
 class WorkflowConfig:
     """Complete workflow configuration"""
+
     workflow_id: str
     name: str
     description: str
@@ -80,9 +93,11 @@ class WorkflowConfig:
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
+
 @dataclass
 class NodeExecutionResult:
     """Result of executing a single workflow node"""
+
     node_id: str
     node_type: str
     status: NodeExecutionStatus
@@ -98,13 +113,15 @@ class NodeExecutionResult:
     def to_dict(self) -> Dict[str, Any]:
         result = asdict(self)
         # Convert datetime objects to ISO strings
-        result['start_time'] = self.start_time.isoformat()
-        result['end_time'] = self.end_time.isoformat() if self.end_time else None
+        result["start_time"] = self.start_time.isoformat()
+        result["end_time"] = self.end_time.isoformat() if self.end_time else None
         return result
+
 
 @dataclass
 class WorkflowExecutionResult:
     """Result of complete workflow execution"""
+
     workflow_id: str
     execution_id: str
     status: WorkflowStatus
@@ -118,10 +135,11 @@ class WorkflowExecutionResult:
 
     def to_dict(self) -> Dict[str, Any]:
         result = asdict(self)
-        result['start_time'] = self.start_time.isoformat()
-        result['end_time'] = self.end_time.isoformat() if self.end_time else None
-        result['node_results'] = [nr.to_dict() for nr in self.node_results]
+        result["start_time"] = self.start_time.isoformat()
+        result["end_time"] = self.end_time.isoformat() if self.end_time else None
+        result["node_results"] = [nr.to_dict() for nr in self.node_results]
         return result
+
 
 class WorkflowExecutionService:
     """
@@ -155,32 +173,26 @@ class WorkflowExecutionService:
                     config={
                         "rule_sets": ["trade-validation"],
                         "timeout_seconds": 30,
-                        "require_all_passed": True
-                    }
+                        "require_all_passed": True,
+                    },
                 ),
                 WorkflowNodeConfig(
                     node_id="check_risk",
                     node_type="RULES_ENGINE",
                     name="Risk Assessment",
                     description="Assess risk limits and concentration",
-                    config={
-                        "rule_sets": ["risk-management"],
-                        "timeout_seconds": 45
-                    },
+                    config={"rule_sets": ["risk-management"], "timeout_seconds": 45},
                     dependencies=["validate_trade"],
-                    conditions={"validate_trade.validation_passed": True}
+                    conditions={"validate_trade.validation_passed": True},
                 ),
                 WorkflowNodeConfig(
                     node_id="compliance_check",
                     node_type="RULES_ENGINE",
                     name="Compliance Screening",
                     description="KYC, AML, and sanctions screening",
-                    config={
-                        "rule_sets": ["compliance-checks"],
-                        "timeout_seconds": 60
-                    },
+                    config={"rule_sets": ["compliance-checks"], "timeout_seconds": 60},
                     dependencies=["check_risk"],
-                    conditions={"check_risk.risk_approved": True}
+                    conditions={"check_risk.risk_approved": True},
                 ),
                 WorkflowNodeConfig(
                     node_id="settlement_processing",
@@ -189,10 +201,10 @@ class WorkflowExecutionService:
                     description="Process settlement instructions and validations",
                     config={
                         "rule_sets": ["settlement-processing"],
-                        "timeout_seconds": 90
+                        "timeout_seconds": 90,
                     },
                     dependencies=["compliance_check"],
-                    conditions={"compliance_check.compliance_approved": True}
+                    conditions={"compliance_check.compliance_approved": True},
                 ),
                 WorkflowNodeConfig(
                     node_id="generate_confirmations",
@@ -202,16 +214,16 @@ class WorkflowExecutionService:
                     config={
                         "agent_type": "document_generator",
                         "template": "trade_confirmation",
-                        "output_format": "pdf"
+                        "output_format": "pdf",
                     },
-                    dependencies=["settlement_processing"]
-                )
+                    dependencies=["settlement_processing"],
+                ),
             ],
             entry_point="validate_trade",
             exit_conditions={
                 "success": "generate_confirmations.status == 'completed'",
-                "failure": "any(node.status == 'failed' for node in nodes)"
-            }
+                "failure": "any(node.status == 'failed' for node in nodes)",
+            },
         )
 
         # Exception Handling Workflow
@@ -229,8 +241,13 @@ class WorkflowExecutionService:
                     config={
                         "agent_type": "classifier",
                         "model": "gpt-4",
-                        "classification_types": ["data_quality", "risk_breach", "compliance_issue", "operational_error"]
-                    }
+                        "classification_types": [
+                            "data_quality",
+                            "risk_breach",
+                            "compliance_issue",
+                            "operational_error",
+                        ],
+                    },
                 ),
                 WorkflowNodeConfig(
                     node_id="check_auto_resolution_rules",
@@ -239,9 +256,9 @@ class WorkflowExecutionService:
                     description="Check if exception can be auto-resolved",
                     config={
                         "rule_sets": ["exception-auto-resolution"],
-                        "timeout_seconds": 30
+                        "timeout_seconds": 30,
                     },
-                    dependencies=["classify_exception"]
+                    dependencies=["classify_exception"],
                 ),
                 WorkflowNodeConfig(
                     node_id="escalate_manual_review",
@@ -251,7 +268,7 @@ class WorkflowExecutionService:
                     config={
                         "decision_logic": "not check_auto_resolution_rules.can_auto_resolve"
                     },
-                    dependencies=["check_auto_resolution_rules"]
+                    dependencies=["check_auto_resolution_rules"],
                 ),
                 WorkflowNodeConfig(
                     node_id="ai_resolution_suggestions",
@@ -261,17 +278,17 @@ class WorkflowExecutionService:
                     config={
                         "agent_type": "advisor",
                         "model": "gpt-4",
-                        "expertise": "custodian_banking_operations"
+                        "expertise": "custodian_banking_operations",
                     },
                     dependencies=["escalate_manual_review"],
-                    conditions={"escalate_manual_review.requires_manual_review": True}
-                )
+                    conditions={"escalate_manual_review.requires_manual_review": True},
+                ),
             ],
             entry_point="classify_exception",
             exit_conditions={
                 "auto_resolved": "check_auto_resolution_rules.can_auto_resolve == True",
-                "manual_review": "ai_resolution_suggestions.status == 'completed'"
-            }
+                "manual_review": "ai_resolution_suggestions.status == 'completed'",
+            },
         )
 
         # Client Onboarding Workflow
@@ -288,9 +305,13 @@ class WorkflowExecutionService:
                     description="AI-powered document collection and validation",
                     config={
                         "agent_type": "document_processor",
-                        "required_documents": ["identity", "address_proof", "financial_statements"],
-                        "ocr_enabled": True
-                    }
+                        "required_documents": [
+                            "identity",
+                            "address_proof",
+                            "financial_statements",
+                        ],
+                        "ocr_enabled": True,
+                    },
                 ),
                 WorkflowNodeConfig(
                     node_id="kyc_screening",
@@ -299,8 +320,8 @@ class WorkflowExecutionService:
                     description="Automated KYC screening and verification",
                     config={
                         "rule_sets": ["kyc-screening", "sanctions-check"],
-                        "external_apis": ["world_check", "lexis_nexis"]
-                    }
+                        "external_apis": ["world_check", "lexis_nexis"],
+                    },
                 ),
                 WorkflowNodeConfig(
                     node_id="credit_assessment",
@@ -310,8 +331,12 @@ class WorkflowExecutionService:
                     config={
                         "agent_type": "risk_assessor",
                         "model": "gpt-4",
-                        "assessment_criteria": ["financial_strength", "regulatory_standing", "operational_risk"]
-                    }
+                        "assessment_criteria": [
+                            "financial_strength",
+                            "regulatory_standing",
+                            "operational_risk",
+                        ],
+                    },
                 ),
                 WorkflowNodeConfig(
                     node_id="final_approval",
@@ -321,21 +346,25 @@ class WorkflowExecutionService:
                     config={
                         "decision_logic": "all([kyc_screening.approved, credit_assessment.approved, document_collection.completed])"
                     },
-                    dependencies=["document_collection", "kyc_screening", "credit_assessment"]
-                )
+                    dependencies=[
+                        "document_collection",
+                        "kyc_screening",
+                        "credit_assessment",
+                    ],
+                ),
             ],
             entry_point="parallel_start",
             exit_conditions={
                 "approved": "final_approval.decision == 'approved'",
-                "rejected": "final_approval.decision == 'rejected'"
-            }
+                "rejected": "final_approval.decision == 'rejected'",
+            },
         )
 
         # Store templates
         self.workflow_templates = {
             trade_processing.workflow_id: trade_processing,
             exception_handling.workflow_id: exception_handling,
-            client_onboarding.workflow_id: client_onboarding
+            client_onboarding.workflow_id: client_onboarding,
         }
 
     async def execute_workflow(
@@ -343,7 +372,7 @@ class WorkflowExecutionService:
         workflow_config: WorkflowConfig,
         input_data: Dict[str, Any],
         user_id: str,
-        execution_options: Optional[Dict[str, Any]] = None
+        execution_options: Optional[Dict[str, Any]] = None,
     ) -> WorkflowExecutionResult:
         """
         Execute a workflow with the given configuration and input data
@@ -360,7 +389,9 @@ class WorkflowExecutionService:
         execution_id = str(uuid.uuid4())
         start_time = datetime.now()
 
-        logger.info(f"Starting workflow execution: {workflow_config.workflow_id} [{execution_id}]")
+        logger.info(
+            f"Starting workflow execution: {workflow_config.workflow_id} [{execution_id}]"
+        )
 
         # Initialize execution result
         execution_result = WorkflowExecutionResult(
@@ -372,7 +403,7 @@ class WorkflowExecutionService:
             total_execution_time_ms=0,
             node_results=[],
             final_output={},
-            summary={}
+            summary={},
         )
 
         # Store active execution
@@ -381,13 +412,21 @@ class WorkflowExecutionService:
         try:
             # Execute workflow based on type
             if workflow_config.workflow_type == WorkflowType.SEQUENTIAL:
-                await self._execute_sequential_workflow(workflow_config, input_data, execution_result)
+                await self._execute_sequential_workflow(
+                    workflow_config, input_data, execution_result
+                )
             elif workflow_config.workflow_type == WorkflowType.PARALLEL:
-                await self._execute_parallel_workflow(workflow_config, input_data, execution_result)
+                await self._execute_parallel_workflow(
+                    workflow_config, input_data, execution_result
+                )
             elif workflow_config.workflow_type == WorkflowType.HYBRID:
-                await self._execute_hybrid_workflow(workflow_config, input_data, execution_result)
+                await self._execute_hybrid_workflow(
+                    workflow_config, input_data, execution_result
+                )
             else:
-                raise ValueError(f"Unsupported workflow type: {workflow_config.workflow_type}")
+                raise ValueError(
+                    f"Unsupported workflow type: {workflow_config.workflow_type}"
+                )
 
             # Mark as completed
             execution_result.status = WorkflowStatus.COMPLETED
@@ -397,7 +436,9 @@ class WorkflowExecutionService:
             ).total_seconds() * 1000
 
             # Generate summary
-            execution_result.summary = self._generate_execution_summary(execution_result)
+            execution_result.summary = self._generate_execution_summary(
+                execution_result
+            )
 
             logger.info(f"Workflow execution completed: {execution_id}")
 
@@ -417,7 +458,7 @@ class WorkflowExecutionService:
         self,
         config: WorkflowConfig,
         input_data: Dict[str, Any],
-        execution_result: WorkflowExecutionResult
+        execution_result: WorkflowExecutionResult,
     ):
         """Execute nodes sequentially based on dependencies"""
 
@@ -428,15 +469,21 @@ class WorkflowExecutionService:
         current_node_id = config.entry_point
 
         while current_node_id:
-            node_config = next((n for n in config.nodes if n.node_id == current_node_id), None)
+            node_config = next(
+                (n for n in config.nodes if n.node_id == current_node_id), None
+            )
             if not node_config:
                 break
 
             # Check dependencies
             if node_config.dependencies:
-                missing_deps = [dep for dep in node_config.dependencies if dep not in executed_nodes]
+                missing_deps = [
+                    dep for dep in node_config.dependencies if dep not in executed_nodes
+                ]
                 if missing_deps:
-                    logger.warning(f"Missing dependencies for node {current_node_id}: {missing_deps}")
+                    logger.warning(
+                        f"Missing dependencies for node {current_node_id}: {missing_deps}"
+                    )
                     break
 
             # Execute node
@@ -449,10 +496,14 @@ class WorkflowExecutionService:
 
             # Check if node failed and should stop execution
             if node_result.status == NodeExecutionStatus.FAILED:
-                raise Exception(f"Node {current_node_id} failed: {node_result.error_message}")
+                raise Exception(
+                    f"Node {current_node_id} failed: {node_result.error_message}"
+                )
 
             # Find next node (simplified - just execute all in order for now)
-            remaining_nodes = [n for n in config.nodes if n.node_id not in executed_nodes]
+            remaining_nodes = [
+                n for n in config.nodes if n.node_id not in executed_nodes
+            ]
             current_node_id = remaining_nodes[0].node_id if remaining_nodes else None
 
         execution_result.final_output = current_data
@@ -461,7 +512,7 @@ class WorkflowExecutionService:
         self,
         config: WorkflowConfig,
         input_data: Dict[str, Any],
-        execution_result: WorkflowExecutionResult
+        execution_result: WorkflowExecutionResult,
     ):
         """Execute nodes in parallel where possible"""
 
@@ -496,7 +547,7 @@ class WorkflowExecutionService:
         self,
         config: WorkflowConfig,
         input_data: Dict[str, Any],
-        execution_result: WorkflowExecutionResult
+        execution_result: WorkflowExecutionResult,
     ):
         """Execute hybrid workflow with both rules and agents"""
 
@@ -504,9 +555,7 @@ class WorkflowExecutionService:
         await self._execute_sequential_workflow(config, input_data, execution_result)
 
     async def _execute_node(
-        self,
-        node_config: WorkflowNodeConfig,
-        input_data: Dict[str, Any]
+        self, node_config: WorkflowNodeConfig, input_data: Dict[str, Any]
     ) -> NodeExecutionResult:
         """Execute a single workflow node"""
 
@@ -524,13 +573,15 @@ class WorkflowExecutionService:
             input_data=input_data,
             output_data={},
             alerts=[],
-            metadata={}
+            metadata={},
         )
 
         try:
             # Execute based on node type
             if node_config.node_type == "RULES_ENGINE":
-                await self._execute_rules_engine_node(node_config, input_data, node_result)
+                await self._execute_rules_engine_node(
+                    node_config, input_data, node_result
+                )
             elif node_config.node_type == "AGENT":
                 await self._execute_agent_node(node_config, input_data, node_result)
             elif node_config.node_type == "DECISION":
@@ -559,7 +610,7 @@ class WorkflowExecutionService:
         self,
         node_config: WorkflowNodeConfig,
         input_data: Dict[str, Any],
-        node_result: NodeExecutionResult
+        node_result: NodeExecutionResult,
     ):
         """Execute a rules engine node using Drools"""
 
@@ -571,31 +622,36 @@ class WorkflowExecutionService:
 
         # Create rule facts
         from app.services.drools_service import RuleFact
+
         facts = [
             RuleFact(
                 fact_type="Trade",
                 fact_id=trade_data.get("tradeId", "unknown"),
                 data=trade_data,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
         ]
 
         # Add portfolio and client data if available
         if "portfolio_data" in input_data:
-            facts.append(RuleFact(
-                fact_type="Portfolio",
-                fact_id=trade_data.get("portfolio", "unknown"),
-                data=input_data["portfolio_data"],
-                timestamp=datetime.now()
-            ))
+            facts.append(
+                RuleFact(
+                    fact_type="Portfolio",
+                    fact_id=trade_data.get("portfolio", "unknown"),
+                    data=input_data["portfolio_data"],
+                    timestamp=datetime.now(),
+                )
+            )
 
         if "client_data" in input_data:
-            facts.append(RuleFact(
-                fact_type="Client",
-                fact_id=trade_data.get("counterpartyId", "unknown"),
-                data=input_data["client_data"],
-                timestamp=datetime.now()
-            ))
+            facts.append(
+                RuleFact(
+                    fact_type="Client",
+                    fact_id=trade_data.get("counterpartyId", "unknown"),
+                    data=input_data["client_data"],
+                    timestamp=datetime.now(),
+                )
+            )
 
         # Execute rules for each rule set
         all_results = []
@@ -604,9 +660,7 @@ class WorkflowExecutionService:
         async with self.drools_service:
             for rule_set in rule_sets:
                 result = await self.drools_service.execute_rules(
-                    rule_set=rule_set,
-                    facts=facts,
-                    timeout_seconds=timeout_seconds
+                    rule_set=rule_set, facts=facts, timeout_seconds=timeout_seconds
                 )
                 all_results.append(result.to_dict())
                 all_alerts.extend(result.actions_triggered)
@@ -623,20 +677,22 @@ class WorkflowExecutionService:
             f"{node_config.node_id}_passed": validation_passed,
             "alerts": all_alerts,
             "rules_executed": len(rule_sets),
-            "total_rules_fired": sum(len(r.get("rules_fired", [])) for r in all_results)
+            "total_rules_fired": sum(
+                len(r.get("rules_fired", [])) for r in all_results
+            ),
         }
 
         node_result.alerts = all_alerts
         node_result.metadata = {
             "rule_sets_executed": rule_sets,
-            "facts_processed": len(facts)
+            "facts_processed": len(facts),
         }
 
     async def _execute_agent_node(
         self,
         node_config: WorkflowNodeConfig,
         input_data: Dict[str, Any],
-        node_result: NodeExecutionResult
+        node_result: NodeExecutionResult,
     ):
         """Execute an AI agent node (mock implementation)"""
 
@@ -647,27 +703,27 @@ class WorkflowExecutionService:
             node_result.output_data = {
                 f"{node_config.node_id}_generated": True,
                 "documents": ["trade_confirmation.pdf"],
-                "generation_method": "AI"
+                "generation_method": "AI",
             }
         elif agent_type == "classifier":
             node_result.output_data = {
                 f"{node_config.node_id}_classification": "data_quality",
                 "confidence": 0.95,
-                "reasoning": "Missing settlement date field"
+                "reasoning": "Missing settlement date field",
             }
         elif agent_type == "advisor":
             node_result.output_data = {
                 f"{node_config.node_id}_suggestions": [
                     "Update settlement date to next business day",
                     "Verify counterparty information",
-                    "Request manual approval for large amount"
+                    "Request manual approval for large amount",
                 ],
-                "priority": "high"
+                "priority": "high",
             }
         else:
             node_result.output_data = {
                 f"{node_config.node_id}_result": "completed",
-                "agent_type": agent_type
+                "agent_type": agent_type,
             }
 
         # Simulate processing time
@@ -677,7 +733,7 @@ class WorkflowExecutionService:
         self,
         node_config: WorkflowNodeConfig,
         input_data: Dict[str, Any],
-        node_result: NodeExecutionResult
+        node_result: NodeExecutionResult,
     ):
         """Execute a decision node"""
 
@@ -692,21 +748,23 @@ class WorkflowExecutionService:
                 decision = True
 
             node_result.output_data = {
-                f"{node_config.node_id}_decision": "approved" if decision else "rejected",
+                f"{node_config.node_id}_decision": (
+                    "approved" if decision else "rejected"
+                ),
                 "decision_logic": decision_logic,
-                "decision_value": decision
+                "decision_value": decision,
             }
         except Exception as e:
             node_result.output_data = {
                 f"{node_config.node_id}_decision": "error",
-                "error": str(e)
+                "error": str(e),
             }
 
     async def _execute_transform_node(
         self,
         node_config: WorkflowNodeConfig,
         input_data: Dict[str, Any],
-        node_result: NodeExecutionResult
+        node_result: NodeExecutionResult,
     ):
         """Execute a data transformation node"""
 
@@ -725,15 +783,25 @@ class WorkflowExecutionService:
 
         node_result.output_data = {
             f"{node_config.node_id}_transformed": transformed_data,
-            "transformations_applied": list(transformations.keys())
+            "transformations_applied": list(transformations.keys()),
         }
 
-    def _generate_execution_summary(self, execution_result: WorkflowExecutionResult) -> Dict[str, Any]:
+    def _generate_execution_summary(
+        self, execution_result: WorkflowExecutionResult
+    ) -> Dict[str, Any]:
         """Generate execution summary"""
 
         total_nodes = len(execution_result.node_results)
-        completed_nodes = sum(1 for nr in execution_result.node_results if nr.status == NodeExecutionStatus.COMPLETED)
-        failed_nodes = sum(1 for nr in execution_result.node_results if nr.status == NodeExecutionStatus.FAILED)
+        completed_nodes = sum(
+            1
+            for nr in execution_result.node_results
+            if nr.status == NodeExecutionStatus.COMPLETED
+        )
+        failed_nodes = sum(
+            1
+            for nr in execution_result.node_results
+            if nr.status == NodeExecutionStatus.FAILED
+        )
 
         total_alerts = sum(len(nr.alerts or []) for nr in execution_result.node_results)
 
@@ -745,7 +813,7 @@ class WorkflowExecutionService:
             "total_alerts": total_alerts,
             "execution_time_ms": execution_result.total_execution_time_ms,
             "workflow_type": execution_result.workflow_id,
-            "final_status": execution_result.status.value
+            "final_status": execution_result.status.value,
         }
 
     def get_workflow_templates(self) -> Dict[str, WorkflowConfig]:
@@ -755,16 +823,21 @@ class WorkflowExecutionService:
     def get_active_executions(self) -> Dict[str, WorkflowExecutionResult]:
         """Get all currently active workflow executions"""
         return {
-            exec_id: result for exec_id, result in self.active_executions.items()
+            exec_id: result
+            for exec_id, result in self.active_executions.items()
             if result.status == WorkflowStatus.RUNNING
         }
 
-    async def get_execution_status(self, execution_id: str) -> Optional[WorkflowExecutionResult]:
+    async def get_execution_status(
+        self, execution_id: str
+    ) -> Optional[WorkflowExecutionResult]:
         """Get status of a specific workflow execution"""
         return self.active_executions.get(execution_id)
 
+
 # Singleton instance
 _workflow_execution_service = None
+
 
 def get_workflow_execution_service() -> WorkflowExecutionService:
     """Get singleton WorkflowExecutionService instance"""

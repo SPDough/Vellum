@@ -2,50 +2,55 @@
 Base service classes and interfaces for Otomeshon Banking Platform
 """
 
+import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, TypeVar, Generic, Protocol, Callable
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-import uuid
+from typing import Any, Callable, Dict, Generic, List, Optional, Protocol, TypeVar
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
-
+from sqlalchemy.ext.asyncio import AsyncSession
 
 # Type variables for generic services
-T = TypeVar('T')
-CreateSchemaType = TypeVar('CreateSchemaType', bound=BaseModel)
-UpdateSchemaType = TypeVar('UpdateSchemaType', bound=BaseModel)
+T = TypeVar("T")
+CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
+UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 
 
 class ServiceError(Exception):
     """Base exception for service layer errors"""
+
     pass
 
 
 class ValidationError(ServiceError):
     """Raised when data validation fails"""
+
     pass
 
 
 class NotFoundError(ServiceError):
     """Raised when requested resource is not found"""
+
     pass
 
 
 class PermissionError(ServiceError):
     """Raised when user lacks required permissions"""
+
     pass
 
 
 class BusinessRuleError(ServiceError):
     """Raised when business rule validation fails"""
+
     pass
 
 
 class AuditLevel(Enum):
     """Audit logging levels for banking compliance"""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -55,6 +60,7 @@ class AuditLevel(Enum):
 @dataclass
 class ServiceContext:
     """Context information for service operations"""
+
     user_id: str
     session_id: Optional[str] = None
     ip_address: Optional[str] = None
@@ -70,6 +76,7 @@ class ServiceContext:
 @dataclass
 class OperationResult:
     """Result of a service operation with metadata"""
+
     success: bool
     data: Any = None
     message: Optional[str] = None
@@ -101,17 +108,23 @@ class BaseService(ABC, Generic[T]):
         self.db = db_session
 
     @abstractmethod
-    async def create(self, data: CreateSchemaType, context: ServiceContext) -> OperationResult:
+    async def create(
+        self, data: CreateSchemaType, context: ServiceContext
+    ) -> OperationResult:
         """Create a new entity"""
         pass
 
     @abstractmethod
-    async def get_by_id(self, entity_id: str, context: ServiceContext) -> OperationResult:
+    async def get_by_id(
+        self, entity_id: str, context: ServiceContext
+    ) -> OperationResult:
         """Get entity by ID"""
         pass
 
     @abstractmethod
-    async def update(self, entity_id: str, data: UpdateSchemaType, context: ServiceContext) -> OperationResult:
+    async def update(
+        self, entity_id: str, data: UpdateSchemaType, context: ServiceContext
+    ) -> OperationResult:
         """Update an existing entity"""
         pass
 
@@ -130,7 +143,7 @@ class BaseService(ABC, Generic[T]):
         after_state: Optional[Dict[str, Any]] = None,
         success: bool = True,
         error_message: Optional[str] = None,
-        additional_data: Optional[Dict[str, Any]] = None
+        additional_data: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Log operation for audit compliance"""
 
@@ -150,10 +163,12 @@ class BaseService(ABC, Generic[T]):
             after_state=after_state,
             success=success,
             error_message=error_message,
-            additional_data=additional_data
+            additional_data=additional_data,
         )
 
-    def validate_permissions(self, context: ServiceContext, required_permission: str) -> bool:
+    def validate_permissions(
+        self, context: ServiceContext, required_permission: str
+    ) -> bool:
         """Validate user permissions for operation"""
         # This would integrate with your permission system
         # For now, return True for admin users
@@ -179,7 +194,7 @@ class CRUDService(BaseService[T]):
         filters: Optional[Dict[str, Any]] = None,
         sort_by: Optional[str] = None,
         page: int = 1,
-        page_size: int = 50
+        page_size: int = 50,
     ) -> OperationResult:
         """List entities with filtering and pagination"""
 
@@ -187,6 +202,7 @@ class CRUDService(BaseService[T]):
             # Apply filters and pagination
             from sqlalchemy import select
             from sqlalchemy.sql import Select
+
             query: Select = select(self.model_class)
 
             if filters:
@@ -212,14 +228,14 @@ class CRUDService(BaseService[T]):
                     "filters": filters,
                     "page": page,
                     "page_size": page_size,
-                    "result_count": len(items)
-                }
+                    "result_count": len(items),
+                },
             )
 
             return OperationResult(
                 success=True,
                 data=items,
-                message=f"Retrieved {len(items)} {self.model_class.__name__} records"
+                message=f"Retrieved {len(items)} {self.model_class.__name__} records",
             )
 
         except Exception as e:
@@ -228,15 +244,17 @@ class CRUDService(BaseService[T]):
                 action="list",
                 resource_type=self.model_class.__name__,
                 success=False,
-                error_message=str(e)
+                error_message=str(e),
             )
 
             return OperationResult(
                 success=False,
-                errors=[f"Failed to list {self.model_class.__name__}: {str(e)}"]
+                errors=[f"Failed to list {self.model_class.__name__}: {str(e)}"],
             )
 
-    async def soft_delete(self, entity_id: str, context: ServiceContext) -> OperationResult:
+    async def soft_delete(
+        self, entity_id: str, context: ServiceContext
+    ) -> OperationResult:
         """Soft delete for banking compliance (maintains audit trail)"""
 
         try:
@@ -244,23 +262,22 @@ class CRUDService(BaseService[T]):
 
             if not entity:
                 return OperationResult(
-                    success=False,
-                    errors=[f"{self.model_class.__name__} not found"]
+                    success=False, errors=[f"{self.model_class.__name__} not found"]
                 )
 
             # Store before state for audit
             before_state = {
                 "id": entity.id,
-                "status": getattr(entity, 'status', None),
-                "is_active": getattr(entity, 'is_active', None)
+                "status": getattr(entity, "status", None),
+                "is_active": getattr(entity, "is_active", None),
             }
 
             # Perform soft delete
-            if hasattr(entity, 'is_active'):
+            if hasattr(entity, "is_active"):
                 entity.is_active = False
-            if hasattr(entity, 'status'):
-                entity.status = 'DELETED'
-            if hasattr(entity, 'deleted_at'):
+            if hasattr(entity, "status"):
+                entity.status = "DELETED"
+            if hasattr(entity, "deleted_at"):
                 entity.deleted_at = datetime.utcnow()
 
             await self.db.commit()
@@ -272,13 +289,13 @@ class CRUDService(BaseService[T]):
                 resource_type=self.model_class.__name__,
                 resource_id=entity_id,
                 before_state=before_state,
-                after_state={"status": "DELETED", "is_active": False}
+                after_state={"status": "DELETED", "is_active": False},
             )
 
             return OperationResult(
                 success=True,
                 data=entity,
-                message=f"{self.model_class.__name__} soft deleted successfully"
+                message=f"{self.model_class.__name__} soft deleted successfully",
             )
 
         except Exception as e:
@@ -290,12 +307,12 @@ class CRUDService(BaseService[T]):
                 resource_type=self.model_class.__name__,
                 resource_id=entity_id,
                 success=False,
-                error_message=str(e)
+                error_message=str(e),
             )
 
             return OperationResult(
                 success=False,
-                errors=[f"Failed to delete {self.model_class.__name__}: {str(e)}"]
+                errors=[f"Failed to delete {self.model_class.__name__}: {str(e)}"],
             )
 
 
@@ -308,7 +325,7 @@ class TransactionalService(CRUDService[T]):
         self,
         context: ServiceContext,
         operations: List[Callable],
-        rollback_on_error: bool = True
+        rollback_on_error: bool = True,
     ) -> OperationResult:
         """Execute multiple operations in a transaction"""
 
@@ -337,15 +354,18 @@ class TransactionalService(CRUDService[T]):
                 resource_type="multi_operation",
                 additional_data={
                     "operation_count": len(operations),
-                    "duration_ms": (datetime.utcnow() - transaction_start).total_seconds() * 1000,
-                    "success": True
-                }
+                    "duration_ms": (
+                        datetime.utcnow() - transaction_start
+                    ).total_seconds()
+                    * 1000,
+                    "success": True,
+                },
             )
 
             return OperationResult(
                 success=True,
                 data=results,
-                message=f"Transaction completed successfully with {len(operations)} operations"
+                message=f"Transaction completed successfully with {len(operations)} operations",
             )
 
         except Exception as e:
@@ -360,14 +380,15 @@ class TransactionalService(CRUDService[T]):
                 error_message=str(e),
                 additional_data={
                     "operation_count": len(operations),
-                    "duration_ms": (datetime.utcnow() - transaction_start).total_seconds() * 1000
-                }
+                    "duration_ms": (
+                        datetime.utcnow() - transaction_start
+                    ).total_seconds()
+                    * 1000,
+                },
             )
 
             return OperationResult(
-                success=False,
-                errors=[f"Transaction failed: {str(e)}"],
-                data=results
+                success=False, errors=[f"Transaction failed: {str(e)}"], data=results
             )
 
 
@@ -384,7 +405,9 @@ class BankingComplianceService(TransactionalService[T]):
         """Add a compliance rule to be checked on operations"""
         self.compliance_rules.append(rule)
 
-    async def validate_compliance(self, data: Any, operation: str, context: ServiceContext) -> List[str]:
+    async def validate_compliance(
+        self, data: Any, operation: str, context: ServiceContext
+    ) -> List[str]:
         """Validate all compliance rules"""
         errors = []
 
@@ -399,24 +422,21 @@ class BankingComplianceService(TransactionalService[T]):
         return errors
 
     async def create_with_compliance(
-        self,
-        data: CreateSchemaType,
-        context: ServiceContext
+        self, data: CreateSchemaType, context: ServiceContext
     ) -> OperationResult:
         """Create entity with full compliance validation"""
 
         # Validate compliance first
         compliance_errors = await self.validate_compliance(data, "create", context)
         if compliance_errors:
-            return OperationResult(
-                success=False,
-                errors=compliance_errors
-            )
+            return OperationResult(success=False, errors=compliance_errors)
 
         # Proceed with creation
         return await self.create(data, context)
 
-    async def get_audit_trail(self, entity_id: str, context: ServiceContext) -> OperationResult:
+    async def get_audit_trail(
+        self, entity_id: str, context: ServiceContext
+    ) -> OperationResult:
         """Get complete audit trail for an entity"""
 
         try:
@@ -424,18 +444,16 @@ class BankingComplianceService(TransactionalService[T]):
 
             audit_service = AuditService(self.db)
             audit_records = await audit_service.get_entity_audit_trail(
-                resource_type=self.model_class.__name__,
-                resource_id=entity_id
+                resource_type=self.model_class.__name__, resource_id=entity_id
             )
 
             return OperationResult(
                 success=True,
                 data=audit_records,
-                message=f"Retrieved audit trail for {self.model_class.__name__} {entity_id}"
+                message=f"Retrieved audit trail for {self.model_class.__name__} {entity_id}",
             )
 
         except Exception as e:
             return OperationResult(
-                success=False,
-                errors=[f"Failed to retrieve audit trail: {str(e)}"]
+                success=False, errors=[f"Failed to retrieve audit trail: {str(e)}"]
             )

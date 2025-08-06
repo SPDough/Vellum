@@ -8,22 +8,29 @@ compliance checks, and settlement processing.
 
 import json
 import logging
-from typing import Dict, List, Any, Optional, TypedDict, Annotated
 from datetime import datetime
+from typing import Annotated, Any, Dict, List, Optional, TypedDict
 
-from langgraph.graph import StateGraph, END
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langgraph.graph import END, StateGraph
 from langgraph.prebuilt import ToolNode
-from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from pydantic import BaseModel, Field
 
-from app.services.drools_service import get_drools_service, RuleFact, RuleResult, RuleExecutionStatus
 from app.models.trade import Trade
-from app.models.workflow import WorkflowExecution, WorkflowNode, NodeType
+from app.models.workflow import NodeType, WorkflowExecution, WorkflowNode
+from app.services.drools_service import (
+    RuleExecutionStatus,
+    RuleFact,
+    RuleResult,
+    get_drools_service,
+)
 
 logger = logging.getLogger(__name__)
 
+
 class RulesEngineState(TypedDict):
     """State structure for rules engine workflow nodes"""
+
     trade_data: Dict[str, Any]
     portfolio_data: Optional[Dict[str, Any]]
     client_data: Optional[Dict[str, Any]]
@@ -38,13 +45,22 @@ class RulesEngineState(TypedDict):
     workflow_status: str
     execution_metadata: Dict[str, Any]
 
+
 class RulesEngineConfig(BaseModel):
     """Configuration for rules engine workflow node"""
-    rule_sets: List[str] = Field(default=["trade-validation"], description="Rule sets to execute")
+
+    rule_sets: List[str] = Field(
+        default=["trade-validation"], description="Rule sets to execute"
+    )
     timeout_seconds: int = Field(default=30, description="Execution timeout")
-    require_all_passed: bool = Field(default=True, description="Require all rule sets to pass")
-    enable_parallel_execution: bool = Field(default=False, description="Execute rule sets in parallel")
+    require_all_passed: bool = Field(
+        default=True, description="Require all rule sets to pass"
+    )
+    enable_parallel_execution: bool = Field(
+        default=False, description="Execute rule sets in parallel"
+    )
     log_level: str = Field(default="INFO", description="Logging level")
+
 
 class TradeValidationNode:
     """
@@ -78,7 +94,7 @@ class TradeValidationNode:
                 fact_type="Trade",
                 fact_id=str(trade_data.get("tradeId", "unknown")),
                 data=trade_data,
-                timestamp=datetime.now()
+                timestamp=datetime.now(),
             )
 
             # Execute validation rules
@@ -86,13 +102,16 @@ class TradeValidationNode:
                 result = await self.drools_service.execute_rules(
                     rule_set="trade-validation",
                     facts=[trade_fact],
-                    timeout_seconds=self.config.timeout_seconds
+                    timeout_seconds=self.config.timeout_seconds,
                 )
 
             # Process results
             validation_passed = (
-                result.status == RuleExecutionStatus.SUCCESS and
-                not any(action.get("type") == "VALIDATION_ERROR" for action in result.actions_triggered)
+                result.status == RuleExecutionStatus.SUCCESS
+                and not any(
+                    action.get("type") == "VALIDATION_ERROR"
+                    for action in result.actions_triggered
+                )
             )
 
             # Update state
@@ -106,24 +125,31 @@ class TradeValidationNode:
                     updated_state["alerts"].append(action)
 
             updated_state["workflow_status"] = "validation_completed"
-            updated_state["execution_metadata"]["validation_time"] = datetime.now().isoformat()
+            updated_state["execution_metadata"][
+                "validation_time"
+            ] = datetime.now().isoformat()
 
-            logger.info(f"Trade validation completed: {'PASSED' if validation_passed else 'FAILED'}")
+            logger.info(
+                f"Trade validation completed: {'PASSED' if validation_passed else 'FAILED'}"
+            )
             return updated_state
 
         except Exception as e:
             logger.error(f"Trade validation failed: {str(e)}")
 
             error_state = state.copy()
-            error_state["errors"].append({
-                "type": "VALIDATION_ERROR",
-                "message": str(e),
-                "timestamp": datetime.now().isoformat()
-            })
+            error_state["errors"].append(
+                {
+                    "type": "VALIDATION_ERROR",
+                    "message": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
             error_state["validation_passed"] = False
             error_state["workflow_status"] = "validation_failed"
 
             return error_state
+
 
 class RiskCheckNode:
     """
@@ -162,14 +188,14 @@ class RiskCheckNode:
                     fact_type="Trade",
                     fact_id=str(trade_data.get("tradeId", "unknown")),
                     data=trade_data,
-                    timestamp=datetime.now()
+                    timestamp=datetime.now(),
                 ),
                 RuleFact(
                     fact_type="Portfolio",
                     fact_id=trade_data.get("portfolio", "unknown"),
                     data=portfolio_data,
-                    timestamp=datetime.now()
-                )
+                    timestamp=datetime.now(),
+                ),
             ]
 
             # Execute risk rules
@@ -177,14 +203,13 @@ class RiskCheckNode:
                 result = await self.drools_service.execute_rules(
                     rule_set="risk-management",
                     facts=facts,
-                    timeout_seconds=self.config.timeout_seconds
+                    timeout_seconds=self.config.timeout_seconds,
                 )
 
             # Process results
-            risk_approved = (
-                result.status == RuleExecutionStatus.SUCCESS and
-                not any(action.get("type") == "RISK_ALERT" and action.get("severity") == "HIGH"
-                       for action in result.actions_triggered)
+            risk_approved = result.status == RuleExecutionStatus.SUCCESS and not any(
+                action.get("type") == "RISK_ALERT" and action.get("severity") == "HIGH"
+                for action in result.actions_triggered
             )
 
             # Update state
@@ -198,24 +223,31 @@ class RiskCheckNode:
                     updated_state["alerts"].append(action)
 
             updated_state["workflow_status"] = "risk_check_completed"
-            updated_state["execution_metadata"]["risk_check_time"] = datetime.now().isoformat()
+            updated_state["execution_metadata"][
+                "risk_check_time"
+            ] = datetime.now().isoformat()
 
-            logger.info(f"Risk check completed: {'APPROVED' if risk_approved else 'REQUIRES_REVIEW'}")
+            logger.info(
+                f"Risk check completed: {'APPROVED' if risk_approved else 'REQUIRES_REVIEW'}"
+            )
             return updated_state
 
         except Exception as e:
             logger.error(f"Risk check failed: {str(e)}")
 
             error_state = state.copy()
-            error_state["errors"].append({
-                "type": "RISK_CHECK_ERROR",
-                "message": str(e),
-                "timestamp": datetime.now().isoformat()
-            })
+            error_state["errors"].append(
+                {
+                    "type": "RISK_CHECK_ERROR",
+                    "message": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
             error_state["risk_approved"] = False
             error_state["workflow_status"] = "risk_check_failed"
 
             return error_state
+
 
 class ComplianceCheckNode:
     """
@@ -254,14 +286,14 @@ class ComplianceCheckNode:
                     fact_type="Trade",
                     fact_id=str(trade_data.get("tradeId", "unknown")),
                     data=trade_data,
-                    timestamp=datetime.now()
+                    timestamp=datetime.now(),
                 ),
                 RuleFact(
                     fact_type="Client",
                     fact_id=trade_data.get("counterpartyId", "unknown"),
                     data=client_data,
-                    timestamp=datetime.now()
-                )
+                    timestamp=datetime.now(),
+                ),
             ]
 
             # Execute compliance rules
@@ -269,14 +301,17 @@ class ComplianceCheckNode:
                 result = await self.drools_service.execute_rules(
                     rule_set="compliance-checks",
                     facts=facts,
-                    timeout_seconds=self.config.timeout_seconds
+                    timeout_seconds=self.config.timeout_seconds,
                 )
 
             # Process results
             compliance_approved = (
-                result.status == RuleExecutionStatus.SUCCESS and
-                not any(action.get("type") == "COMPLIANCE_ALERT" and action.get("severity") in ["HIGH", "CRITICAL"]
-                       for action in result.actions_triggered)
+                result.status == RuleExecutionStatus.SUCCESS
+                and not any(
+                    action.get("type") == "COMPLIANCE_ALERT"
+                    and action.get("severity") in ["HIGH", "CRITICAL"]
+                    for action in result.actions_triggered
+                )
             )
 
             # Update state
@@ -290,24 +325,31 @@ class ComplianceCheckNode:
                     updated_state["alerts"].append(action)
 
             updated_state["workflow_status"] = "compliance_check_completed"
-            updated_state["execution_metadata"]["compliance_check_time"] = datetime.now().isoformat()
+            updated_state["execution_metadata"][
+                "compliance_check_time"
+            ] = datetime.now().isoformat()
 
-            logger.info(f"Compliance check completed: {'APPROVED' if compliance_approved else 'REQUIRES_REVIEW'}")
+            logger.info(
+                f"Compliance check completed: {'APPROVED' if compliance_approved else 'REQUIRES_REVIEW'}"
+            )
             return updated_state
 
         except Exception as e:
             logger.error(f"Compliance check failed: {str(e)}")
 
             error_state = state.copy()
-            error_state["errors"].append({
-                "type": "COMPLIANCE_CHECK_ERROR",
-                "message": str(e),
-                "timestamp": datetime.now().isoformat()
-            })
+            error_state["errors"].append(
+                {
+                    "type": "COMPLIANCE_CHECK_ERROR",
+                    "message": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
             error_state["compliance_approved"] = False
             error_state["workflow_status"] = "compliance_check_failed"
 
             return error_state
+
 
 class SettlementRulesNode:
     """
@@ -338,7 +380,9 @@ class SettlementRulesNode:
             if not trade_data:
                 raise ValueError("No trade data provided for settlement processing")
             if not settlement_data:
-                raise ValueError("No settlement data provided for settlement processing")
+                raise ValueError(
+                    "No settlement data provided for settlement processing"
+                )
 
             # Create facts for rules engine
             facts = [
@@ -346,14 +390,14 @@ class SettlementRulesNode:
                     fact_type="Trade",
                     fact_id=str(trade_data.get("tradeId", "unknown")),
                     data=trade_data,
-                    timestamp=datetime.now()
+                    timestamp=datetime.now(),
                 ),
                 RuleFact(
                     fact_type="Settlement",
                     fact_id=f"settlement_{trade_data.get('tradeId', 'unknown')}",
                     data=settlement_data,
-                    timestamp=datetime.now()
-                )
+                    timestamp=datetime.now(),
+                ),
             ]
 
             # Execute settlement rules
@@ -361,13 +405,16 @@ class SettlementRulesNode:
                 result = await self.drools_service.execute_rules(
                     rule_set="settlement-processing",
                     facts=facts,
-                    timeout_seconds=self.config.timeout_seconds
+                    timeout_seconds=self.config.timeout_seconds,
                 )
 
             # Process results
             settlement_approved = (
-                result.status == RuleExecutionStatus.SUCCESS and
-                not any(action.get("type") == "SETTLEMENT_ERROR" for action in result.actions_triggered)
+                result.status == RuleExecutionStatus.SUCCESS
+                and not any(
+                    action.get("type") == "SETTLEMENT_ERROR"
+                    for action in result.actions_triggered
+                )
             )
 
             # Update state
@@ -381,24 +428,31 @@ class SettlementRulesNode:
                     updated_state["alerts"].append(action)
 
             updated_state["workflow_status"] = "settlement_processing_completed"
-            updated_state["execution_metadata"]["settlement_processing_time"] = datetime.now().isoformat()
+            updated_state["execution_metadata"][
+                "settlement_processing_time"
+            ] = datetime.now().isoformat()
 
-            logger.info(f"Settlement processing completed: {'APPROVED' if settlement_approved else 'REQUIRES_REVIEW'}")
+            logger.info(
+                f"Settlement processing completed: {'APPROVED' if settlement_approved else 'REQUIRES_REVIEW'}"
+            )
             return updated_state
 
         except Exception as e:
             logger.error(f"Settlement processing failed: {str(e)}")
 
             error_state = state.copy()
-            error_state["errors"].append({
-                "type": "SETTLEMENT_PROCESSING_ERROR",
-                "message": str(e),
-                "timestamp": datetime.now().isoformat()
-            })
+            error_state["errors"].append(
+                {
+                    "type": "SETTLEMENT_PROCESSING_ERROR",
+                    "message": str(e),
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
             error_state["settlement_approved"] = False
             error_state["workflow_status"] = "settlement_processing_failed"
 
             return error_state
+
 
 def create_trade_processing_workflow(config: RulesEngineConfig) -> StateGraph:
     """
@@ -431,28 +485,29 @@ def create_trade_processing_workflow(config: RulesEngineConfig) -> StateGraph:
     # Conditional edges based on rule results
     workflow.add_conditional_edges(
         "validate_trade",
-        lambda state: "check_risk" if state["validation_passed"] else END
+        lambda state: "check_risk" if state["validation_passed"] else END,
     )
 
     workflow.add_conditional_edges(
         "check_risk",
-        lambda state: "check_compliance" if state["risk_approved"] else END
+        lambda state: "check_compliance" if state["risk_approved"] else END,
     )
 
     workflow.add_conditional_edges(
         "check_compliance",
-        lambda state: "process_settlement" if state["compliance_approved"] else END
+        lambda state: "process_settlement" if state["compliance_approved"] else END,
     )
 
     workflow.add_edge("process_settlement", END)
 
     return workflow.compile()
 
+
 def create_initial_state(
     trade_data: Dict[str, Any],
     portfolio_data: Optional[Dict[str, Any]] = None,
     client_data: Optional[Dict[str, Any]] = None,
-    settlement_data: Optional[Dict[str, Any]] = None
+    settlement_data: Optional[Dict[str, Any]] = None,
 ) -> RulesEngineState:
     """
     Create initial state for rules engine workflow
@@ -481,6 +536,6 @@ def create_initial_state(
         workflow_status="initialized",
         execution_metadata={
             "start_time": datetime.now().isoformat(),
-            "workflow_id": f"rules_workflow_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        }
+            "workflow_id": f"rules_workflow_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        },
     )

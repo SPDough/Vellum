@@ -3,16 +3,16 @@ Security utilities and hardening for Otomeshon Banking Platform
 """
 
 import hashlib
-import secrets
-import re
-from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta
-import json
 import ipaddress
+import json
+import re
+import secrets
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
-from passlib.context import CryptContext
-from jose import JWTError, jwt
 import structlog
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 
 logger = structlog.get_logger(__name__)
 
@@ -41,16 +41,18 @@ class SecurityValidator:
 
         # Length check
         if len(password) < MIN_PASSWORD_LENGTH:
-            issues.append(f"Password must be at least {MIN_PASSWORD_LENGTH} characters long")
+            issues.append(
+                f"Password must be at least {MIN_PASSWORD_LENGTH} characters long"
+            )
 
         # Character requirements
-        if not re.search(r'[A-Z]', password):
+        if not re.search(r"[A-Z]", password):
             issues.append("Password must contain at least one uppercase letter")
 
-        if not re.search(r'[a-z]', password):
+        if not re.search(r"[a-z]", password):
             issues.append("Password must contain at least one lowercase letter")
 
-        if not re.search(r'\d', password):
+        if not re.search(r"\d", password):
             issues.append("Password must contain at least one number")
 
         if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
@@ -58,12 +60,12 @@ class SecurityValidator:
 
         # Common password patterns
         common_patterns = [
-            r'password',
-            r'123456',
-            r'qwerty',
-            r'admin',
-            r'otomeshon',
-            r'banking'
+            r"password",
+            r"123456",
+            r"qwerty",
+            r"admin",
+            r"otomeshon",
+            r"banking",
         ]
 
         for pattern in common_patterns:
@@ -71,32 +73,34 @@ class SecurityValidator:
                 issues.append(f"Password cannot contain common pattern: {pattern}")
 
         # Sequence checks
-        if re.search(r'(.)\1{2,}', password):  # 3+ repeated characters
+        if re.search(r"(.)\1{2,}", password):  # 3+ repeated characters
             issues.append("Password cannot contain 3 or more repeated characters")
 
         return {
-            'valid': len(issues) == 0,
-            'issues': issues,
-            'strength_score': max(0, 100 - len(issues) * 15)
+            "valid": len(issues) == 0,
+            "issues": issues,
+            "strength_score": max(0, 100 - len(issues) * 15),
         }
 
     @staticmethod
     def validate_email_format(email: str) -> bool:
         """Validate email format with banking domain restrictions"""
-        email_pattern = re.compile(
-            r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        )
+        email_pattern = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
         if not email_pattern.match(email):
             return False
 
         # Additional banking-specific validations
-        domain = email.split('@')[1].lower()
+        domain = email.split("@")[1].lower()
 
         # Block known public email domains for internal users
         blocked_domains = [
-            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
-            'tempmail.org', '10minutemail.com'
+            "gmail.com",
+            "yahoo.com",
+            "hotmail.com",
+            "outlook.com",
+            "tempmail.org",
+            "10minutemail.com",
         ]
 
         if domain in blocked_domains:
@@ -106,7 +110,9 @@ class SecurityValidator:
         return True
 
     @staticmethod
-    def validate_ip_address(ip: str, allowed_ranges: Optional[List[str]] = None) -> bool:
+    def validate_ip_address(
+        ip: str, allowed_ranges: Optional[List[str]] = None
+    ) -> bool:
         """Validate IP address against allowed ranges"""
         try:
             ip_obj = ipaddress.ip_address(ip)
@@ -114,10 +120,10 @@ class SecurityValidator:
             # Default allowed ranges for banking (internal networks)
             if allowed_ranges is None:
                 allowed_ranges = [
-                    '10.0.0.0/8',      # Private Class A
-                    '172.16.0.0/12',   # Private Class B
-                    '192.168.0.0/16',  # Private Class C
-                    '127.0.0.0/8'      # Loopback
+                    "10.0.0.0/8",  # Private Class A
+                    "172.16.0.0/12",  # Private Class B
+                    "192.168.0.0/16",  # Private Class C
+                    "127.0.0.0/8",  # Loopback
                 ]
 
             for range_str in allowed_ranges:
@@ -139,26 +145,26 @@ class DataMasking:
     def mask_account_number(account: str) -> str:
         """Mask account number, showing only last 4 digits"""
         if len(account) <= 4:
-            return '*' * len(account)
-        return '*' * (len(account) - 4) + account[-4:]
+            return "*" * len(account)
+        return "*" * (len(account) - 4) + account[-4:]
 
     @staticmethod
     def mask_ssn(ssn: str) -> str:
         """Mask SSN, showing only last 4 digits"""
-        cleaned = re.sub(r'[^\d]', '', ssn)
+        cleaned = re.sub(r"[^\d]", "", ssn)
         if len(cleaned) != 9:
-            return '*' * len(ssn)
+            return "*" * len(ssn)
         return f"***-**-{cleaned[-4:]}"
 
     @staticmethod
     def mask_credit_card(card: str) -> str:
         """Mask credit card number, showing only last 4 digits"""
-        cleaned = re.sub(r'[^\d]', '', card)
+        cleaned = re.sub(r"[^\d]", "", card)
         if len(cleaned) < 13:
-            return '*' * len(card)
+            return "*" * len(card)
 
         # Reconstruct with original formatting
-        masked = '*' * (len(cleaned) - 4) + cleaned[-4:]
+        masked = "*" * (len(cleaned) - 4) + cleaned[-4:]
 
         # Apply original formatting
         result = ""
@@ -176,13 +182,15 @@ class DataMasking:
     def mask_sensitive_data(data: Dict[str, Any]) -> Dict[str, Any]:
         """Mask sensitive fields in a data dictionary"""
         sensitive_fields = {
-            'account_number': DataMasking.mask_account_number,
-            'ssn': DataMasking.mask_ssn,
-            'social_security_number': DataMasking.mask_ssn,
-            'credit_card': DataMasking.mask_credit_card,
-            'card_number': DataMasking.mask_credit_card,
-            'password': lambda x: '*' * len(x),
-            'api_key': lambda x: x[:8] + '*' * (len(x) - 8) if len(x) > 8 else '*' * len(x)
+            "account_number": DataMasking.mask_account_number,
+            "ssn": DataMasking.mask_ssn,
+            "social_security_number": DataMasking.mask_ssn,
+            "credit_card": DataMasking.mask_credit_card,
+            "card_number": DataMasking.mask_credit_card,
+            "password": lambda x: "*" * len(x),
+            "api_key": lambda x: (
+                x[:8] + "*" * (len(x) - 8) if len(x) > 8 else "*" * len(x)
+            ),
         }
 
         masked_data = {}
@@ -210,7 +218,7 @@ class AuditLogger:
         success: bool,
         ip_address: str,
         user_agent: str,
-        additional_data: Optional[Dict] = None
+        additional_data: Optional[Dict] = None,
     ):
         """Log authentication events"""
         self.logger.info(
@@ -221,7 +229,7 @@ class AuditLogger:
             ip_address=ip_address,
             user_agent=user_agent,
             timestamp=datetime.utcnow().isoformat(),
-            additional_data=additional_data or {}
+            additional_data=additional_data or {},
         )
 
     def log_transaction_event(
@@ -232,7 +240,7 @@ class AuditLogger:
         amount: float,
         currency: str,
         status: str,
-        additional_data: Optional[Dict] = None
+        additional_data: Optional[Dict] = None,
     ):
         """Log transaction events"""
         masked_data = DataMasking.mask_sensitive_data(additional_data or {})
@@ -246,7 +254,7 @@ class AuditLogger:
             currency=currency,
             status=status,
             timestamp=datetime.utcnow().isoformat(),
-            additional_data=masked_data
+            additional_data=masked_data,
         )
 
     def log_access_event(
@@ -256,7 +264,7 @@ class AuditLogger:
         action: str,
         success: bool,
         ip_address: str,
-        additional_data: Optional[Dict] = None
+        additional_data: Optional[Dict] = None,
     ):
         """Log resource access events"""
         self.logger.info(
@@ -267,7 +275,7 @@ class AuditLogger:
             success=success,
             ip_address=ip_address,
             timestamp=datetime.utcnow().isoformat(),
-            additional_data=additional_data or {}
+            additional_data=additional_data or {},
         )
 
 
@@ -279,21 +287,20 @@ class SessionManager:
         self.sessions = {}  # In-memory fallback if Redis unavailable
 
     async def create_session(
-        self,
-        user_id: str,
-        ip_address: str,
-        user_agent: str
+        self, user_id: str, ip_address: str, user_agent: str
     ) -> str:
         """Create a new secure session"""
         session_id = secrets.token_urlsafe(32)
 
         session_data = {
-            'user_id': user_id,
-            'created_at': datetime.utcnow().isoformat(),
-            'ip_address': ip_address,
-            'user_agent': user_agent,
-            'last_activity': datetime.utcnow().isoformat(),
-            'expires_at': (datetime.utcnow() + timedelta(minutes=SESSION_TIMEOUT_MINUTES)).isoformat()
+            "user_id": user_id,
+            "created_at": datetime.utcnow().isoformat(),
+            "ip_address": ip_address,
+            "user_agent": user_agent,
+            "last_activity": datetime.utcnow().isoformat(),
+            "expires_at": (
+                datetime.utcnow() + timedelta(minutes=SESSION_TIMEOUT_MINUTES)
+            ).isoformat(),
         }
 
         if self.redis:
@@ -301,7 +308,7 @@ class SessionManager:
                 await self.redis.setex(
                     f"session:{session_id}",
                     SESSION_TIMEOUT_MINUTES * 60,
-                    json.dumps(session_data)
+                    json.dumps(session_data),
                 )
             except Exception as e:
                 logger.error("Failed to store session in Redis", error=str(e))
@@ -311,7 +318,9 @@ class SessionManager:
 
         return session_id
 
-    async def validate_session(self, session_id: str, ip_address: str) -> Optional[Dict[str, Any]]:
+    async def validate_session(
+        self, session_id: str, ip_address: str
+    ) -> Optional[Dict[str, Any]]:
         """Validate session and check for security violations"""
         session_data = None
 
@@ -330,31 +339,31 @@ class SessionManager:
             return None
 
         # Check expiration
-        expires_at = datetime.fromisoformat(session_data['expires_at'])
+        expires_at = datetime.fromisoformat(session_data["expires_at"])
         if datetime.utcnow() > expires_at:
             await self.invalidate_session(session_id)
             return None
 
         # Check IP address consistency (basic session hijacking protection)
-        if session_data['ip_address'] != ip_address:
+        if session_data["ip_address"] != ip_address:
             logger.warning(
                 "Session IP address mismatch",
                 session_id=session_id,
-                original_ip=session_data['ip_address'],
-                current_ip=ip_address
+                original_ip=session_data["ip_address"],
+                current_ip=ip_address,
             )
             # In strict mode, we could invalidate the session here
             # For now, just log the warning
 
         # Update last activity
-        session_data['last_activity'] = datetime.utcnow().isoformat()
+        session_data["last_activity"] = datetime.utcnow().isoformat()
 
         if self.redis:
             try:
                 await self.redis.setex(
                     f"session:{session_id}",
                     SESSION_TIMEOUT_MINUTES * 60,
-                    json.dumps(session_data)
+                    json.dumps(session_data),
                 )
             except Exception:
                 pass
@@ -380,12 +389,12 @@ class SecurityHeaders:
     def get_security_headers() -> Dict[str, str]:
         """Get recommended security headers for banking applications"""
         return {
-            'X-Content-Type-Options': 'nosniff',
-            'X-Frame-Options': 'DENY',
-            'X-XSS-Protection': '1; mode=block',
-            'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
-            'Referrer-Policy': 'strict-origin-when-cross-origin',
-            'Content-Security-Policy': (
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "X-XSS-Protection": "1; mode=block",
+            "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+            "Content-Security-Policy": (
                 "default-src 'self'; "
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
                 "style-src 'self' 'unsafe-inline'; "
@@ -394,7 +403,7 @@ class SecurityHeaders:
                 "connect-src 'self' https:; "
                 "frame-ancestors 'none';"
             ),
-            'Permissions-Policy': (
+            "Permissions-Policy": (
                 "geolocation=(), "
                 "microphone=(), "
                 "camera=(), "
@@ -404,9 +413,9 @@ class SecurityHeaders:
                 "gyroscope=(), "
                 "speaker=()"
             ),
-            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
+            "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
         }
 
 

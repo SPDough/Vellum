@@ -3,18 +3,19 @@ Input validation and sanitization module for banking operations.
 Provides security-focused validation for financial data.
 """
 
-import re
 import html
-from typing import Any, Dict, Optional, Union
-from decimal import Decimal, InvalidOperation
-from datetime import datetime
 import logging
+import re
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
+from typing import Any, Dict, Optional, Union
 
 logger = logging.getLogger(__name__)
 
 
 class ValidationError(Exception):
     """Custom validation error for banking operations."""
+
     pass
 
 
@@ -22,15 +23,15 @@ class InputValidator:
     """Secure input validator for banking operations."""
 
     # Banking-specific patterns
-    CURRENCY_PATTERN = re.compile(r'^[A-Z]{3}$')  # ISO 4217 currency codes
-    CUSTOMER_ID_PATTERN = re.compile(r'^CUST_[0-9]{4,10}$')
-    TRANSACTION_ID_PATTERN = re.compile(r'^[A-Za-z0-9\-_]{8,64}$')
+    CURRENCY_PATTERN = re.compile(r"^[A-Z]{3}$")  # ISO 4217 currency codes
+    CUSTOMER_ID_PATTERN = re.compile(r"^CUST_[0-9]{4,10}$")
+    TRANSACTION_ID_PATTERN = re.compile(r"^[A-Za-z0-9\-_]{8,64}$")
 
     # Security patterns
     SQL_INJECTION_PATTERNS = [
         r"('|(\\')|(;)|(--)|(\s*(union|select|insert|update|delete|drop|create|alter)\s+))",
         r"(\b(exec|execute|sp_|xp_)\b)",
-        r"(\b(script|javascript|vbscript|onload|onerror|onclick)\b)"
+        r"(\b(script|javascript|vbscript|onload|onerror|onclick)\b)",
     ]
 
     @staticmethod
@@ -48,7 +49,9 @@ class InputValidator:
         # HTML escape and limit length
         sanitized = html.escape(value.strip())
         if len(sanitized) > max_length:
-            raise ValidationError(f"Input too long. Maximum {max_length} characters allowed")
+            raise ValidationError(
+                f"Input too long. Maximum {max_length} characters allowed"
+            )
 
         return sanitized
 
@@ -62,7 +65,7 @@ class InputValidator:
             if decimal_amount < 0:
                 raise ValidationError("Amount cannot be negative")
 
-            if decimal_amount > Decimal('999999999999.99'):  # 1 trillion limit
+            if decimal_amount > Decimal("999999999999.99"):  # 1 trillion limit
                 raise ValidationError("Amount exceeds maximum allowed value")
 
             # Check for reasonable decimal places (2 for most currencies)
@@ -70,7 +73,7 @@ class InputValidator:
             if isinstance(exponent, int) and exponent < -2:
                 raise ValidationError("Amount has too many decimal places")
 
-            return decimal_amount.quantize(Decimal('0.01'))
+            return decimal_amount.quantize(Decimal("0.01"))
 
         except (InvalidOperation, ValueError):
             raise ValidationError("Invalid amount format")
@@ -84,7 +87,17 @@ class InputValidator:
             raise ValidationError("Invalid currency code format")
 
         # Common currency whitelist for banking
-        allowed_currencies = {'USD', 'EUR', 'GBP', 'JPY', 'CHF', 'CAD', 'AUD', 'SGD', 'HKD'}
+        allowed_currencies = {
+            "USD",
+            "EUR",
+            "GBP",
+            "JPY",
+            "CHF",
+            "CAD",
+            "AUD",
+            "SGD",
+            "HKD",
+        }
         if currency not in allowed_currencies:
             logger.warning(f"Uncommon currency code used: {currency}")
 
@@ -105,13 +118,13 @@ class InputValidator:
         """Validate email address with banking domain restrictions."""
         email = InputValidator.sanitize_string(email, 100).lower()
 
-        email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+        email_pattern = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
         if not email_pattern.match(email):
             raise ValidationError("Invalid email format")
 
         # Block suspicious domains
-        suspicious_domains = ['temp-mail.org', '10minutemail.com', 'guerrillamail.com']
-        domain = email.split('@')[1]
+        suspicious_domains = ["temp-mail.org", "10minutemail.com", "guerrillamail.com"]
+        domain = email.split("@")[1]
         if domain in suspicious_domains:
             raise ValidationError("Email domain not allowed")
 
@@ -133,7 +146,9 @@ class InputValidator:
             if clean_key == "source":
                 allowed_sources = ["workflow", "api", "mcp", "manual"]
                 if value not in allowed_sources:
-                    raise ValidationError(f"Invalid source. Must be one of: {allowed_sources}")
+                    raise ValidationError(
+                        f"Invalid source. Must be one of: {allowed_sources}"
+                    )
                 validated_filters[clean_key] = value
 
             elif clean_key in ["date_from", "date_to"]:
@@ -151,16 +166,22 @@ class InputValidator:
                 validated_filters[clean_key] = InputValidator.validate_currency(value)
 
             elif clean_key == "customer_id":
-                validated_filters[clean_key] = InputValidator.validate_customer_id(value)
+                validated_filters[clean_key] = InputValidator.validate_customer_id(
+                    value
+                )
 
             else:
                 # Generic string validation for other filters
                 if isinstance(value, str):
-                    validated_filters[clean_key] = InputValidator.sanitize_string(value, 100)
+                    validated_filters[clean_key] = InputValidator.sanitize_string(
+                        value, 100
+                    )
                 elif isinstance(value, (int, float, bool)):
                     validated_filters[clean_key] = value
                 else:
-                    logger.warning(f"Unexpected filter value type for {clean_key}: {type(value)}")
+                    logger.warning(
+                        f"Unexpected filter value type for {clean_key}: {type(value)}"
+                    )
 
         return validated_filters
 

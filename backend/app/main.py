@@ -11,13 +11,13 @@ from fastapi.security import HTTPBearer
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.database import init_db
-from app.core.telemetry import setup_telemetry
 from app.core.middleware import (
     ErrorHandlingMiddleware,
-    SecurityHeadersMiddleware,
+    RateLimitingMiddleware,
     RequestLoggingMiddleware,
-    RateLimitingMiddleware
+    SecurityHeadersMiddleware,
 )
+from app.core.telemetry import setup_telemetry
 from app.services.kafka_service import kafka_service
 from app.services.knowledge_graph_sync_service import kg_sync_service
 from app.services.neo4j_service import neo4j_service
@@ -80,7 +80,7 @@ if settings.environment == "production":
 app.add_middleware(
     RequestLoggingMiddleware,
     log_requests=True,
-    log_responses=settings.environment == "development"
+    log_responses=settings.environment == "development",
 )
 
 # 4. CORS (should be last)

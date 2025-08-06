@@ -2,20 +2,21 @@
 Monitoring and performance endpoints for Otomeshon Banking Platform
 """
 
-from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, Any
-import time
-import psutil
 import os
+import time
+from typing import Any, Dict
 
+import psutil
+from fastapi import APIRouter, Depends, HTTPException
+
+from app.core.config import get_settings
 from app.core.performance import (
-    performance_monitor,
-    db_performance_monitor,
+    MemoryMonitor,
     cache_manager,
     connection_pool_monitor,
-    MemoryMonitor
+    db_performance_monitor,
+    performance_monitor,
 )
-from app.core.config import get_settings
 
 router = APIRouter(prefix="/monitoring", tags=["Monitoring"])
 
@@ -28,7 +29,7 @@ async def health_check() -> Dict[str, Any]:
         "timestamp": time.time(),
         "service": "otomeshon-api",
         "version": "1.0.0",
-        "environment": get_settings().environment
+        "environment": get_settings().environment,
     }
 
 
@@ -48,7 +49,7 @@ async def get_metrics() -> Dict[str, Any]:
     # System metrics
     cpu_percent = psutil.cpu_percent(interval=1)
     memory = psutil.virtual_memory()
-    disk = psutil.disk_usage('/')
+    disk = psutil.disk_usage("/")
 
     return {
         "performance": performance_summary,
@@ -60,16 +61,18 @@ async def get_metrics() -> Dict[str, Any]:
             "memory_available_gb": memory.available / (1024**3),
             "disk_percent": disk.percent,
             "disk_free_gb": disk.free / (1024**3),
-            "load_average": os.getloadavg() if hasattr(os, 'getloadavg') else None
+            "load_average": os.getloadavg() if hasattr(os, "getloadavg") else None,
         },
         "database": {
             "total_queries": db_performance_monitor.query_count,
             "avg_query_time_ms": (
-                db_performance_monitor.total_query_time / db_performance_monitor.query_count
-                if db_performance_monitor.query_count > 0 else 0
+                db_performance_monitor.total_query_time
+                / db_performance_monitor.query_count
+                if db_performance_monitor.query_count > 0
+                else 0
             ),
-            "slow_queries_count": len(db_performance_monitor.slow_queries)
-        }
+            "slow_queries_count": len(db_performance_monitor.slow_queries),
+        },
     }
 
 
@@ -87,17 +90,18 @@ async def get_database_metrics() -> Dict[str, Any]:
         "total_query_time_ms": db_performance_monitor.total_query_time,
         "average_query_time_ms": (
             db_performance_monitor.total_query_time / db_performance_monitor.query_count
-            if db_performance_monitor.query_count > 0 else 0
+            if db_performance_monitor.query_count > 0
+            else 0
         ),
         "slow_queries": [
             {
                 "statement": q["statement"][:200],  # Truncate for security
                 "duration_ms": q["duration_ms"],
-                "timestamp": q["timestamp"].isoformat()
+                "timestamp": q["timestamp"].isoformat(),
             }
             for q in db_performance_monitor.slow_queries[-10:]  # Last 10 slow queries
         ],
-        "connection_pools": connection_pool_monitor.pool_stats
+        "connection_pools": connection_pool_monitor.pool_stats,
     }
 
 
@@ -115,7 +119,7 @@ async def force_garbage_collection() -> Dict[str, Any]:
     return {
         "message": "Garbage collection completed",
         "stats": gc_stats,
-        "memory_after": MemoryMonitor.get_memory_stats()
+        "memory_after": MemoryMonitor.get_memory_stats(),
     }
 
 
@@ -164,14 +168,16 @@ async def get_performance_alerts() -> Dict[str, Any]:
 
     # Check slow queries
     if len(db_performance_monitor.slow_queries) > 10:
-        warnings.append(f"Multiple slow database queries detected: {len(db_performance_monitor.slow_queries)}")
+        warnings.append(
+            f"Multiple slow database queries detected: {len(db_performance_monitor.slow_queries)}"
+        )
 
     return {
         "alerts": alerts,
         "warnings": warnings,
         "alert_count": len(alerts),
         "warning_count": len(warnings),
-        "status": "critical" if alerts else "warning" if warnings else "healthy"
+        "status": "critical" if alerts else "warning" if warnings else "healthy",
     }
 
 
@@ -185,7 +191,7 @@ async def get_banking_specific_metrics() -> Dict[str, Any]:
         "sop_execution",
         "risk_calculation",
         "compliance_check",
-        "settlement_processing"
+        "settlement_processing",
     ]
 
     banking_metrics = {}
@@ -196,7 +202,9 @@ async def get_banking_specific_metrics() -> Dict[str, Any]:
                 "total_calls": len(times),
                 "avg_response_ms": sum(times) / len(times) if times else 0,
                 "max_response_ms": max(times) if times else 0,
-                "sla_compliance": sum(1 for t in times if t < 1000) / len(times) if times else 1.0
+                "sla_compliance": (
+                    sum(1 for t in times if t < 1000) / len(times) if times else 1.0
+                ),
             }
 
     return {
@@ -206,14 +214,14 @@ async def get_banking_specific_metrics() -> Dict[str, Any]:
             "sop_execution": "< 5000ms",
             "risk_calculation": "< 200ms",
             "compliance_check": "< 500ms",
-            "settlement_processing": "< 10000ms"
+            "settlement_processing": "< 10000ms",
         },
         "regulatory_requirements": {
             "uptime_target": "99.9%",
             "data_retention": "7 years",
             "audit_trail": "complete",
-            "disaster_recovery": "< 4 hours RTO"
-        }
+            "disaster_recovery": "< 4 hours RTO",
+        },
     }
 
 
@@ -228,37 +236,47 @@ async def prometheus_metrics() -> str:
     # Response time metrics
     if "response_times" in perf_summary:
         rt = perf_summary["response_times"]
-        metrics.extend([
-            f"otomeshon_response_time_avg_ms {rt['avg_ms']:.2f}",
-            f"otomeshon_response_time_p95_ms {rt['p95_ms']:.2f}",
-            f"otomeshon_response_time_p99_ms {rt['p99_ms']:.2f}",
-        ])
+        metrics.extend(
+            [
+                f"otomeshon_response_time_avg_ms {rt['avg_ms']:.2f}",
+                f"otomeshon_response_time_p95_ms {rt['p95_ms']:.2f}",
+                f"otomeshon_response_time_p99_ms {rt['p99_ms']:.2f}",
+            ]
+        )
 
     # Request metrics
-    metrics.extend([
-        f"otomeshon_requests_total {perf_summary['total_requests']}",
-        f"otomeshon_errors_total {perf_summary['total_errors']}",
-        f"otomeshon_requests_per_second {perf_summary['requests_per_second']:.2f}",
-        f"otomeshon_error_rate {perf_summary['error_rate']:.4f}",
-    ])
+    metrics.extend(
+        [
+            f"otomeshon_requests_total {perf_summary['total_requests']}",
+            f"otomeshon_errors_total {perf_summary['total_errors']}",
+            f"otomeshon_requests_per_second {perf_summary['requests_per_second']:.2f}",
+            f"otomeshon_error_rate {perf_summary['error_rate']:.4f}",
+        ]
+    )
 
     # Memory metrics
-    metrics.extend([
-        f"otomeshon_memory_rss_mb {memory_stats['rss_mb']:.2f}",
-        f"otomeshon_memory_percent {memory_stats['percent']:.2f}",
-    ])
+    metrics.extend(
+        [
+            f"otomeshon_memory_rss_mb {memory_stats['rss_mb']:.2f}",
+            f"otomeshon_memory_percent {memory_stats['percent']:.2f}",
+        ]
+    )
 
     # Database metrics
-    metrics.extend([
-        f"otomeshon_db_queries_total {db_performance_monitor.query_count}",
-        f"otomeshon_db_slow_queries_total {len(db_performance_monitor.slow_queries)}",
-    ])
+    metrics.extend(
+        [
+            f"otomeshon_db_queries_total {db_performance_monitor.query_count}",
+            f"otomeshon_db_slow_queries_total {len(db_performance_monitor.slow_queries)}",
+        ]
+    )
 
     # Cache metrics
     cache_stats = cache_manager.get_stats()
-    metrics.extend([
-        f"otomeshon_cache_keys_total {cache_stats['total_keys']}",
-        f"otomeshon_cache_memory_mb {cache_stats['memory_estimate_mb']:.2f}",
-    ])
+    metrics.extend(
+        [
+            f"otomeshon_cache_keys_total {cache_stats['total_keys']}",
+            f"otomeshon_cache_memory_mb {cache_stats['memory_estimate_mb']:.2f}",
+        ]
+    )
 
     return "\n".join(metrics) + "\n"

@@ -33,14 +33,15 @@ from app.models.data_source import (
 from app.services.base import BaseService
 from app.services.mcp_service import MCPService
 
-
 logger = logging.getLogger(__name__)
 
 
 class DataSourceService(BaseService):
     """Service for managing scheduled data pull workflows."""
 
-    def __init__(self, db_session: AsyncSession, mcp_service: Optional[MCPService] = None):
+    def __init__(
+        self, db_session: AsyncSession, mcp_service: Optional[MCPService] = None
+    ):
         super().__init__(db_session)
         self.mcp_service = mcp_service
 
@@ -51,7 +52,9 @@ class DataSourceService(BaseService):
         config_id = str(uuid.uuid4())
 
         # Validate source configuration
-        await self._validate_source_config(config_data.data_source_type, config_data.source_config)
+        await self._validate_source_config(
+            config_data.data_source_type, config_data.source_config
+        )
 
         config = DataSourceConfiguration(
             id=config_id,
@@ -63,7 +66,8 @@ class DataSourceService(BaseService):
             schedule_type=config_data.schedule_type.value,
             schedule_config=config_data.schedule_config or {},
             output_to_sandbox=config_data.output_to_sandbox,
-            output_table_name=config_data.output_table_name or f"data_source_{config_id[:8]}",
+            output_table_name=config_data.output_table_name
+            or f"data_source_{config_id[:8]}",
             created_by=config_data.created_by,
         )
 
@@ -79,10 +83,14 @@ class DataSourceService(BaseService):
 
         return DataSourceConfigurationResponse.model_validate(config)
 
-    async def get_configuration(self, config_id: str) -> Optional[DataSourceConfigurationResponse]:
+    async def get_configuration(
+        self, config_id: str
+    ) -> Optional[DataSourceConfigurationResponse]:
         """Get a data source configuration by ID."""
         result = await self.db.execute(
-            select(DataSourceConfiguration).where(DataSourceConfiguration.id == config_id)
+            select(DataSourceConfiguration).where(
+                DataSourceConfiguration.id == config_id
+            )
         )
         config = result.scalar_one_or_none()
 
@@ -96,7 +104,7 @@ class DataSourceService(BaseService):
         data_source_type: Optional[DataSourceType] = None,
         is_active: Optional[bool] = None,
         limit: int = 100,
-        offset: int = 0
+        offset: int = 0,
     ) -> List[DataSourceConfigurationResponse]:
         """List data source configurations with optional filters."""
         query = select(DataSourceConfiguration)
@@ -104,7 +112,9 @@ class DataSourceService(BaseService):
         if created_by:
             query = query.where(DataSourceConfiguration.created_by == created_by)
         if data_source_type:
-            query = query.where(DataSourceConfiguration.data_source_type == data_source_type.value)
+            query = query.where(
+                DataSourceConfiguration.data_source_type == data_source_type.value
+            )
         if is_active is not None:
             query = query.where(DataSourceConfiguration.is_active == is_active)
 
@@ -114,14 +124,18 @@ class DataSourceService(BaseService):
         result = await self.db.execute(query)
         configs = result.scalars().all()
 
-        return [DataSourceConfigurationResponse.model_validate(config) for config in configs]
+        return [
+            DataSourceConfigurationResponse.model_validate(config) for config in configs
+        ]
 
     async def update_configuration(
         self, config_id: str, update_data: DataSourceConfigurationUpdate
     ) -> Optional[DataSourceConfigurationResponse]:
         """Update a data source configuration."""
         result = await self.db.execute(
-            select(DataSourceConfiguration).where(DataSourceConfiguration.id == config_id)
+            select(DataSourceConfiguration).where(
+                DataSourceConfiguration.id == config_id
+            )
         )
         config = result.scalar_one_or_none()
 
@@ -149,7 +163,9 @@ class DataSourceService(BaseService):
     async def delete_configuration(self, config_id: str) -> bool:
         """Delete a data source configuration."""
         result = await self.db.execute(
-            select(DataSourceConfiguration).where(DataSourceConfiguration.id == config_id)
+            select(DataSourceConfiguration).where(
+                DataSourceConfiguration.id == config_id
+            )
         )
         config = result.scalar_one_or_none()
 
@@ -159,7 +175,9 @@ class DataSourceService(BaseService):
             return True
         return False
 
-    async def test_configuration(self, test_request: DataSourceTestRequest) -> DataSourceTestResponse:
+    async def test_configuration(
+        self, test_request: DataSourceTestRequest
+    ) -> DataSourceTestResponse:
         """Test a data source configuration without saving it."""
         try:
             start_time = datetime.utcnow()
@@ -168,7 +186,7 @@ class DataSourceService(BaseService):
             data = await self._pull_data(
                 test_request.data_source_type,
                 test_request.source_config,
-                sample_size=test_request.sample_size
+                sample_size=test_request.sample_size,
             )
 
             # Apply processing if specified
@@ -179,11 +197,11 @@ class DataSourceService(BaseService):
 
             # Convert to list of dicts for JSON serialization
             if isinstance(data, pd.DataFrame):
-                sample_data = data.head(test_request.sample_size).to_dict('records')
+                sample_data = data.head(test_request.sample_size).to_dict("records")
                 record_count = len(data)
                 data_schema = {col: str(dtype) for col, dtype in data.dtypes.items()}
             else:
-                sample_data = data[:test_request.sample_size] if data else []
+                sample_data = data[: test_request.sample_size] if data else []
                 record_count = len(data) if data else 0
                 data_schema = {}
 
@@ -192,15 +210,12 @@ class DataSourceService(BaseService):
                 sample_data=sample_data,
                 record_count=record_count,
                 execution_time_seconds=execution_time,
-                data_schema=data_schema
+                data_schema=data_schema,
             )
 
         except Exception as e:
             logger.error(f"Error testing data source: {str(e)}")
-            return DataSourceTestResponse(
-                success=False,
-                error_message=str(e)
-            )
+            return DataSourceTestResponse(success=False, error_message=str(e))
 
     async def execute_data_pull(
         self, config_id: str, trigger_type: str = "MANUAL", triggered_by: str = "system"
@@ -216,7 +231,7 @@ class DataSourceService(BaseService):
             configuration_id=config_id,
             status=DataPullStatus.PENDING.value,
             trigger_type=trigger_type,
-            triggered_by=triggered_by
+            triggered_by=triggered_by,
         )
 
         self.db.add(execution)
@@ -230,8 +245,7 @@ class DataSourceService(BaseService):
 
             # Pull data
             data = await self._pull_data(
-                DataSourceType(config.data_source_type),
-                config.source_config
+                DataSourceType(config.data_source_type), config.source_config
             )
 
             # Process data if needed
@@ -263,7 +277,9 @@ class DataSourceService(BaseService):
             execution.output_location = output_location
 
             # Update configuration stats
-            await self._update_configuration_stats(config_id, True, execution.duration_seconds)
+            await self._update_configuration_stats(
+                config_id, True, execution.duration_seconds
+            )
 
         except Exception as e:
             logger.error(f"Error executing data pull {execution_id}: {str(e)}")
@@ -277,7 +293,9 @@ class DataSourceService(BaseService):
                 )
 
             # Update configuration stats
-            await self._update_configuration_stats(config_id, False, execution.duration_seconds)
+            await self._update_configuration_stats(
+                config_id, False, execution.duration_seconds
+            )
 
         await self.db.commit()
         await self.db.refresh(execution)
@@ -297,9 +315,14 @@ class DataSourceService(BaseService):
         )
         executions = result.scalars().all()
 
-        return [DataPullExecutionResponse.model_validate(execution) for execution in executions]
+        return [
+            DataPullExecutionResponse.model_validate(execution)
+            for execution in executions
+        ]
 
-    async def _validate_source_config(self, source_type: DataSourceType, config: Dict[str, Any]):
+    async def _validate_source_config(
+        self, source_type: DataSourceType, config: Dict[str, Any]
+    ):
         """Validate source configuration based on type."""
         try:
             if source_type == DataSourceType.API:
@@ -312,7 +335,10 @@ class DataSourceService(BaseService):
             raise ValueError(f"Invalid {source_type.value} configuration: {str(e)}")
 
     async def _pull_data(
-        self, source_type: DataSourceType, config: Dict[str, Any], sample_size: Optional[int] = None
+        self,
+        source_type: DataSourceType,
+        config: Dict[str, Any],
+        sample_size: Optional[int] = None,
     ) -> Union[pd.DataFrame, List[Dict[str, Any]], None]:
         """Pull data from the specified source."""
         if source_type == DataSourceType.API:
@@ -336,7 +362,9 @@ class DataSourceService(BaseService):
             # Add authentication headers
             if api_config.auth_type and api_config.auth_config:
                 if api_config.auth_type == "bearer":
-                    headers["Authorization"] = f"Bearer {api_config.auth_config.get('token')}"
+                    headers["Authorization"] = (
+                        f"Bearer {api_config.auth_config.get('token')}"
+                    )
                 elif api_config.auth_type == "api_key":
                     key_name = api_config.auth_config.get("key_name", "X-API-Key")
                     headers[key_name] = api_config.auth_config.get("key")
@@ -346,7 +374,7 @@ class DataSourceService(BaseService):
                 url=api_config.url,
                 headers=headers,
                 params=api_config.params,
-                timeout=api_config.timeout_seconds
+                timeout=api_config.timeout_seconds,
             )
             response.raise_for_status()
 
@@ -365,6 +393,7 @@ class DataSourceService(BaseService):
                 return df
             elif api_config.response_format == "csv":
                 from io import StringIO
+
                 df = pd.read_csv(StringIO(response.text))
 
                 if sample_size and len(df) > sample_size:
@@ -386,7 +415,7 @@ class DataSourceService(BaseService):
         result = await self.mcp_service.call_tool(
             mcp_config.server_name,
             mcp_config.tool_name,
-            mcp_config.tool_arguments or {}
+            mcp_config.tool_arguments or {},
         )
 
         if isinstance(result, list):
@@ -423,16 +452,19 @@ class DataSourceService(BaseService):
 
                 # Navigate to page
                 await page.goto(
-                    scraping_config.url,
-                    timeout=scraping_config.timeout_seconds * 1000
+                    scraping_config.url, timeout=scraping_config.timeout_seconds * 1000
                 )
 
                 # Wait for content if specified
                 if scraping_config.wait_config:
                     if "selector" in scraping_config.wait_config:
-                        await page.wait_for_selector(scraping_config.wait_config["selector"])
+                        await page.wait_for_selector(
+                            scraping_config.wait_config["selector"]
+                        )
                     elif "timeout" in scraping_config.wait_config:
-                        await page.wait_for_timeout(scraping_config.wait_config["timeout"])
+                        await page.wait_for_timeout(
+                            scraping_config.wait_config["timeout"]
+                        )
 
                 # Extract data using selectors
                 data = []
@@ -482,9 +514,13 @@ class DataSourceService(BaseService):
         if processing_config.transformations:
             for transform in processing_config.transformations:
                 if transform["type"] == "rename_column":
-                    df = df.rename(columns={transform["old_name"]: transform["new_name"]})
+                    df = df.rename(
+                        columns={transform["old_name"]: transform["new_name"]}
+                    )
                 elif transform["type"] == "convert_type":
-                    df[transform["column"]] = df[transform["column"]].astype(transform["dtype"])
+                    df[transform["column"]] = df[transform["column"]].astype(
+                        transform["dtype"]
+                    )
                 elif transform["type"] == "add_column":
                     df[transform["name"]] = transform["value"]
 
@@ -508,7 +544,9 @@ class DataSourceService(BaseService):
 
         return df
 
-    async def _store_data_in_sandbox(self, data: Union[pd.DataFrame, List[Dict[str, Any]]], table_name: str) -> str:
+    async def _store_data_in_sandbox(
+        self, data: Union[pd.DataFrame, List[Dict[str, Any]]], table_name: str
+    ) -> str:
         """Store data in the data sandbox."""
         # This is a placeholder - implement based on your data sandbox storage mechanism
         # Could be database, file system, or other storage
@@ -527,10 +565,14 @@ class DataSourceService(BaseService):
 
         return location
 
-    async def _update_configuration_stats(self, config_id: str, success: bool, duration_seconds: Optional[int]):
+    async def _update_configuration_stats(
+        self, config_id: str, success: bool, duration_seconds: Optional[int]
+    ):
         """Update configuration statistics after execution."""
         result = await self.db.execute(
-            select(DataSourceConfiguration).where(DataSourceConfiguration.id == config_id)
+            select(DataSourceConfiguration).where(
+                DataSourceConfiguration.id == config_id
+            )
         )
         config = result.scalar_one_or_none()
 
@@ -553,7 +595,9 @@ class DataSourceService(BaseService):
 
             await self.db.commit()
 
-    def _calculate_next_run(self, schedule_type: ScheduleType, config: Dict[str, Any]) -> datetime:
+    def _calculate_next_run(
+        self, schedule_type: ScheduleType, config: Dict[str, Any]
+    ) -> datetime:
         """Calculate the next run time based on schedule configuration."""
         now = datetime.utcnow()
 

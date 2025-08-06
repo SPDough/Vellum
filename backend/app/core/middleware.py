@@ -5,14 +5,14 @@ Middleware for error handling, authentication, and request processing
 import json
 import time
 import traceback
-from typing import Callable, Dict, Any, Optional
+from typing import Any, Callable, Dict, Optional
 from uuid import uuid4
 
-from fastapi import Request, Response, HTTPException, status
+import structlog
+from fastapi import HTTPException, Request, Response, status
 from fastapi.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import RequestResponseEndpoint
-import structlog
 
 logger = structlog.get_logger(__name__)
 
@@ -22,7 +22,9 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     Global error handling middleware for consistent error responses
     """
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         request_id = str(uuid4())
         request.state.request_id = request_id
 
@@ -49,10 +51,10 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                         "code": http_exc.status_code,
                         "message": http_exc.detail,
                         "type": "http_exception",
-                        "request_id": request_id
+                        "request_id": request_id,
                     }
                 },
-                headers=http_exc.headers
+                headers=http_exc.headers,
             )
 
         except ValidationError as validation_exc:
@@ -61,7 +63,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                 "Validation error",
                 request_id=request_id,
                 path=request.url.path,
-                errors=validation_exc.errors()
+                errors=validation_exc.errors(),
             )
             return JSONResponse(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -71,9 +73,9 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                         "message": "Validation failed",
                         "type": "validation_error",
                         "details": validation_exc.errors(),
-                        "request_id": request_id
+                        "request_id": request_id,
                     }
-                }
+                },
             )
 
         except Exception as exc:
@@ -84,7 +86,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                 path=request.url.path,
                 method=request.method,
                 exception=str(exc),
-                traceback=traceback.format_exc()
+                traceback=traceback.format_exc(),
             )
 
             # In development, include more details
@@ -92,24 +94,25 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                 "code": 500,
                 "message": "Internal server error",
                 "type": "internal_error",
-                "request_id": request_id
+                "request_id": request_id,
             }
 
             # Add debug info in development
             try:
                 from app.core.config import get_settings
+
                 settings = get_settings()
                 if settings.environment == "development":
                     error_detail["debug"] = {
                         "exception": str(exc),
-                        "traceback": traceback.format_exc().split('\n')
+                        "traceback": traceback.format_exc().split("\n"),
                     }
             except:
                 pass  # Fail silently if config unavailable
 
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content={"error": error_detail}
+                content={"error": error_detail},
             )
 
 
@@ -118,14 +121,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     Add security headers to all responses
     """
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         response = await call_next(request)
 
         # Security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
         # Remove server header for security
@@ -148,21 +155,28 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         log_responses: bool = False,
         log_request_body: bool = False,
         log_response_body: bool = False,
-        exclude_paths: Optional[set] = None
+        exclude_paths: Optional[set] = None,
     ):
         super().__init__(app)
         self.log_requests = log_requests
         self.log_responses = log_responses
         self.log_request_body = log_request_body
         self.log_response_body = log_response_body
-        self.exclude_paths = exclude_paths or {"/health", "/metrics", "/docs", "/openapi.json"}
+        self.exclude_paths = exclude_paths or {
+            "/health",
+            "/metrics",
+            "/docs",
+            "/openapi.json",
+        }
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         # Skip logging for excluded paths
         if request.url.path in self.exclude_paths:
             return await call_next(request)
 
-        request_id = getattr(request.state, 'request_id', str(uuid4()))
+        request_id = getattr(request.state, "request_id", str(uuid4()))
         start_time = time.time()
 
         # Log request
@@ -174,7 +188,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 "client_ip": request.client.host if request.client else None,
                 "user_agent": request.headers.get("user-agent"),
                 "content_type": request.headers.get("content-type"),
-                "content_length": request.headers.get("content-length")
+                "content_length": request.headers.get("content-length"),
             }
 
             # Log request body if enabled (be careful with sensitive data)
@@ -183,7 +197,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                     body = await request.body()
                     if body:
                         # Only log non-binary content
-                        if request.headers.get("content-type", "").startswith("application/json"):
+                        if request.headers.get("content-type", "").startswith(
+                            "application/json"
+                        ):
                             request_data["body"] = json.loads(body.decode())
                         else:
                             request_data["body_size"] = len(body)
@@ -202,7 +218,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 "request_id": request_id,
                 "status_code": response.status_code,
                 "process_time": round(process_time, 3),
-                "response_size": response.headers.get("content-length")
+                "response_size": response.headers.get("content-length"),
             }
 
             logger.info("Request completed", **response_data)
@@ -222,7 +238,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         *,
         requests_per_minute: int = 60,
         burst_limit: int = 100,
-        exclude_paths: Optional[set] = None
+        exclude_paths: Optional[set] = None,
     ):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
@@ -230,7 +246,9 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         self.exclude_paths = exclude_paths or {"/health", "/metrics"}
         self.request_counts: Dict[str, Dict[str, Any]] = {}
 
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         # Skip rate limiting for excluded paths
         if request.url.path in self.exclude_paths:
             return await call_next(request)
@@ -242,7 +260,8 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         # Clean old entries (older than 1 minute)
         cutoff_time = current_time - 60
         self.request_counts = {
-            ip: data for ip, data in self.request_counts.items()
+            ip: data
+            for ip, data in self.request_counts.items()
             if data["last_request"] > cutoff_time
         }
 
@@ -251,7 +270,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
             self.request_counts[client_ip] = {
                 "count": 0,
                 "last_request": current_time,
-                "window_start": current_time
+                "window_start": current_time,
             }
 
         client_data = self.request_counts[client_ip]
@@ -270,7 +289,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
                 "Rate limit exceeded",
                 client_ip=client_ip,
                 request_count=client_data["count"],
-                path=request.url.path
+                path=request.url.path,
             )
             return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -279,10 +298,10 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
                         "code": 429,
                         "message": "Too many requests",
                         "type": "rate_limit_exceeded",
-                        "retry_after": 60
+                        "retry_after": 60,
                     }
                 },
-                headers={"Retry-After": "60"}
+                headers={"Retry-After": "60"},
             )
 
         return await call_next(request)

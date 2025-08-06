@@ -13,14 +13,13 @@ logger = logging.getLogger(__name__)
 
 class DockerPythonREPLInput(BaseModel):
     """Input schema for Docker Python REPL tool."""
+
     code: str = Field(description="Python code to execute")
     variables: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="Variables to inject into execution context"
+        default=None, description="Variables to inject into execution context"
     )
     timeout_seconds: Optional[int] = Field(
-        default=30,
-        description="Execution timeout in seconds"
+        default=30, description="Execution timeout in seconds"
     )
 
 
@@ -62,7 +61,7 @@ class DockerPythonREPLTool(BaseTool):
         code: str,
         variables: Optional[Dict[str, Any]] = None,
         timeout_seconds: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         """Async execution of Python code in Docker container."""
         execution_id = str(uuid.uuid4())
@@ -74,15 +73,14 @@ class DockerPythonREPLTool(BaseTool):
                     "code": code,
                     "execution_id": execution_id,
                     "timeout_seconds": timeout_seconds or 30,
-                    "variables": variables
+                    "variables": variables,
                 }
 
                 logger.info(f"Executing Python code in Docker REPL: {execution_id}")
 
                 # Execute code
                 response = await client.post(
-                    f"{self.repl_service_url}/execute",
-                    json=request_data
+                    f"{self.repl_service_url}/execute", json=request_data
                 )
                 response.raise_for_status()
 
@@ -100,7 +98,9 @@ class DockerPythonREPLTool(BaseTool):
                         response_parts.append(f"Output:\n{output}")
 
                     if variables_created:
-                        response_parts.append(f"Variables created: {', '.join(variables_created)}")
+                        response_parts.append(
+                            f"Variables created: {', '.join(variables_created)}"
+                        )
 
                     response_parts.append(
                         f"Execution completed in {execution_time:.2f}s "
@@ -127,7 +127,7 @@ class DockerPythonREPLTool(BaseTool):
         code: str,
         variables: Optional[Dict[str, Any]] = None,
         timeout_seconds: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> str:
         """Sync execution (runs async version)."""
         loop = None
@@ -138,10 +138,11 @@ class DockerPythonREPLTool(BaseTool):
                 # If loop is running, we can't use run_until_complete
                 # Create a new task instead
                 import concurrent.futures
+
                 with concurrent.futures.ThreadPoolExecutor() as executor:
                     future = executor.submit(
                         asyncio.run,
-                        self._arun(code, variables, timeout_seconds, **kwargs)
+                        self._arun(code, variables, timeout_seconds, **kwargs),
                     )
                     return future.result(timeout=self.timeout)
             else:
@@ -150,9 +151,7 @@ class DockerPythonREPLTool(BaseTool):
                 )
         except RuntimeError:
             # No event loop exists, create a new one
-            return asyncio.run(
-                self._arun(code, variables, timeout_seconds, **kwargs)
-            )
+            return asyncio.run(self._arun(code, variables, timeout_seconds, **kwargs))
 
     async def check_service_health(self) -> bool:
         """Check if the REPL service is healthy."""
@@ -178,7 +177,9 @@ class DockerPythonREPLTool(BaseTool):
         """Get currently active executions."""
         try:
             async with httpx.AsyncClient(timeout=10) as client:
-                response = await client.get(f"{self.repl_service_url}/active-executions")
+                response = await client.get(
+                    f"{self.repl_service_url}/active-executions"
+                )
                 response.raise_for_status()
                 return response.json()
         except Exception as e:
@@ -187,7 +188,9 @@ class DockerPythonREPLTool(BaseTool):
 
 
 # Convenience function to create the tool
-def create_docker_python_repl_tool(repl_service_url: str = "http://localhost:8001") -> DockerPythonREPLTool:
+def create_docker_python_repl_tool(
+    repl_service_url: str = "http://localhost:8001",
+) -> DockerPythonREPLTool:
     """Create a Docker Python REPL tool instance."""
     return DockerPythonREPLTool(repl_service_url=repl_service_url)
 

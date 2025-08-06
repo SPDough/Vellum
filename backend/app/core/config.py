@@ -1,8 +1,8 @@
+import os
 from functools import lru_cache
 from typing import Optional
-import os
 
-from pydantic import Field, validator, root_validator, field_validator
+from pydantic import Field, field_validator, root_validator, validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,7 +19,9 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
     # Database - PostgreSQL
-    database_url: str = Field(default="postgresql://localhost:5432/otomeshon", alias="DATABASE_URL")
+    database_url: str = Field(
+        default="postgresql://localhost:5432/otomeshon", alias="DATABASE_URL"
+    )
 
     # Neo4j Graph Database
     neo4j_url: str = Field(default="bolt://localhost:7687", alias="NEO4J_URL")
@@ -43,7 +45,9 @@ class Settings(BaseSettings):
     ollama_base_url: str = Field(default="http://ollama:11434", alias="OLLAMA_BASE_URL")
 
     # Authentication
-    secret_key: str = Field(default="changeme-secret-key-for-production", alias="SECRET_KEY")
+    secret_key: str = Field(
+        default="changeme-secret-key-for-production", alias="SECRET_KEY"
+    )
     jwt_secret_key: str = Field(default="changeme", alias="JWT_SECRET_KEY")
 
     # Rules Engine
@@ -71,8 +75,12 @@ class Settings(BaseSettings):
     )
 
     # Banking Compliance Settings
-    audit_log_retention_days: int = Field(default=2555, alias="AUDIT_LOG_RETENTION_DAYS")  # 7 years
-    max_transaction_amount: int = Field(default=10000000, alias="MAX_TRANSACTION_AMOUNT")  # $10M
+    audit_log_retention_days: int = Field(
+        default=2555, alias="AUDIT_LOG_RETENTION_DAYS"
+    )  # 7 years
+    max_transaction_amount: int = Field(
+        default=10000000, alias="MAX_TRANSACTION_AMOUNT"
+    )  # $10M
     compliance_mode: str = Field(default="test", alias="COMPLIANCE_MODE")
 
     # Redis (Optional)
@@ -113,7 +121,9 @@ class Settings(BaseSettings):
         if "changeme" in v.lower():
             env = values.get("environment", "development")
             if env == "production":
-                raise ValueError("JWT_SECRET_KEY cannot contain 'changeme' in production")
+                raise ValueError(
+                    "JWT_SECRET_KEY cannot contain 'changeme' in production"
+                )
         if len(v) < 32:
             raise ValueError("JWT_SECRET_KEY must be at least 32 characters long")
         return v
@@ -125,7 +135,7 @@ class Settings(BaseSettings):
             raise ValueError(f"Compliance mode must be one of: {valid_modes}")
         return v
 
-    @field_validator('environment')
+    @field_validator("environment")
     @classmethod
     def validate_production_settings(cls, v, info):
         """Additional validation for production environment"""
@@ -140,8 +150,10 @@ def get_settings() -> Settings:
     """Get cached settings instance."""
     # Check if we're in a test environment and override defaults
     if os.getenv("ENVIRONMENT") == "testing":
-        os.environ.setdefault("DATABASE_URL", "postgresql://test:test@localhost:5432/otomeshon_test")
-        os.environ.setdefault("NEO4J_URL", "bolt://localhost:7687") 
+        os.environ.setdefault(
+            "DATABASE_URL", "postgresql://test:test@localhost:5432/otomeshon_test"
+        )
+        os.environ.setdefault("NEO4J_URL", "bolt://localhost:7687")
         os.environ.setdefault("NEO4J_PASSWORD", "testpassword")
         os.environ.setdefault("ENVIRONMENT", "testing")
         return Settings()

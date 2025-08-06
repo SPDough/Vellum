@@ -5,11 +5,13 @@ This module contains common data models to eliminate duplication across endpoint
 
 from datetime import datetime
 from typing import Optional
+
 from pydantic import BaseModel
 
 
 class UserResponse(BaseModel):
     """Standard user response schema used across API endpoints."""
+
     id: int
     email: str
     username: str
@@ -22,19 +24,21 @@ class UserResponse(BaseModel):
     created_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
     auth_provider: Optional[str] = None
-    
+
     class Config:
         from_attributes = True
 
 
 class ErrorResponse(BaseModel):
     """Standard error response schema."""
+
     detail: str
     error_code: str = "INTERNAL_ERROR"
 
 
 class HealthResponse(BaseModel):
     """Health check response schema."""
+
     status: str
     active_connections: int
     messages_sent: int

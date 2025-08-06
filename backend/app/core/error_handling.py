@@ -5,7 +5,8 @@ Provides secure error responses that don't leak sensitive information.
 
 import logging
 import traceback
-from typing import Dict, Any
+from typing import Any, Dict
+
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -15,11 +16,13 @@ logger = logging.getLogger(__name__)
 
 class SecurityError(Exception):
     """Exception for security-related errors."""
+
     pass
 
 
 class BankingOperationError(Exception):
     """Exception for banking operation errors."""
+
     pass
 
 
@@ -39,7 +42,9 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
         except Exception as exc:
             return await self.handle_unexpected_error(request, exc)
 
-    async def handle_http_exception(self, request: Request, exc: HTTPException) -> JSONResponse:
+    async def handle_http_exception(
+        self, request: Request, exc: HTTPException
+    ) -> JSONResponse:
         """Handle HTTP exceptions with secure error responses."""
         # Log the error for monitoring
         logger.warning(
@@ -48,8 +53,8 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                 "method": request.method,
                 "url": str(request.url),
                 "status_code": exc.status_code,
-                "client_ip": request.client.host if request.client else "unknown"
-            }
+                "client_ip": request.client.host if request.client else "unknown",
+            },
         )
 
         return JSONResponse(
@@ -59,12 +64,14 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                     "code": exc.status_code,
                     "message": exc.detail,
                     "type": "http_error",
-                    "timestamp": logger.time() if hasattr(logger, 'time') else None
+                    "timestamp": logger.time() if hasattr(logger, "time") else None,
                 }
-            }
+            },
         )
 
-    async def handle_security_error(self, request: Request, exc: SecurityError) -> JSONResponse:
+    async def handle_security_error(
+        self, request: Request, exc: SecurityError
+    ) -> JSONResponse:
         """Handle security-related errors with appropriate logging."""
         # Security errors are always logged as warnings or errors
         logger.error(
@@ -73,8 +80,8 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                 "method": request.method,
                 "url": str(request.url),
                 "client_ip": request.client.host if request.client else "unknown",
-                "error_type": "security_error"
-            }
+                "error_type": "security_error",
+            },
         )
 
         # Return generic error message to not leak security information
@@ -85,12 +92,14 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                     "code": 403,
                     "message": "Access denied. Please contact support if this error persists.",
                     "type": "security_error",
-                    "reference_id": id(exc)  # Unique reference for support
+                    "reference_id": id(exc),  # Unique reference for support
                 }
-            }
+            },
         )
 
-    async def handle_banking_error(self, request: Request, exc: BankingOperationError) -> JSONResponse:
+    async def handle_banking_error(
+        self, request: Request, exc: BankingOperationError
+    ) -> JSONResponse:
         """Handle banking operation errors with appropriate logging."""
         logger.error(
             f"Banking operation error on {request.method} {request.url}: {str(exc)}",
@@ -98,8 +107,8 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                 "method": request.method,
                 "url": str(request.url),
                 "client_ip": request.client.host if request.client else "unknown",
-                "error_type": "banking_error"
-            }
+                "error_type": "banking_error",
+            },
         )
 
         return JSONResponse(
@@ -109,12 +118,14 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                     "code": 422,
                     "message": "Banking operation failed. Please verify your input and try again.",
                     "type": "banking_error",
-                    "details": str(exc)  # Banking errors can show more detail
+                    "details": str(exc),  # Banking errors can show more detail
                 }
-            }
+            },
         )
 
-    async def handle_unexpected_error(self, request: Request, exc: Exception) -> JSONResponse:
+    async def handle_unexpected_error(
+        self, request: Request, exc: Exception
+    ) -> JSONResponse:
         """Handle unexpected errors with secure logging."""
         # Log full traceback for debugging, but don't expose it
         logger.error(
@@ -124,8 +135,8 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                 "url": str(request.url),
                 "client_ip": request.client.host if request.client else "unknown",
                 "error_type": "unexpected_error",
-                "traceback": traceback.format_exc()
-            }
+                "traceback": traceback.format_exc(),
+            },
         )
 
         # Return generic error message
@@ -136,9 +147,9 @@ class EnhancedErrorHandler(BaseHTTPMiddleware):
                     "code": 500,
                     "message": "An unexpected error occurred. Please try again later.",
                     "type": "internal_error",
-                    "reference_id": id(exc)  # Unique reference for support
+                    "reference_id": id(exc),  # Unique reference for support
                 }
-            }
+            },
         )
 
 
@@ -146,16 +157,10 @@ def create_error_response(
     status_code: int,
     message: str,
     error_type: str = "error",
-    details: Optional[Dict[str, Any]] = None
+    details: Optional[Dict[str, Any]] = None,
 ) -> JSONResponse:
     """Create a standardized error response."""
-    content = {
-        "error": {
-            "code": status_code,
-            "message": message,
-            "type": error_type
-        }
-    }
+    content = {"error": {"code": status_code, "message": message, "type": error_type}}
 
     if details:
         content["error"]["details"] = details
@@ -167,7 +172,7 @@ def validate_banking_operation(
     operation_type: str,
     amount: Optional[float] = None,
     currency: Optional[str] = None,
-    customer_id: Optional[str] = None
+    customer_id: Optional[str] = None,
 ):
     """Validate banking operation parameters and raise appropriate errors."""
     if operation_type not in ["deposit", "withdrawal", "transfer", "query"]:
@@ -192,21 +197,18 @@ def setup_secure_logging():
     """Configure secure logging for banking operations."""
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler(),
             # In production, add secure file handler or external logging service
-        ]
+        ],
     )
 
     # Configure specific loggers for security events
-    security_logger = logging.getLogger('security')
+    security_logger = logging.getLogger("security")
     security_logger.setLevel(logging.WARNING)
 
-    banking_logger = logging.getLogger('banking')
+    banking_logger = logging.getLogger("banking")
     banking_logger.setLevel(logging.INFO)
 
-    return {
-        'security': security_logger,
-        'banking': banking_logger
-    }
+    return {"security": security_logger, "banking": banking_logger}
