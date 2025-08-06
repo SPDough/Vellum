@@ -412,18 +412,18 @@ const WorkflowExecutor: React.FC = () => {
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2">
-                    {formatDuration(execution.duration_ms || 0)}
+                    {formatDuration(execution.total_execution_time_ms || 0)}
                   </Typography>
                 </TableCell>
                 <TableCell>
                   <Box display="flex" alignItems="center" gap={1}>
                     <LinearProgress
                       variant="determinate"
-                      value={(execution.nodes_completed / execution.total_nodes) * 100}
+                      value={execution.node_results.length > 0 ? (execution.node_results.filter((n: any) => n.status === 'COMPLETED').length / execution.node_results.length) * 100 : 0}
                       sx={{ width: 60 }}
                     />
                     <Typography variant="caption">
-                      {execution.nodes_completed}/{execution.total_nodes}
+                      {execution.node_results.filter((n: any) => n.status === 'COMPLETED').length}/{execution.node_results.length}
                     </Typography>
                   </Box>
                 </TableCell>
@@ -559,7 +559,7 @@ const WorkflowExecutor: React.FC = () => {
                       </Alert>
                     )}
 
-                    <Accordion size="small">
+                    <Accordion>
                       <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                         <Typography variant="body2">Output Data</Typography>
                       </AccordionSummary>

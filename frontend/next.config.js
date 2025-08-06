@@ -1,6 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  experimental: {
+    appDir: true,
+  },
+  output: 'standalone',
+  generateStaticParams: false,
+  pageExtensions: ['page.tsx', 'page.ts', 'page.jsx', 'page.js'],
   async rewrites() {
     return [
       {
@@ -18,13 +24,11 @@ const nextConfig = {
     
     return config;
   },
-  // For production deployment, we need to handle React Query SSR properly
-  // For now, keeping build validation disabled until we refactor data fetching
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 };
 

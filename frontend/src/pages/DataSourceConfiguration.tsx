@@ -50,27 +50,11 @@ import DataSourceForm from '@/components/DataSources/DataSourceForm';
 import DataSourceTestDialog from '@/components/DataSources/DataSourceTestDialog';
 import ExecutionHistoryDialog from '@/components/DataSources/ExecutionHistoryDialog';
 import PythonREPLWorkflow from '@/components/DataSources/PythonREPLWorkflow';
+import { DataSourceConfiguration } from '@/services/dataSourceService';
 
-interface DataSourceConfiguration {
-  id: string;
-  name: string;
-  description?: string;
-  data_source_type: 'API' | 'MCP_SERVER' | 'WEB_SCRAPING';
-  is_active: boolean;
-  schedule_type: 'MANUAL' | 'INTERVAL' | 'CRON';
-  last_run_at?: string;
-  next_run_at?: string;
-  total_runs: number;
-  successful_runs: number;
-  failed_runs: number;
-  avg_execution_time_seconds?: number;
-  created_at: string;
-  created_by: string;
-}
+interface DataSourceConfigurationPageProps {}
 
-interface DataSourceConfigurationProps {}
-
-const DataSourceConfiguration: React.FC<DataSourceConfigurationProps> = () => {
+const DataSourceConfigurationPage: React.FC<DataSourceConfigurationPageProps> = () => {
   const [selectedTab, setSelectedTab] = useState(0);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [testDialogOpen, setTestDialogOpen] = useState(false);
@@ -493,4 +477,4 @@ const DataSourceConfiguration: React.FC<DataSourceConfigurationProps> = () => {
   );
 };
 
-export default DataSourceConfiguration;
+export default DataSourceConfigurationPage;

@@ -21,7 +21,7 @@ const Login: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  const from = searchParams.get('from') || '/';
+  const from = searchParams?.get('from') || '/';
 
   // Redirect if already authenticated
   useEffect(() => {

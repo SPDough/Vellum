@@ -317,7 +317,7 @@ const DataSourceForm: React.FC<DataSourceFormProps> = ({ open, onClose, config, 
                       label="Name"
                       {...formik.getFieldProps('name')}
                       error={formik.touched.name && Boolean(formik.errors.name)}
-                      helperText={formik.touched.name && formik.errors.name}
+                      helperText={formik.touched.name && typeof formik.errors.name === 'string' ? formik.errors.name : ''}
                     />
                   </Grid>
                   <Grid item xs={12} md={6}>
@@ -444,7 +444,7 @@ const DataSourceForm: React.FC<DataSourceFormProps> = ({ open, onClose, config, 
                         label="Output Table Name"
                         {...formik.getFieldProps('output_table_name')}
                         error={formik.touched.output_table_name && Boolean(formik.errors.output_table_name)}
-                        helperText={formik.touched.output_table_name && formik.errors.output_table_name}
+                        helperText={formik.touched.output_table_name && typeof formik.errors.output_table_name === 'string' ? formik.errors.output_table_name : ''}
                       />
                     </Grid>
                   )}
