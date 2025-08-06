@@ -194,6 +194,7 @@ module = [
     "drools.*",
     "app.services.sop_service",
     "app.services.drools_service",
+    "app.services.base",
     "app.models.data_sandbox",
     "transformers.*",
 ]
