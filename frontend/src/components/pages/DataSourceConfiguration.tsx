@@ -50,7 +50,7 @@ import DataSourceForm from '@/components/DataSources/DataSourceForm';
 import DataSourceTestDialog from '@/components/DataSources/DataSourceTestDialog';
 import ExecutionHistoryDialog from '@/components/DataSources/ExecutionHistoryDialog';
 import PythonREPLWorkflow from '@/components/DataSources/PythonREPLWorkflow';
-import type { DataSourceConfiguration as DataSourceConfigType } from '@/services/dataSourceService';
+import type { DataSourceConfiguration as DataSourceConfigurationModel } from '@/services/dataSourceService';
 
 interface DataSourceConfigurationProps {}
 
@@ -60,7 +60,7 @@ const DataSourceConfiguration: React.FC<DataSourceConfigurationProps> = () => {
   const [testDialogOpen, setTestDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [replWorkflowOpen, setReplWorkflowOpen] = useState(false);
-  const [selectedConfig, setSelectedConfig] = useState<DataSourceConfigType | null>(null);
+  const [selectedConfig, setSelectedConfig] = useState<DataSourceConfigurationModel | null>(null);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [menuConfigId, setMenuConfigId] = useState<string | null>(null);
 
@@ -103,7 +103,7 @@ const DataSourceConfiguration: React.FC<DataSourceConfigurationProps> = () => {
     setFormDialogOpen(true);
   };
 
-  const handleEdit = (config: DataSourceConfigType) => {
+  const handleEdit = (config: DataSourceConfigurationModel) => {
     setSelectedConfig(config);
     setFormDialogOpen(true);
     handleMenuClose();
@@ -123,19 +123,19 @@ const DataSourceConfiguration: React.FC<DataSourceConfigurationProps> = () => {
     executeMutation.mutate(configId);
   };
 
-  const handleTest = (config: DataSourceConfigType) => {
+  const handleTest = (config: DataSourceConfigurationModel) => {
     setSelectedConfig(config);
     setTestDialogOpen(true);
     handleMenuClose();
   };
 
-  const handleViewHistory = (config: DataSourceConfigType) => {
+  const handleViewHistory = (config: DataSourceConfigurationModel) => {
     setSelectedConfig(config);
     setHistoryDialogOpen(true);
     handleMenuClose();
   };
 
-  const handleOpenREPLWorkflow = (config: DataSourceConfigType) => {
+  const handleOpenREPLWorkflow = (config: DataSourceConfigurationModel) => {
     setSelectedConfig(config);
     setReplWorkflowOpen(true);
     handleMenuClose();
