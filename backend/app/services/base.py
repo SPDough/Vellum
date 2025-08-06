@@ -186,7 +186,8 @@ class CRUDService(BaseService[T]):
         try:
             # Apply filters and pagination
             from sqlalchemy import select
-            query = select(self.model_class)
+            from sqlalchemy.sql import Select
+            query: Select = select(self.model_class)
 
             if filters:
                 for key, value in filters.items():

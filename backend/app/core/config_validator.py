@@ -250,7 +250,7 @@ class ConfigHealthChecker:
             async with driver.session() as session:
                 result = await session.run("RETURN 'Neo4j connected' as message")
                 record = await result.single()
-                message = record['message']
+                message = record['message'] if record else "No response"
 
             await driver.close()
 
