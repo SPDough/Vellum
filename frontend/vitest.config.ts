@@ -6,13 +6,4 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     globals: true,
   },
-  build: {
-    target: 'node14',
-    rollupOptions: {
-      external: ['@rollup/rollup-linux-x64-gnu']
-    }
-  },
-  esbuild: {
-    target: 'node14'
-  }
 })
