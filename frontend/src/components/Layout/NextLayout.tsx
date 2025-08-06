@@ -93,7 +93,7 @@ const NextLayout: React.FC<LayoutProps> = ({ children }) => {
     if (path === '/') {
       return pathname === '/';
     }
-    return pathname.startsWith(path);
+    return pathname?.startsWith(path) || false;
   };
 
   const drawer = (

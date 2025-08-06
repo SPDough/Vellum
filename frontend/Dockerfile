@@ -53,7 +53,7 @@ RUN apk add --no-cache curl
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Copy built application from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /app/.next /usr/share/nginx/html
 
 # Create non-root user for nginx
 RUN addgroup -g 1001 -S nginx && \

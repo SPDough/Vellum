@@ -1,9 +1,9 @@
 {
   "version": 2,
   "name": "otomeshon-frontend",
-  "buildCommand": "pnpm run build",
-  "devCommand": "pnpm run dev",
-  "installCommand": "pnpm install",
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
   "framework": "nextjs",
   "outputDirectory": ".next"
 }

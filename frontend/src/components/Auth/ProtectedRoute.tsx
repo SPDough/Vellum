@@ -19,7 +19,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   useEffect(() => {
     if (!loading && !isAuthenticated) {
       // Redirect to login page with return url
-      router.push(`/login?from=${encodeURIComponent(pathname)}`);
+      router.push(`/login?from=${encodeURIComponent(pathname || '/')}`);
     } else if (!loading && requiredRole && user?.role !== requiredRole && user?.role !== 'admin') {
       // User doesn't have required role
       router.push('/unauthorized');
