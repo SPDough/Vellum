@@ -40,12 +40,12 @@ class UserResponse(BaseModel):
     full_name: str
     role: str
     status: str
-    department: str = None
-    position: str = None
+    department: Optional[str] = None
+    position: Optional[str] = None
     is_active: bool
     created_at: datetime
-    last_login: datetime = None
-    auth_provider: str = None
+    last_login: Optional[datetime] = None
+    auth_provider: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -56,7 +56,7 @@ class AuthProvidersResponse(BaseModel):
 def get_client_info(request: Request) -> Dict[str, str]:
     """Extract client information from request"""
     return {
-        "ip_address": request.client.host if request.client else None,
+        "ip_address": request.client.host if request.client else "",
         "user_agent": request.headers.get("user-agent", "")
     }
 

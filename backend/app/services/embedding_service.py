@@ -300,7 +300,7 @@ class EmbeddingService:
 
         # Try primary provider first
         try:
-            return cast(List[List[float]], await chosen_provider.get_embeddings(texts))
+            return await chosen_provider.get_embeddings(texts)
         except Exception as e:
             logger.warning(f"Primary provider failed: {e}, trying fallbacks...")
 
@@ -309,10 +309,7 @@ class EmbeddingService:
                 if fallback_provider != chosen_provider:
                     try:
                         logger.info(f"Trying fallback provider: {name}")
-                        return cast(
-                            List[List[float]],
-                            await fallback_provider.get_embeddings(texts),
-                        )
+                        return await fallback_provider.get_embeddings(texts)
                     except Exception as fallback_error:
                         logger.warning(
                             f"Fallback provider {name} failed: {fallback_error}"
@@ -333,7 +330,7 @@ class EmbeddingService:
         """Get embedding dimension."""
         if provider and provider in self.providers:
             return self.providers[provider].get_dimension()
-        return cast(int, self.primary_provider.get_dimension())
+        return self.primary_provider.get_dimension()
 
     def get_available_providers(self) -> List[str]:
         """Get list of available providers."""

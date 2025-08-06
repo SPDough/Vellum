@@ -66,7 +66,8 @@ class InputValidator:
                 raise ValidationError("Amount exceeds maximum allowed value")
             
             # Check for reasonable decimal places (2 for most currencies)
-            if decimal_amount.as_tuple().exponent < -2:
+            exponent = decimal_amount.as_tuple().exponent
+            if isinstance(exponent, int) and exponent < -2:
                 raise ValidationError("Amount has too many decimal places")
             
             return decimal_amount.quantize(Decimal('0.01'))

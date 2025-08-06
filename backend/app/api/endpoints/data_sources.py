@@ -171,9 +171,9 @@ async def get_data_source_status(
         recent_executions = await service.get_execution_history(config_id, limit=5)
         
         # Calculate success rate
-        success_rate = 0
+        success_rate = 0.0
         if config.total_runs > 0:
-            success_rate = (config.successful_runs / config.total_runs) * 100
+            success_rate = (config.successful_runs / config.total_runs) * 100.0
         
         return {
             "config_id": config_id,
@@ -207,6 +207,9 @@ async def toggle_data_source(
         
         update_data = DataSourceConfigurationUpdate(is_active=not config.is_active)
         updated_config = await service.update_configuration(config_id, update_data)
+        
+        if not updated_config:
+            raise HTTPException(status_code=500, detail="Failed to update data source")
         
         return {
             "config_id": config_id,

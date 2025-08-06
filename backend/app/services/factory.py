@@ -2,7 +2,7 @@
 Service factory implementation for Otomeshon Banking Platform
 """
 
-from typing import Dict, Type, Optional
+from typing import Dict, Type, Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.interfaces import (
@@ -28,7 +28,7 @@ class ServiceFactory(IServiceFactory):
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
         self.settings = get_settings()
-        self._service_cache: Dict[str, any] = {}
+        self._service_cache: Dict[str, Any] = {}
     
     def create_trade_service(self) -> ITradeService:
         """Create trade service instance"""
@@ -42,10 +42,8 @@ class ServiceFactory(IServiceFactory):
     def create_sop_service(self) -> ISOPService:
         """Create SOP service instance"""
         if 'sop_service' not in self._service_cache:
-            from app.services.sop_service import SOPService
-            self._service_cache['sop_service'] = SOPService(
-                db_session=self.db_session
-            )
+            from app.services.sop_service import SOPExecutionService as SOPService
+            self._service_cache['sop_service'] = SOPService()
         return self._service_cache['sop_service']
     
     def create_risk_service(self) -> IRiskService:
@@ -260,7 +258,7 @@ def get_service_factory(db_session: AsyncSession) -> ServiceFactory:
     return ServiceFactory(db_session)
 
 
-def get_banking_services(db_session: AsyncSession) -> Dict[str, any]:
+def get_banking_services(db_session: AsyncSession) -> Dict[str, Any]:
     """Get all banking services in a dictionary"""
     factory = ServiceFactory(db_session)
     

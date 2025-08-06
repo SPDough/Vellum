@@ -76,7 +76,7 @@ class AuthService:
         except jwt.PyJWTError:
             return None
 
-    def authenticate_user(self, email: str, password: str, ip_address: str = None, user_agent: str = None) -> Optional[Dict[str, Any]]:
+    def authenticate_user(self, email: str, password: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Authenticate user with email and password"""
         
         # Get user
@@ -208,7 +208,7 @@ class AuthService:
             "expires_in": self.access_token_expire_minutes * 60
         }
 
-    def logout_user(self, session_token: str, ip_address: str = None, user_agent: str = None) -> bool:
+    def logout_user(self, session_token: str, ip_address: Optional[str] = None, user_agent: Optional[str] = None) -> bool:
         """Logout user and invalidate session"""
         
         session = self.db.query(UserSession).filter(
@@ -343,7 +343,7 @@ class AuthService:
         return action in resource_permissions
 
     def _log_audit(self, user_id: Optional[int], action: str, details: str, result: str, 
-                   ip_address: str = None, user_agent: str = None, session_id: str = None):
+                   ip_address: Optional[str] = None, user_agent: Optional[str] = None, session_id: Optional[str] = None):
         """Log user action for audit trail"""
         
         audit_log = UserAuditLog(

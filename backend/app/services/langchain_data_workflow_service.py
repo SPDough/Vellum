@@ -29,6 +29,24 @@ logger = logging.getLogger(__name__)
 class LangchainDataWorkflowService(BaseService):
     """Service for executing data workflows using Langchain."""
     
+    # Implement abstract methods from BaseService
+    async def create(self, data: Any, context: Optional[Any] = None) -> Any:
+        """Create method required by BaseService"""
+        raise NotImplementedError("Create not implemented for LangchainDataWorkflowService")
+    
+    async def get_by_id(self, entity_id: str, context: Optional[Any] = None) -> Any:
+        """Get by ID method required by BaseService"""
+        raise NotImplementedError("Get by ID not implemented for LangchainDataWorkflowService")
+    
+    async def update(self, entity_id: str, data: Any, context: Optional[Any] = None) -> Any:
+        """Update method required by BaseService"""
+        raise NotImplementedError("Update not implemented for LangchainDataWorkflowService")
+    
+    async def delete(self, entity_id: str, context: Optional[Any] = None) -> Any:
+        """Delete method required by BaseService"""
+        raise NotImplementedError("Delete not implemented for LangchainDataWorkflowService")
+    """Service for executing data workflows using Langchain."""
+    
     def __init__(self, data_source_service: DataSourceService, openai_api_key: str, repl_service_url: str = "http://localhost:8001"):
         self.data_source_service = data_source_service
         self.repl_service_url = repl_service_url
@@ -454,7 +472,7 @@ class LangchainDataWorkflowService(BaseService):
                 if isinstance(data, list):
                     df = pd.DataFrame(data)
                 else:
-                    df = data.copy()
+                    df = data.copy() if data is not None and hasattr(data, 'copy') else data
                 
                 # Apply processing if configured
                 if config.processing_config:

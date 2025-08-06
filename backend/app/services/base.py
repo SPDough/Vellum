@@ -3,7 +3,7 @@ Base service classes and interfaces for Otomeshon Banking Platform
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, TypeVar, Generic, Protocol
+from typing import Any, Callable, Dict, List, Optional, TypeVar, Generic, Protocol
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -73,8 +73,8 @@ class OperationResult:
     success: bool
     data: Any = None
     message: Optional[str] = None
-    errors: List[str] = None
-    audit_trail: List[Dict[str, Any]] = None
+    errors: Optional[List[str]] = None
+    audit_trail: Optional[List[Dict[str, Any]]] = None
     performance_metrics: Optional[Dict[str, float]] = None
     
     def __post_init__(self):
@@ -303,7 +303,7 @@ class TransactionalService(CRUDService[T]):
     async def execute_transaction(
         self,
         context: ServiceContext,
-        operations: List[callable],
+        operations: List[Callable],
         rollback_on_error: bool = True
     ) -> OperationResult:
         """Execute multiple operations in a transaction"""
@@ -374,9 +374,9 @@ class BankingComplianceService(TransactionalService[T]):
     
     def __init__(self, db_session: AsyncSession, model_class: type):
         super().__init__(db_session, model_class)
-        self.compliance_rules = []
+        self.compliance_rules: List[Callable] = []
     
-    def add_compliance_rule(self, rule: callable):
+    def add_compliance_rule(self, rule: Callable):
         """Add a compliance rule to be checked on operations"""
         self.compliance_rules.append(rule)
     
