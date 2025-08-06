@@ -132,3 +132,25 @@ async def run_test_with_error_handling(
 def run_async_test_main(test_func: Callable[[], Awaitable[None]]) -> None:
     """Standard main function for async test scripts"""
     asyncio.run(test_func())
+
+
+def assert_health_response(response, expected_status_code: int = 200) -> None:
+    """Assert standard health response format"""
+    assert response.status_code == expected_status_code
+    data = response.json()
+    
+    assert "active_connections" in data
+    assert "messages_sent" in data
+    assert "last_activity" in data
+
+
+def assert_api_response(response, expected_status_code: int = 200, required_fields: list = None) -> dict:
+    """Assert standard API response and return parsed data"""
+    assert response.status_code == expected_status_code
+    data = response.json()
+    
+    if required_fields:
+        for field in required_fields:
+            assert field in data
+    
+    return data

@@ -3,9 +3,15 @@ Integration tests for API endpoints
 """
 
 import pytest
+import sys
+import os
 import json
 from httpx import AsyncClient
 from unittest.mock import patch, Mock
+
+# Add parent directory for shared test utilities
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from test_utils import assert_health_response
 
 
 @pytest.mark.integration
@@ -175,13 +181,7 @@ class TestHealthEndpoints:
     async def test_websocket_stats(self, async_client: AsyncClient):
         """Test WebSocket statistics endpoint"""
         response = await async_client.get("/api/v1/data-sandbox/ws/stats")
-
-        assert response.status_code == 200
-        data = response.json()
-
-        assert "active_connections" in data
-        assert "messages_sent" in data
-        assert "last_activity" in data
+        assert_health_response(response)
 
     async def test_metrics_endpoint(self, async_client: AsyncClient):
         """Test metrics endpoint for monitoring"""

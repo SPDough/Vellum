@@ -1,9 +1,15 @@
 """
 Tests for the simplified main application
 """
+import sys
+import os
 import pytest
 from fastapi.testclient import TestClient
 from app.main_simple import app, generate_sample_data
+
+# Add parent directory for shared test utilities
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from test_utils import assert_health_response
 
 # Generate sample data before running tests
 generate_sample_data()
@@ -97,11 +103,7 @@ def test_export_data():
 def test_websocket_stats():
     """Test WebSocket stats endpoint"""
     response = client.get("/api/v1/data-sandbox/ws/stats")
-    assert response.status_code == 200
-    data = response.json()
-    assert "active_connections" in data
-    assert "messages_sent" in data
-    assert "last_activity" in data
+    assert_health_response(response)
 
 
 def test_metrics():

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 
 from app.core.database import get_db
+from app.schemas import UserResponse
 from app.services.auth_factory import AuthFactory
 from app.models.user import User, UserRole, UserStatus
 
@@ -33,22 +34,7 @@ class RefreshTokenResponse(BaseModel):
     token_type: str
     expires_in: int
 
-class UserResponse(BaseModel):
-    id: int
-    email: str
-    username: str
-    full_name: str
-    role: str
-    status: str
-    department: str = None
-    position: str = None
-    is_active: bool
-    created_at: datetime
-    last_login: datetime = None
-    auth_provider: str = None
-
-    class Config:
-        from_attributes = True
+# UserResponse now imported from app.schemas
 
 class AuthProvidersResponse(BaseModel):
     current: str

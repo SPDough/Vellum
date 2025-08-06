@@ -15,6 +15,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from pydantic import BaseModel, EmailStr
+from app.schemas import UserResponse
 import uvicorn
 import os
 
@@ -47,13 +48,7 @@ class LoginResponse(BaseModel):
     expires_in: int
     user: Dict[str, Any]
 
-class UserResponse(BaseModel):
-    id: int
-    email: str
-    username: str
-    full_name: str
-    role: str
-    department: Optional[str] = None
+# UserResponse now imported from app.schemas
 
 class AuthConfigResponse(BaseModel):
     current_provider: str
