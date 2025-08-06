@@ -185,19 +185,22 @@ class CRUDService(BaseService[T]):
 
         try:
             # Apply filters and pagination
-            query = self.db.query(self.model_class)
+            from sqlalchemy import select
+            query = select(self.model_class)
 
             if filters:
                 for key, value in filters.items():
                     if hasattr(self.model_class, key):
-                        query = query.filter(getattr(self.model_class, key) == value)
+                        query = query.where(getattr(self.model_class, key) == value)
 
             if sort_by and hasattr(self.model_class, sort_by):
                 query = query.order_by(getattr(self.model_class, sort_by))
 
             # Apply pagination
             offset = (page - 1) * page_size
-            items = query.offset(offset).limit(page_size).all()
+            query = query.offset(offset).limit(page_size)
+            result = await self.db.execute(query)
+            items = result.scalars().all()
 
             # Audit the list operation
             await self.audit_operation(

@@ -311,7 +311,7 @@ class SessionManager:
 
         return session_id
 
-    async def validate_session(self, session_id: str, ip_address: str) -> Optional[Dict]:
+    async def validate_session(self, session_id: str, ip_address: str) -> Optional[Dict[str, Any]]:
         """Validate session and check for security violations"""
         session_data = None
 
@@ -412,12 +412,12 @@ class SecurityHeaders:
 
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt"""
-    return pwd_context.hash(password)
+    return str(pwd_context.hash(password))
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    return bool(pwd_context.verify(plain_password, hashed_password))
 
 
 def generate_secure_token(length: int = 32) -> str:
