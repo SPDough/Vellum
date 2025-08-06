@@ -19,12 +19,12 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
     # Database - PostgreSQL
-    database_url: str = Field(alias="DATABASE_URL")
+    database_url: str = Field(default="postgresql://localhost:5432/otomeshon", alias="DATABASE_URL")
 
     # Neo4j Graph Database
-    neo4j_url: str = Field(alias="NEO4J_URL")
+    neo4j_url: str = Field(default="bolt://localhost:7687", alias="NEO4J_URL")
     neo4j_user: str = Field(default="neo4j", alias="NEO4J_USER")
-    neo4j_password: str = Field(alias="NEO4J_PASSWORD")
+    neo4j_password: str = Field(default="password", alias="NEO4J_PASSWORD")
 
     # Kafka
     kafka_bootstrap_servers: str = Field(

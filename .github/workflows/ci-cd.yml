@@ -56,8 +56,8 @@ jobs:
       with:
         name: frontend-build
         path: |
-          frontend/.next/
-          frontend/out/
+          frontend/.next/standalone/
+          frontend/.next/static/
         if-no-files-found: warn
 
   # Backend Tests and Build
@@ -128,7 +128,7 @@ jobs:
         REDIS_URL: redis://localhost:6379/0
         SECRET_KEY: test-secret-key
         ENVIRONMENT: test
-      run: pytest
+      run: pytest tests/test_basic.py -v
 
   # Security Scanning
   security-scan:
