@@ -122,7 +122,6 @@ async def get_rules_status(
             }
     except Exception as e:
         raise HTTPException(
-
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get rules status: {str(e)}",
         )
@@ -958,6 +957,5 @@ async def search_rules(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-
             detail=f"Search failed: {str(e)}",
         )

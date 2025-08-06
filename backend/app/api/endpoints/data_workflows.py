@@ -303,7 +303,14 @@ async def validate_workflow_prompt(prompt: str) -> Dict:
             validation_results["score"] -= 10
 
         # Check for data-specific terms
-        data_terms: List[str] = ["data", "dataset", "columns", "rows", "values", "statistics"]
+        data_terms: List[str] = [
+            "data",
+            "dataset",
+            "columns",
+            "rows",
+            "values",
+            "statistics",
+        ]
         if not any(term in prompt.lower() for term in data_terms):
             validation_results["suggestions"].append(
                 "Include specific references to data elements you want to analyze."
@@ -440,7 +447,6 @@ async def get_workflow_service_status() -> Dict:
             "multi_source_pipelines": True,
             "automated_insights": True,
             "workflow_templates": True,
-
             "secure_execution": True,
         },
     }

@@ -110,6 +110,7 @@ class NodeExecutionResult:
 
     alerts: Optional[List[Dict[str, Any]]] = None
     metadata: Optional[Dict[str, Any]] = None
+
     def to_dict(self) -> Dict[str, Any]:
         result = asdict(self)
         # Convert datetime objects to ISO strings
@@ -467,7 +468,6 @@ class WorkflowExecutionService:
 
         # Find entry point
 
-
         while current_node_id:
             node_config = next(
                 (n for n in config.nodes if n.node_id == current_node_id), None
@@ -502,15 +502,16 @@ class WorkflowExecutionService:
                     f"Node {current_node_id} failed: {node_result.error_message}"
                 )
 
-                raise Exception(f"Node {next_node_id} failed: {node_result.error_message}")
-            
+                raise Exception(
+                    f"Node {next_node_id} failed: {node_result.error_message}"
+                )
+
             # Find next node (simplified - just execute all in order for now)
 
             remaining_nodes = [
                 n for n in config.nodes if n.node_id not in executed_nodes
             ]
             current_node_id = remaining_nodes[0].node_id if remaining_nodes else None
-
 
         execution_result.final_output = current_data
 

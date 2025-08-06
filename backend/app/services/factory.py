@@ -2,7 +2,6 @@
 Service factory implementation for Otomeshon Banking Platform
 """
 
-
 from typing import Any, Dict, Optional, Type
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,6 +31,7 @@ class ServiceFactory(IServiceFactory):
         self.settings = get_settings()
 
         self._service_cache: dict[str, Any] = {}
+
     def create_trade_service(self) -> ITradeService:
         """Create trade service instance"""
         if "trade_service" not in self._service_cache:
@@ -200,7 +200,7 @@ class BankingServiceRegistry:
         if factory is None:
             raise ValueError(f"No factory registered for environment: {environment}")
         return factory
-    
+
     def get_environment_config(self, environment: str) -> dict[str, Any]:
         """Get configuration for environment"""
         return self._environment_configs.get(environment, {})

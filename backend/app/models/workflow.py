@@ -72,7 +72,7 @@ class WorkflowNode(Base):
     node_type = Column(String, nullable=False)
     node_name = Column(String, nullable=False)
     node_config = Column(JSON)
-    
+
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

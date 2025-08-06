@@ -154,6 +154,7 @@ db_manager = DatabaseManager()
 
 Base = TradeBase
 
+
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     """Get async database session (alias for get_db)."""
     async with AsyncSessionLocal() as session:
@@ -161,6 +162,7 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
             yield session
         finally:
             await session.close()
+
 
 # Dependency for getting async database session
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
