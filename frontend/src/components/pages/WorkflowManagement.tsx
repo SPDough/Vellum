@@ -47,7 +47,7 @@ import {
   Psychology,
   Code,
 } from '@mui/icons-material';
-import { workflowService } from '../services/workflowService';
+import { workflowService } from '../../services/workflowService';
 
 interface WorkflowSummary {
   summary: {
