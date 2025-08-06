@@ -1,6 +1,6 @@
 import React from 'react';
 import NextLayout from '@/components/Layout/NextLayout';
-import Agents from '@/pages/Agents';
+import Agents from '@/components/pages/Agents';
 
 // Disable static generation for this page
 export const dynamic = 'force-dynamic';

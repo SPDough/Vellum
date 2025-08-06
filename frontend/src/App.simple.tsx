@@ -28,9 +28,9 @@ import {
 } from '@mui/icons-material';
 
 // Import pages - using safe imports
-import DataSandbox from './pages/DataSandbox';
-import WorkflowExecutor from './pages/WorkflowExecutor';
-import SOPManager from './pages/SOPManager';
+import DataSandbox from './components/pages/DataSandbox';
+import WorkflowExecutor from './components/pages/WorkflowExecutor';
+import SOPManager from './components/pages/SOPManager';
 
 // Custodian Bank theme
 const theme = createTheme({

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import NextLayout from '@/components/Layout/NextLayout';
-import Analytics from '@/pages/Analytics';
+import Analytics from '@/components/pages/Analytics';
 
 export default function AnalyticsPage() {
   return (

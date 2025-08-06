@@ -2,7 +2,7 @@
 
 import React from 'react';
 import NextLayout from '@/components/Layout/NextLayout';
-import WorkflowManagement from '@/pages/WorkflowManagement';
+import WorkflowManagement from '@/components/pages/WorkflowManagement';
 
 export default function WorkflowsPage() {
   return (

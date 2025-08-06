@@ -52,15 +52,32 @@ import ExecutionHistoryDialog from '@/components/DataSources/ExecutionHistoryDia
 import PythonREPLWorkflow from '@/components/DataSources/PythonREPLWorkflow';
 import { DataSourceConfiguration } from '@/services/dataSourceService';
 
-interface DataSourceConfigurationPageProps {}
+interface DataSourceConfig {
+  id: string;
+  name: string;
+  description?: string;
+  data_source_type: 'API' | 'MCP_SERVER' | 'WEB_SCRAPING';
+  is_active: boolean;
+  schedule_type: 'MANUAL' | 'INTERVAL' | 'CRON';
+  last_run_at?: string;
+  next_run_at?: string;
+  total_runs: number;
+  successful_runs: number;
+  failed_runs: number;
+  avg_execution_time_seconds?: number;
+  created_at: string;
+  created_by: string;
+}
 
-const DataSourceConfigurationPage: React.FC<DataSourceConfigurationPageProps> = () => {
+interface DataSourceConfigurationProps {}
+
+const DataSourceConfiguration: React.FC<DataSourceConfigurationProps> = () => {
   const [selectedTab, setSelectedTab] = useState(0);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
   const [testDialogOpen, setTestDialogOpen] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [replWorkflowOpen, setReplWorkflowOpen] = useState(false);
-  const [selectedConfig, setSelectedConfig] = useState<DataSourceConfiguration | null>(null);
+  const [selectedConfig, setSelectedConfig] = useState<DataSourceConfig | null>(null);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [menuConfigId, setMenuConfigId] = useState<string | null>(null);
 
@@ -103,7 +120,7 @@ const DataSourceConfigurationPage: React.FC<DataSourceConfigurationPageProps> = 
     setFormDialogOpen(true);
   };
 
-  const handleEdit = (config: DataSourceConfiguration) => {
+  const handleEdit = (config: DataSourceConfig) => {
     setSelectedConfig(config);
     setFormDialogOpen(true);
     handleMenuClose();
@@ -123,19 +140,19 @@ const DataSourceConfigurationPage: React.FC<DataSourceConfigurationPageProps> = 
     executeMutation.mutate(configId);
   };
 
-  const handleTest = (config: DataSourceConfiguration) => {
+  const handleTest = (config: DataSourceConfig) => {
     setSelectedConfig(config);
     setTestDialogOpen(true);
     handleMenuClose();
   };
 
-  const handleViewHistory = (config: DataSourceConfiguration) => {
+  const handleViewHistory = (config: DataSourceConfig) => {
     setSelectedConfig(config);
     setHistoryDialogOpen(true);
     handleMenuClose();
   };
 
-  const handleOpenREPLWorkflow = (config: DataSourceConfiguration) => {
+  const handleOpenREPLWorkflow = (config: DataSourceConfig) => {
     setSelectedConfig(config);
     setReplWorkflowOpen(true);
     handleMenuClose();
@@ -477,4 +494,4 @@ const DataSourceConfigurationPage: React.FC<DataSourceConfigurationPageProps> = 
   );
 };
 
-export default DataSourceConfigurationPage;
+export default DataSourceConfiguration;

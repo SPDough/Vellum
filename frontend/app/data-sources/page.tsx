@@ -1,6 +1,6 @@
 import React from 'react';
 import NextLayout from '@/components/Layout/NextLayout';
-import DataSourceConfiguration from '@/pages/DataSourceConfiguration';
+import DataSourceConfiguration from '@/components/pages/DataSourceConfiguration';
 
 // Disable static generation for this page
 export const dynamic = 'force-dynamic';
