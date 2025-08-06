@@ -18,6 +18,10 @@ jobs:
       run:
         working-directory: ./frontend
     
+    env:
+      NODE_ENV: test
+      CI: true
+    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -27,18 +31,13 @@ jobs:
       with:
         node-version: '20'
         registry-url: 'https://registry.npmjs.org'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
 
     - name: Install dependencies
       run: |
-        npm cache clean --force
-        rm -rf node_modules package-lock.json
-        # Set environment for native modules
-        export npm_config_target_platform=linux
-        export npm_config_target_arch=x64
-        export npm_config_target_libc=glibc
-        npm install --legacy-peer-deps --verbose
-        # Try to rebuild native modules if needed
-        npm rebuild --verbose
+        # Clean install for consistent builds
+        npm ci --legacy-peer-deps
 
     - name: Run type checking
       run: npm run type-check
@@ -56,7 +55,10 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: frontend-build
-        path: frontend/.next/
+        path: |
+          frontend/.next/
+          frontend/out/
+        if-no-files-found: warn
 
   # Backend Tests and Build
   backend-test:
@@ -64,6 +66,10 @@ jobs:
     defaults:
       run:
         working-directory: ./backend
+    
+    env:
+      ENVIRONMENT: test
+      PYTHONPATH: /home/runner/work/Vellum/Vellum/backend
 
     services:
       postgres:
@@ -95,17 +101,13 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12'
+        cache: 'pip'
+        cache-dependency-path: backend/requirements.txt
 
-    - name: Cache Python dependencies
-      uses: actions/cache@v3
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
+
 
     - name: Install dependencies
       run: |
@@ -113,7 +115,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run type checking
-      run: mypy app/ --no-site-packages
+      run: mypy app/ --config-file=pyproject.toml
 
     - name: Run linting
       run: |
@@ -141,7 +143,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
+      uses: aquasecurity/trivy-action@0.28.0
       with:
         scan-type: 'fs'
         scan-ref: '.'
@@ -152,6 +154,7 @@ jobs:
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: 'trivy-results.sarif'
+      if: always()
 
   # Build and Push Docker Images
   build-and-push:
@@ -267,4 +270,4 @@ jobs:
         channel: '#deployments'
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      if: always()
+      if: always() && vars.SLACK_NOTIFICATIONS_ENABLED == 'true'
