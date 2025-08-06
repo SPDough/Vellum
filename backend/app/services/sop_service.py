@@ -84,15 +84,15 @@ class SOPExecutionService:
         logger.info(f"Created SOP execution {execution_id} for template {sop_id}")
 
         return SOPExecutionResponse(
-            id=execution.id,
-            sop_document_id=execution.sop_document_id,
-            execution_name=execution.execution_name,
-            status=execution.status,
-            initiated_by=execution.initiated_by,
-            assigned_to=execution.assigned_to,
-            estimated_duration_minutes=execution.estimated_duration_minutes,
-            requires_approval=execution.requires_approval,
-            created_at=execution.created_at
+            id=execution.id,  # type: ignore
+            sop_document_id=execution.sop_document_id,  # type: ignore
+            execution_name=execution.execution_name,  # type: ignore
+            status=execution.status,  # type: ignore
+            initiated_by=execution.initiated_by,  # type: ignore
+            assigned_to=execution.assigned_to,  # type: ignore
+            estimated_duration_minutes=execution.estimated_duration_minutes,  # type: ignore
+            requires_approval=execution.requires_approval,  # type: ignore
+            created_at=execution.created_at  # type: ignore
         )
 
     async def start_sop_execution(self, execution_id: str, started_by: str) -> SOPExecutionResponse:
