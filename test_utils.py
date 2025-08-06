@@ -154,3 +154,31 @@ def assert_api_response(response, expected_status_code: int = 200, required_fiel
             assert field in data
     
     return data
+
+
+def create_concurrent_trade_data(index: int, base_value: int = 100000, increment: int = 50000) -> dict:
+    """Create concurrent trade data for SOP testing"""
+    securities = ["AAPL", "MSFT", "GOOGL", "TSLA", "NVDA"]
+    return {
+        "tradeId": f"TRADE_CONCURRENT_{index+1:03d}",
+        "tradeValue": base_value + (index * increment),
+        "securityId": securities[index % len(securities)],
+        "quantity": 1000 * (index + 1),
+        "price": 100.0 + (index * 10)
+    }
+
+
+def create_sop_execution_data(
+    index: int, 
+    sop_id: str = "TRADE_SETTLEMENT",
+    base_name: str = "Concurrent Trade Settlement"
+) -> dict:
+    """Create SOP execution data with consistent patterns"""
+    return {
+        "sop_id": sop_id,
+        "execution_name": f"{base_name} {index+1}",
+        "initiated_by": f"operator_{index+1}",
+        "context_data": {
+            "trade_data": create_concurrent_trade_data(index)
+        }
+    }

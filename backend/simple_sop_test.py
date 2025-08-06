@@ -6,13 +6,22 @@ Tests the SOP management system without requiring external dependencies.
 Demonstrates the complete SOP workflow for custodian banking operations.
 """
 
-import asyncio
 import json
+import sys
+import os
 import uuid
 from datetime import datetime, timedelta
 from dataclasses import dataclass, asdict
 from enum import Enum
 from typing import Dict, List, Any, Optional
+
+# Add the parent directory for shared test utilities
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from test_utils import (
+    create_sop_execution_data,
+    create_concurrent_trade_data,
+    run_async_test_main
+)
 
 # Mock SOP Models and Service
 
@@ -660,18 +669,8 @@ async def test_concurrent_executions(service):
     # Create multiple concurrent executions
     execution_tasks = []
     for i in range(3):
-        task = service.create_sop_execution(
-            sop_id="TRADE_SETTLEMENT",
-            execution_name=f"Concurrent Trade Settlement {i+1}",
-            initiated_by=f"operator_{i+1}",
-            context_data={
-                "trade_data": {
-                    "tradeId": f"TRADE_CONCURRENT_{i+1:03d}",
-                    "tradeValue": 100000 + (i * 50000),
-                    "securityId": ["AAPL", "MSFT", "GOOGL"][i]
-                }
-            }
-        )
+        exec_data = create_sop_execution_data(i)
+        task = service.create_sop_execution(**exec_data)
         execution_tasks.append(task)
 
     start_time = datetime.now()
@@ -730,10 +729,5 @@ async def main():
         print("   ✅ Real-time execution status tracking")
         print("="*70)
 
-    except Exception as e:
-        print(f"\n❌ Test failed: {str(e)}")
-        import traceback
-        traceback.print_exc()
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    run_async_test_main(main)

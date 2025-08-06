@@ -681,10 +681,6 @@ async def main():
         print("   ✅ Comprehensive error handling")
         print("="*70)
 
-    except Exception as e:
-        print(f"\n❌ Test failed: {str(e)}")
-        import traceback
-        traceback.print_exc()
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    from test_utils import run_async_test_main
+    run_async_test_main(main)
