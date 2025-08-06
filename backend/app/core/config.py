@@ -69,35 +69,35 @@ class Settings(BaseSettings):
     langfuse_host: str = Field(
         default="https://cloud.langfuse.com", alias="LANGFUSE_HOST"
     )
-    
+
     # Banking Compliance Settings
     audit_log_retention_days: int = Field(default=2555, alias="AUDIT_LOG_RETENTION_DAYS")  # 7 years
     max_transaction_amount: int = Field(default=10000000, alias="MAX_TRANSACTION_AMOUNT")  # $10M
     compliance_mode: str = Field(default="test", alias="COMPLIANCE_MODE")
-    
+
     # Redis (Optional)
     redis_url: Optional[str] = Field(default=None, alias="REDIS_URL")
-    
-    # Keycloak (Optional)  
+
+    # Keycloak (Optional)
     keycloak_url: Optional[str] = Field(default=None, alias="KEYCLOAK_URL")
-    
+
     # CORS Settings
     cors_origins: str = Field(default="http://localhost:3000", alias="CORS_ORIGINS")
-    
+
     @validator("environment")
     def validate_environment(cls, v):
         valid_envs = ["development", "testing", "staging", "production"]
         if v not in valid_envs:
             raise ValueError(f"Environment must be one of: {valid_envs}")
         return v
-    
+
     @validator("log_level")
     def validate_log_level(cls, v):
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         if v.upper() not in valid_levels:
             raise ValueError(f"Log level must be one of: {valid_levels}")
         return v.upper()
-    
+
     @validator("secret_key")
     def validate_secret_key(cls, v, values):
         if "changeme" in v.lower():
@@ -107,7 +107,7 @@ class Settings(BaseSettings):
         if len(v) < 32:
             raise ValueError("SECRET_KEY must be at least 32 characters long")
         return v
-    
+
     @validator("jwt_secret_key")
     def validate_jwt_secret_key(cls, v, values):
         if "changeme" in v.lower():
@@ -117,14 +117,14 @@ class Settings(BaseSettings):
         if len(v) < 32:
             raise ValueError("JWT_SECRET_KEY must be at least 32 characters long")
         return v
-    
+
     @validator("compliance_mode")
     def validate_compliance_mode(cls, v):
         valid_modes = ["test", "live", "sandbox"]
         if v not in valid_modes:
             raise ValueError(f"Compliance mode must be one of: {valid_modes}")
         return v
-    
+
     @root_validator
     def validate_production_settings(cls, values):
         """Additional validation for production environment"""
@@ -134,17 +134,17 @@ class Settings(BaseSettings):
             retention = values.get("audit_log_retention_days", 0)
             if retention < 2555:  # 7 years
                 raise ValueError("Audit log retention must be at least 7 years (2555 days) for banking compliance")
-            
+
             # Check compliance mode
             compliance = values.get("compliance_mode")
             if compliance == "test":
                 raise ValueError("Compliance mode cannot be 'test' in production")
-            
+
             # Check CORS origins
             cors = values.get("cors_origins", "")
             if "*" in cors:
                 raise ValueError("CORS origins cannot include '*' in production")
-        
+
         return values
 
 
@@ -155,11 +155,11 @@ def get_settings() -> Settings:
     if os.getenv("ENVIRONMENT") == "testing":
         return Settings(
             DATABASE_URL="postgresql://test:test@localhost:5432/otomeshon_test",
-            NEO4J_URL="bolt://localhost:7687", 
+            NEO4J_URL="bolt://localhost:7687",
             NEO4J_PASSWORD="testpassword",
             environment="testing"
         )
-    
+
     # For non-test environments, load from environment variables
     # This will raise validation errors if required settings are missing
     return Settings()

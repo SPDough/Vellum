@@ -22,7 +22,7 @@ def test_fibo_models():
     try:
         from app.models.fibo_ontology import FIBOLegalEntity
         from datetime import datetime
-        
+
         entity = FIBOLegalEntity(
             id="test-entity",
             name="Test Entity",
@@ -31,7 +31,7 @@ def test_fibo_models():
             created_at=datetime.utcnow().isoformat(),
             updated_at=datetime.utcnow().isoformat()
         )
-        
+
         print(f"✓ FIBO entity created: {entity.name}")
         return True
     except Exception as e:
@@ -42,7 +42,7 @@ def test_langgraph_node():
     """Test LangGraph node instantiation."""
     try:
         from app.services.langgraph_service import FIBOPositionMappingNode
-        
+
         node = FIBOPositionMappingNode()
         print(f"✓ LangGraph node created: {node.name}")
         return True
@@ -52,17 +52,17 @@ def test_langgraph_node():
 
 if __name__ == "__main__":
     print("Testing FIBO ontology and LangGraph implementation...")
-    
+
     tests = [
         test_imports,
         test_fibo_models,
         test_langgraph_node,
     ]
-    
+
     results = []
     for test in tests:
         results.append(test())
-    
+
     if all(results):
         print("\n✓ All tests passed!")
         sys.exit(0)

@@ -171,17 +171,17 @@ class FIBOPositionMappingNode:
 
 class TradeValidationNode:
     """LangGraph node for trade validation and compliance checking."""
-    
+
     def __init__(self) -> None:
         self.node_id = str(uuid4())
         self.node_type = "TRADE_VALIDATION"
         self.name = "Trade Validation Node"
-    
+
     async def __call__(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Execute trade validation logic."""
         try:
             logger.info(f"Executing trade validation node: {self.node_id}")
-            
+
             trade_data = state.get("data", {}).get("trades", [])
             if not trade_data:
                 logger.warning("No trade data found in state")
@@ -189,12 +189,12 @@ class TradeValidationNode:
                     **state,
                     "errors": state.get("errors", []) + ["No trade data provided"],
                 }
-            
+
             validation_results = []
             for trade in trade_data:
                 validation_result = await self._validate_trade(trade)
                 validation_results.append(validation_result)
-            
+
             new_state = {
                 **state,
                 "data": {
@@ -213,38 +213,38 @@ class TradeValidationNode:
                     }
                 ],
             }
-            
+
             logger.info(f"Trade validation completed: {len(validation_results)} trades processed")
             return new_state
-            
+
         except Exception as e:
             logger.error(f"Trade validation node failed: {e}")
             return {
                 **state,
                 "errors": state.get("errors", []) + [f"Trade validation failed: {str(e)}"],
             }
-    
+
     async def _validate_trade(self, trade: Dict[str, Any]) -> Dict[str, Any]:
         """Validate a single trade."""
         trade_id = trade.get("id", "unknown")
         issues = []
-        
+
         # Amount validation
         amount = trade.get("total_amount", 0)
         if amount > 10000000:  # $10M limit
             issues.append("Trade amount exceeds $10M limit")
-        
+
         # Currency validation
         currency = trade.get("currency", "")
         valid_currencies = ["USD", "EUR", "GBP", "JPY", "CAD"]
         if currency not in valid_currencies:
             issues.append(f"Invalid currency: {currency}")
-        
+
         # Settlement date validation
         settlement_date = trade.get("settlement_date")
         if not settlement_date:
             issues.append("Missing settlement date")
-        
+
         return {
             "trade_id": trade_id,
             "status": "VALID" if not issues else "INVALID",

@@ -14,7 +14,7 @@ settings = get_settings()
 
 class AuthService:
     """Authentication and authorization service for banking platform"""
-    
+
     def __init__(self, db: Session):
         self.db = db
         self.secret_key = settings.SECRET_KEY
@@ -63,22 +63,22 @@ class AuthService:
         """Verify and decode JWT token"""
         try:
             payload = jwt.decode(token, self.secret_key, algorithms=[self.algorithm])
-            
+
             # Verify token type
             if payload.get("type") != token_type:
                 return None
-                
+
             # Check if token is expired
             if datetime.utcnow() > datetime.fromtimestamp(payload.get("exp", 0)):
                 return None
-                
+
             return payload
         except jwt.PyJWTError:
             return None
 
     def authenticate_user(self, email: str, password: str, ip_address: str = None, user_agent: str = None) -> Optional[Dict[str, Any]]:
         """Authenticate user with email and password"""
-        
+
         # Get user
         user = self.db.query(User).filter(User.email == email).first()
         if not user:
@@ -105,12 +105,12 @@ class AuthService:
         if not self.verify_password(password, user.hashed_password):
             # Increment failed attempts
             user.failed_login_attempts += 1
-            
+
             # Lock account if too many failures
             if user.failed_login_attempts >= self.max_failed_attempts:
                 user.locked_until = datetime.utcnow() + timedelta(minutes=self.lockout_duration_minutes)
                 self._log_audit(user.id, "account_locked", f"Too many failed attempts", "success", ip_address, user_agent)
-            
+
             self.db.commit()
             self._log_audit(user.id, "login_attempt", "Invalid password", "failure", ip_address, user_agent)
             return None
@@ -119,7 +119,7 @@ class AuthService:
         user.failed_login_attempts = 0
         user.locked_until = None
         user.last_login = datetime.utcnow()
-        
+
         # Create tokens
         token_data = {
             "sub": str(user.id),
@@ -127,10 +127,10 @@ class AuthService:
             "role": user.role.value,
             "full_name": user.full_name
         }
-        
+
         access_token = self.create_access_token(token_data)
         refresh_token = self.create_refresh_token({"sub": str(user.id)})
-        
+
         # Create session
         session = UserSession(
             user_id=user.id,
@@ -140,12 +140,12 @@ class AuthService:
             user_agent=user_agent,
             expires_at=datetime.utcnow() + timedelta(days=self.refresh_token_expire_days)
         )
-        
+
         self.db.add(session)
         self.db.commit()
-        
+
         self._log_audit(user.id, "login", "Successful login", "success", ip_address, user_agent, session.session_token)
-        
+
         return {
             "access_token": access_token,
             "refresh_token": refresh_token,
@@ -163,31 +163,31 @@ class AuthService:
 
     def refresh_access_token(self, refresh_token: str) -> Optional[Dict[str, Any]]:
         """Refresh access token using refresh token"""
-        
+
         # Verify refresh token
         payload = self.verify_token(refresh_token, "refresh")
         if not payload:
             return None
-            
+
         user_id = payload.get("sub")
         if not user_id:
             return None
-            
+
         # Check if session exists and is active
         session = self.db.query(UserSession).filter(
             UserSession.refresh_token == refresh_token,
             UserSession.is_active == True,
             UserSession.expires_at > datetime.utcnow()
         ).first()
-        
+
         if not session:
             return None
-            
+
         # Get user
         user = self.db.query(User).filter(User.id == user_id).first()
         if not user or user.status != UserStatus.ACTIVE:
             return None
-            
+
         # Create new access token
         token_data = {
             "sub": str(user.id),
@@ -195,13 +195,13 @@ class AuthService:
             "role": user.role.value,
             "full_name": user.full_name
         }
-        
+
         access_token = self.create_access_token(token_data)
-        
+
         # Update session activity
         session.last_activity = datetime.utcnow()
         self.db.commit()
-        
+
         return {
             "access_token": access_token,
             "token_type": "bearer",
@@ -210,26 +210,26 @@ class AuthService:
 
     def logout_user(self, session_token: str, ip_address: str = None, user_agent: str = None) -> bool:
         """Logout user and invalidate session"""
-        
+
         session = self.db.query(UserSession).filter(
             UserSession.session_token == session_token,
             UserSession.is_active == True
         ).first()
-        
+
         if not session:
             return False
-            
+
         # Deactivate session
         session.is_active = False
         session.logged_out_at = datetime.utcnow()
         self.db.commit()
-        
+
         self._log_audit(session.user_id, "logout", "User logged out", "success", ip_address, user_agent, session_token)
         return True
 
     def create_user(self, email: str, password: str, full_name: str, role: UserRole = UserRole.VIEWER, **kwargs) -> User:
         """Create new user account"""
-        
+
         # Check if user already exists
         existing_user = self.db.query(User).filter(User.email == email).first()
         if existing_user:
@@ -237,17 +237,17 @@ class AuthService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="User with this email already exists"
             )
-            
+
         # Generate username from email if not provided
         username = kwargs.get('username') or email.split('@')[0]
-        
+
         # Ensure username is unique
         counter = 1
         original_username = username
         while self.db.query(User).filter(User.username == username).first():
             username = f"{original_username}{counter}"
             counter += 1
-            
+
         # Create user
         user = User(
             email=email,
@@ -258,49 +258,49 @@ class AuthService:
             status=UserStatus.PENDING,
             **kwargs
         )
-        
+
         self.db.add(user)
         self.db.commit()
         self.db.refresh(user)
-        
+
         self._log_audit(user.id, "user_created", f"User account created", "success")
         return user
 
     def change_password(self, user_id: int, current_password: str, new_password: str) -> bool:
         """Change user password"""
-        
+
         user = self.db.query(User).filter(User.id == user_id).first()
         if not user:
             return False
-            
+
         # Verify current password
         if not self.verify_password(current_password, user.hashed_password):
             self._log_audit(user_id, "password_change", "Invalid current password", "failure")
             return False
-            
+
         # Update password
         user.hashed_password = self.hash_password(new_password)
         user.password_changed_at = datetime.utcnow()
         user.must_change_password = False
-        
+
         # Invalidate all existing sessions
         self.db.query(UserSession).filter(
             UserSession.user_id == user_id,
             UserSession.is_active == True
         ).update({"is_active": False, "logged_out_at": datetime.utcnow()})
-        
+
         self.db.commit()
-        
+
         self._log_audit(user_id, "password_changed", "Password changed successfully", "success")
         return True
 
     def has_permission(self, user: User, resource: str, action: str) -> bool:
         """Check if user has permission for resource and action"""
-        
+
         # Admin has all permissions
         if user.role == UserRole.ADMIN:
             return True
-            
+
         # Define role-based permissions
         permissions = {
             UserRole.MANAGER: {
@@ -336,16 +336,16 @@ class AuthService:
                 "reports": ["read"]
             }
         }
-        
+
         user_permissions = permissions.get(user.role, {})
         resource_permissions = user_permissions.get(resource, [])
-        
+
         return action in resource_permissions
 
-    def _log_audit(self, user_id: Optional[int], action: str, details: str, result: str, 
+    def _log_audit(self, user_id: Optional[int], action: str, details: str, result: str,
                    ip_address: str = None, user_agent: str = None, session_id: str = None):
         """Log user action for audit trail"""
-        
+
         audit_log = UserAuditLog(
             user_id=user_id,
             action=action,
@@ -355,20 +355,20 @@ class AuthService:
             user_agent=user_agent,
             session_id=session_id
         )
-        
+
         self.db.add(audit_log)
         # Note: Don't commit here as it might be part of a larger transaction
 
     def get_user_by_token(self, token: str) -> Optional[User]:
         """Get user from access token"""
-        
+
         payload = self.verify_token(token, "access")
         if not payload:
             return None
-            
+
         user_id = payload.get("sub")
         if not user_id:
             return None
-            
+
         user = self.db.query(User).filter(User.id == user_id).first()
         return user if user and user.status == UserStatus.ACTIVE else None

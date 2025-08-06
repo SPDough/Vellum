@@ -13,7 +13,7 @@ router = APIRouter(prefix="/data-workflows", tags=["data-workflows"])
 
 class WorkflowExecutionRequest(BaseModel):
     """Request model for executing data workflows."""
-    
+
     source_config_id: str
     workflow_prompt: str
     custom_instructions: Optional[str] = None
@@ -22,7 +22,7 @@ class WorkflowExecutionRequest(BaseModel):
 
 class SQLWorkflowRequest(BaseModel):
     """Request model for SQL workflows."""
-    
+
     connection_string: str
     query_prompt: str
     table_names: Optional[List[str]] = None
@@ -30,7 +30,7 @@ class SQLWorkflowRequest(BaseModel):
 
 class DataPipelineRequest(BaseModel):
     """Request model for data pipeline workflows."""
-    
+
     source_config_ids: List[str]
     pipeline_instructions: str
     output_format: str = "dataframe"
@@ -38,7 +38,7 @@ class DataPipelineRequest(BaseModel):
 
 class AutoInsightsRequest(BaseModel):
     """Request model for automated insights."""
-    
+
     source_config_id: str
     insight_type: str = "general"
 
@@ -62,7 +62,7 @@ async def execute_data_workflow(
         config = await service.data_source_service.get_configuration(request.source_config_id)
         if not config:
             raise HTTPException(status_code=404, detail="Data source configuration not found")
-        
+
         # Execute workflow (choose method based on request)
         if request.use_docker_repl:
             result = await service.execute_data_workflow_with_docker_repl(
@@ -76,9 +76,9 @@ async def execute_data_workflow(
                 workflow_prompt=request.workflow_prompt,
                 custom_instructions=request.custom_instructions
             )
-        
+
         return result
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -97,9 +97,9 @@ async def execute_sql_workflow(
             query_prompt=request.query_prompt,
             table_names=request.table_names
         )
-        
+
         return result
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to execute SQL workflow: {str(e)}")
 
@@ -118,16 +118,16 @@ async def execute_data_pipeline(
             if not config:
                 raise HTTPException(status_code=404, detail=f"Data source configuration {config_id} not found")
             source_configs.append(config)
-        
+
         # Execute pipeline workflow
         result = await service.create_data_pipeline_workflow(
             source_configs=source_configs,
             pipeline_instructions=request.pipeline_instructions,
             output_format=request.output_format
         )
-        
+
         return result
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -145,15 +145,15 @@ async def generate_automated_insights(
         config = await service.data_source_service.get_configuration(request.source_config_id)
         if not config:
             raise HTTPException(status_code=404, detail="Data source configuration not found")
-        
+
         # Generate insights
         result = await service.create_automated_insights_workflow(
             config=config,
             insight_type=request.insight_type
         )
-        
+
         return result
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -213,7 +213,7 @@ async def get_workflow_templates() -> Dict:
             "category": "comparison"
         }
     }
-    
+
     return {
         "templates": templates,
         "categories": list(set(t["category"] for t in templates.values()))
@@ -241,7 +241,7 @@ async def get_insight_types() -> Dict:
             "description": "Find relationships, correlations, and business patterns in the data"
         }
     }
-    
+
     return {"insight_types": insight_types}
 
 
@@ -256,35 +256,35 @@ async def validate_workflow_prompt(prompt: str) -> Dict:
             "warnings": [],
             "score": 100
         }
-        
+
         # Check prompt length
         if len(prompt.strip()) < 10:
             validation_results["is_valid"] = False
             validation_results["warnings"].append("Prompt is too short. Provide more detailed instructions.")
             validation_results["score"] -= 30
-        
+
         # Check for specific data analysis keywords
         analysis_keywords = ["analyze", "calculate", "identify", "compare", "find", "detect", "summarize"]
         if not any(keyword in prompt.lower() for keyword in analysis_keywords):
             validation_results["suggestions"].append("Consider adding specific action words like 'analyze', 'calculate', or 'identify'.")
             validation_results["score"] -= 10
-        
+
         # Check for data-specific terms
         data_terms = ["data", "dataset", "columns", "rows", "values", "statistics"]
         if not any(term in prompt.lower() for term in data_terms):
             validation_results["suggestions"].append("Include specific references to data elements you want to analyze.")
             validation_results["score"] -= 10
-        
+
         # Check for question format
         if "?" in prompt:
             validation_results["suggestions"].append("Consider rephrasing questions as specific instructions for better results.")
-        
+
         # Provide enhancement suggestions
         if validation_results["score"] > 80:
             validation_results["suggestions"].append("Your prompt looks good! Consider adding specific output format requirements if needed.")
-        
+
         return validation_results
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to validate prompt: {str(e)}")
 
@@ -296,11 +296,11 @@ async def check_repl_health(
     """Check the health of the Docker Python REPL service."""
     try:
         is_healthy = await service.python_repl_tool.check_service_health()
-        
+
         if is_healthy:
             capabilities = await service.python_repl_tool.get_service_capabilities()
             active_executions = await service.python_repl_tool.get_active_executions()
-            
+
             return {
                 "status": "healthy",
                 "repl_service_url": service.repl_service_url,
@@ -313,7 +313,7 @@ async def check_repl_health(
                 "repl_service_url": service.repl_service_url,
                 "error": "REPL service is not responding"
             }
-    
+
     except Exception as e:
         return {
             "status": "error",
@@ -365,13 +365,13 @@ async def execute_direct_repl(
             variables=request.variables,
             timeout_seconds=request.timeout_seconds
         )
-        
+
         return {
             "success": True,
             "result": result,
             "execution_method": "direct_repl"
         }
-    
+
     except Exception as e:
         return {
             "success": False,

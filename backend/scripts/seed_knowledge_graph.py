@@ -527,7 +527,7 @@ async def main():
         # Seed relationships
         await seed_positions()
         await seed_account_custodian_relationships()
-        
+
         await seed_fibo_entities()
         await seed_fibo_relationships()
 

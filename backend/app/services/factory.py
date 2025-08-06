@@ -20,16 +20,16 @@ from app.core.config import get_settings
 class ServiceFactory(IServiceFactory):
     """
     Concrete service factory implementation
-    
+
     This factory creates service instances with proper dependency injection
     and configuration based on the current environment.
     """
-    
+
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
         self.settings = get_settings()
         self._service_cache: Dict[str, any] = {}
-    
+
     def create_trade_service(self) -> ITradeService:
         """Create trade service instance"""
         if 'trade_service' not in self._service_cache:
@@ -38,7 +38,7 @@ class ServiceFactory(IServiceFactory):
                 db_session=self.db_session
             )
         return self._service_cache['trade_service']
-    
+
     def create_sop_service(self) -> ISOPService:
         """Create SOP service instance"""
         if 'sop_service' not in self._service_cache:
@@ -47,7 +47,7 @@ class ServiceFactory(IServiceFactory):
                 db_session=self.db_session
             )
         return self._service_cache['sop_service']
-    
+
     def create_risk_service(self) -> IRiskService:
         """Create risk service instance"""
         if 'risk_service' not in self._service_cache:
@@ -61,7 +61,7 @@ class ServiceFactory(IServiceFactory):
                 }
             )
         return self._service_cache['risk_service']
-    
+
     def create_compliance_service(self) -> IComplianceService:
         """Create compliance service instance"""
         if 'compliance_service' not in self._service_cache:
@@ -75,7 +75,7 @@ class ServiceFactory(IServiceFactory):
                 }
             )
         return self._service_cache['compliance_service']
-    
+
     def create_user_service(self) -> IUserService:
         """Create user service instance"""
         if 'user_service' not in self._service_cache:
@@ -84,7 +84,7 @@ class ServiceFactory(IServiceFactory):
                 db_session=self.db_session
             )
         return self._service_cache['user_service']
-    
+
     def create_audit_service(self) -> IAuditService:
         """Create audit service instance"""
         if 'audit_service' not in self._service_cache:
@@ -93,7 +93,7 @@ class ServiceFactory(IServiceFactory):
                 db_session=self.db_session
             )
         return self._service_cache['audit_service']
-    
+
     def create_data_service(self):
         """Create data service instance"""
         if 'data_service' not in self._service_cache:
@@ -102,7 +102,7 @@ class ServiceFactory(IServiceFactory):
                 db_session=self.db_session
             )
         return self._service_cache['data_service']
-    
+
     def create_workflow_service(self):
         """Create workflow service instance"""
         if 'workflow_service' not in self._service_cache:
@@ -111,7 +111,7 @@ class ServiceFactory(IServiceFactory):
                 db_session=self.db_session
             )
         return self._service_cache['workflow_service']
-    
+
     def create_notification_service(self):
         """Create notification service instance"""
         if 'notification_service' not in self._service_cache:
@@ -125,7 +125,7 @@ class ServiceFactory(IServiceFactory):
                 }
             )
         return self._service_cache['notification_service']
-    
+
     def get_service(self, service_name: str):
         """Get service by name"""
         service_creators = {
@@ -139,13 +139,13 @@ class ServiceFactory(IServiceFactory):
             'workflow': self.create_workflow_service,
             'notification': self.create_notification_service
         }
-        
+
         creator = service_creators.get(service_name)
         if creator:
             return creator()
         else:
             raise ValueError(f"Unknown service: {service_name}")
-    
+
     def clear_cache(self):
         """Clear service cache (useful for testing)"""
         self._service_cache.clear()
@@ -155,7 +155,7 @@ class BankingServiceRegistry:
     """
     Registry for banking-specific service configurations and instances
     """
-    
+
     def __init__(self):
         self._factories: Dict[str, ServiceFactory] = {}
         self._environment_configs = {
@@ -178,15 +178,15 @@ class BankingServiceRegistry:
                 'mock_external_services': False
             }
         }
-    
+
     def register_factory(self, environment: str, factory: ServiceFactory):
         """Register a service factory for an environment"""
         self._factories[environment] = factory
-    
+
     def get_factory(self, environment: str) -> ServiceFactory:
         """Get service factory for environment"""
         return self._factories.get(environment)
-    
+
     def get_environment_config(self, environment: str) -> Dict:
         """Get configuration for environment"""
         return self._environment_configs.get(environment, {})
@@ -196,55 +196,55 @@ class ServiceLocator:
     """
     Service locator pattern implementation for dependency injection
     """
-    
+
     _instance = None
     _factory: Optional[ServiceFactory] = None
-    
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-    
+
     @classmethod
     def initialize(cls, factory: ServiceFactory):
         """Initialize the service locator with a factory"""
         cls._factory = factory
-    
+
     @classmethod
     def get_trade_service(cls) -> ITradeService:
         """Get trade service instance"""
         if cls._factory is None:
             raise RuntimeError("ServiceLocator not initialized")
         return cls._factory.create_trade_service()
-    
+
     @classmethod
     def get_sop_service(cls) -> ISOPService:
         """Get SOP service instance"""
         if cls._factory is None:
             raise RuntimeError("ServiceLocator not initialized")
         return cls._factory.create_sop_service()
-    
+
     @classmethod
     def get_risk_service(cls) -> IRiskService:
         """Get risk service instance"""
         if cls._factory is None:
             raise RuntimeError("ServiceLocator not initialized")
         return cls._factory.create_risk_service()
-    
+
     @classmethod
     def get_compliance_service(cls) -> IComplianceService:
         """Get compliance service instance"""
         if cls._factory is None:
             raise RuntimeError("ServiceLocator not initialized")
         return cls._factory.create_compliance_service()
-    
+
     @classmethod
     def get_user_service(cls) -> IUserService:
         """Get user service instance"""
         if cls._factory is None:
             raise RuntimeError("ServiceLocator not initialized")
         return cls._factory.create_user_service()
-    
+
     @classmethod
     def get_audit_service(cls) -> IAuditService:
         """Get audit service instance"""
@@ -263,7 +263,7 @@ def get_service_factory(db_session: AsyncSession) -> ServiceFactory:
 def get_banking_services(db_session: AsyncSession) -> Dict[str, any]:
     """Get all banking services in a dictionary"""
     factory = ServiceFactory(db_session)
-    
+
     return {
         'trade': factory.create_trade_service(),
         'sop': factory.create_sop_service(),
@@ -286,7 +286,7 @@ async def get_trade_service_dependency(db_session: AsyncSession = None) -> ITrad
         async for session in get_async_session():
             db_session = session
             break
-    
+
     factory = ServiceFactory(db_session)
     return factory.create_trade_service()
 
@@ -298,7 +298,7 @@ async def get_sop_service_dependency(db_session: AsyncSession = None) -> ISOPSer
         async for session in get_async_session():
             db_session = session
             break
-    
+
     factory = ServiceFactory(db_session)
     return factory.create_sop_service()
 
@@ -310,6 +310,6 @@ async def get_risk_service_dependency(db_session: AsyncSession = None) -> IRiskS
         async for session in get_async_session():
             db_session = session
             break
-    
+
     factory = ServiceFactory(db_session)
     return factory.create_risk_service()

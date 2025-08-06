@@ -86,7 +86,7 @@ def create_safe_globals(variables: Optional[Dict[str, Any]] = None) -> Dict[str,
             '_write_': lambda x: x,
         }
     }
-    
+
     # Add allowed modules
     allowed_imports = {}
     for module_name in ALLOWED_MODULES:
@@ -124,13 +124,13 @@ def create_safe_globals(variables: Optional[Dict[str, Any]] = None) -> Dict[str,
                 allowed_imports[module_name] = __import__(module_name)
         except ImportError:
             logger.warning(f"Module {module_name} not available")
-    
+
     safe_dict.update(allowed_imports)
-    
+
     # Add user variables if provided
     if variables:
         safe_dict.update(variables)
-    
+
     return safe_dict
 
 
@@ -139,11 +139,11 @@ def execution_timeout(seconds: int):
     """Context manager for execution timeout."""
     def timeout_handler(signum, frame):
         raise TimeoutError(f"Execution exceeded {seconds} seconds")
-    
+
     # Set the signal handler
     old_handler = signal.signal(signal.SIGALRM, timeout_handler)
     signal.alarm(seconds)
-    
+
     try:
         yield
     finally:
@@ -167,58 +167,58 @@ async def execute_python_code(
     """Execute Python code in a restricted environment."""
     start_time = datetime.utcnow()
     initial_memory = monitor_memory_usage()
-    
+
     # Track execution
     active_executions[execution_id] = {
         'status': 'running',
         'start_time': start_time,
         'code': code
     }
-    
+
     try:
         # Compile the code with RestrictedPython
         compiled_code = compile_restricted(code, '<string>', 'exec')
         if compiled_code is None:
             raise ValueError("Code compilation failed - potentially unsafe code detected")
-        
+
         # Create safe execution environment
         safe_globals_dict = create_safe_globals(variables)
         safe_locals_dict = {}
-        
+
         # Capture stdout
         old_stdout = sys.stdout
         stdout_capture = StringIO()
         sys.stdout = stdout_capture
-        
+
         try:
             # Execute with timeout and memory monitoring
             with execution_timeout(timeout_seconds):
                 exec(compiled_code, safe_globals_dict, safe_locals_dict)
-            
+
             # Get output
             output = stdout_capture.getvalue()
             if len(output) > MAX_OUTPUT_LENGTH:
                 output = output[:MAX_OUTPUT_LENGTH] + "\n... [Output truncated]"
-            
+
             # Check memory usage
             current_memory = monitor_memory_usage()
             memory_used = current_memory - initial_memory
-            
+
             if memory_used > MAX_MEMORY_MB:
                 logger.warning(f"Execution {execution_id} used {memory_used:.2f}MB memory")
-            
+
             # Get variables created
             variables_created = [
-                key for key in safe_locals_dict.keys() 
+                key for key in safe_locals_dict.keys()
                 if not key.startswith('_') and key not in (variables.keys() if variables else [])
             ]
-            
+
             execution_time = (datetime.utcnow() - start_time).total_seconds()
-            
+
             # Update execution tracking
             active_executions[execution_id]['status'] = 'completed'
             active_executions[execution_id]['execution_time'] = execution_time
-            
+
             return ExecutionResponse(
                 execution_id=execution_id,
                 success=True,
@@ -228,10 +228,10 @@ async def execute_python_code(
                 variables_created=variables_created,
                 timestamp=start_time
             )
-            
+
         finally:
             sys.stdout = old_stdout
-            
+
     except TimeoutError as e:
         active_executions[execution_id]['status'] = 'timeout'
         logger.error(f"Execution {execution_id} timed out: {str(e)}")
@@ -242,17 +242,17 @@ async def execute_python_code(
             execution_time_seconds=timeout_seconds,
             timestamp=start_time
         )
-        
+
     except Exception as e:
         active_executions[execution_id]['status'] = 'failed'
         error_msg = f"{type(e).__name__}: {str(e)}"
         logger.error(f"Execution {execution_id} failed: {error_msg}")
-        
+
         # Include traceback for debugging (but sanitize it)
         tb = traceback.format_exc()
         if len(tb) > 1000:
             tb = tb[:1000] + "\n... [Traceback truncated]"
-        
+
         return ExecutionResponse(
             execution_id=execution_id,
             success=False,
@@ -260,7 +260,7 @@ async def execute_python_code(
             execution_time_seconds=(datetime.utcnow() - start_time).total_seconds(),
             timestamp=start_time
         )
-    
+
     finally:
         # Clean up execution tracking after some time
         asyncio.create_task(cleanup_execution(execution_id))
@@ -278,27 +278,27 @@ async def execute_code(request: ExecutionRequest):
     """Execute Python code in a sandboxed environment."""
     execution_id = request.execution_id or str(uuid.uuid4())
     timeout = request.timeout_seconds or MAX_EXECUTION_TIME
-    
+
     # Validate timeout
     if timeout > MAX_EXECUTION_TIME:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail=f"Timeout cannot exceed {MAX_EXECUTION_TIME} seconds"
         )
-    
+
     # Validate code length
     if len(request.code) > 50000:  # 50KB limit
         raise HTTPException(status_code=400, detail="Code too long")
-    
+
     logger.info(f"Executing code for execution_id: {execution_id}")
-    
+
     result = await execute_python_code(
         code=request.code,
         execution_id=execution_id,
         timeout_seconds=timeout,
         variables=request.variables
     )
-    
+
     return result
 
 
@@ -307,15 +307,15 @@ async def get_execution_status(execution_id: str):
     """Get the status of a code execution."""
     if execution_id not in active_executions:
         raise HTTPException(status_code=404, detail="Execution not found")
-    
+
     execution = active_executions[execution_id]
     execution_time = None
-    
+
     if execution['status'] in ['completed', 'failed', 'timeout']:
         execution_time = execution.get('execution_time')
     else:
         execution_time = (datetime.utcnow() - execution['start_time']).total_seconds()
-    
+
     return ExecutionStatus(
         execution_id=execution_id,
         status=execution['status'],
@@ -346,11 +346,11 @@ async def cancel_execution(execution_id: str):
     """Cancel a running execution."""
     if execution_id not in active_executions:
         raise HTTPException(status_code=404, detail="Execution not found")
-    
+
     # In a real implementation, you'd need to implement proper cancellation
     # For now, just mark as cancelled
     active_executions[execution_id]['status'] = 'cancelled'
-    
+
     return {"message": f"Execution {execution_id} marked for cancellation"}
 
 
@@ -358,7 +358,7 @@ async def cancel_execution(execution_id: str):
 async def health_check():
     """Health check endpoint."""
     memory_usage = monitor_memory_usage()
-    
+
     return {
         "status": "healthy",
         "memory_usage_mb": memory_usage,
@@ -393,21 +393,21 @@ async def get_capabilities():
 async def startup_event():
     """Startup tasks."""
     logger.info("Python REPL Service starting up")
-    
+
     async def periodic_cleanup():
         while True:
             await asyncio.sleep(600)  # Every 10 minutes
             now = datetime.utcnow()
             to_remove = []
-            
+
             for exec_id, exec_data in active_executions.items():
                 if now - exec_data['start_time'] > timedelta(hours=1):
                     to_remove.append(exec_id)
-            
+
             for exec_id in to_remove:
                 del active_executions[exec_id]
                 logger.info(f"Cleaned up old execution: {exec_id}")
-    
+
     asyncio.create_task(periodic_cleanup())
 
 

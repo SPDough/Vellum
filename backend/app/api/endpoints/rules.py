@@ -74,7 +74,7 @@ async def get_rules_status(
 ):
     """
     Get status of the rules engine and deployed rules
-    
+
     Returns:
         Dict: Status information including deployed rules and engine health
     """
@@ -101,10 +101,10 @@ async def execute_rules(
 ):
     """
     Execute rules against provided facts
-    
+
     Args:
         request: Rule execution request with rule set and facts
-        
+
     Returns:
         RuleExecutionResponse: Execution results
     """
@@ -119,16 +119,16 @@ async def execute_rules(
                 timestamp=datetime.now()
             )
             rule_facts.append(rule_fact)
-        
+
         async with drools_service:
             result = await drools_service.execute_rules(
                 rule_set=request.rule_set,
                 facts=rule_facts,
                 timeout_seconds=request.timeout_seconds
             )
-        
+
         return RuleExecutionResponse(**result.to_dict())
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -144,10 +144,10 @@ async def validate_trade(
 ):
     """
     Execute trade validation rules against a specific trade
-    
+
     Args:
         request: Trade validation request
-        
+
     Returns:
         RuleExecutionResponse: Validation results
     """
@@ -159,12 +159,12 @@ async def validate_trade(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Trade {request.trade_id} not found"
             )
-        
+
         async with drools_service:
             result = await drools_service.validate_trade(trade)
-        
+
         return RuleExecutionResponse(**result.to_dict())
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -182,10 +182,10 @@ async def check_risk_limits(
 ):
     """
     Execute risk management rules for a trade
-    
+
     Args:
         request: Risk check request
-        
+
     Returns:
         RuleExecutionResponse: Risk check results
     """
@@ -197,12 +197,12 @@ async def check_risk_limits(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Trade {request.trade_id} not found"
             )
-        
+
         async with drools_service:
             result = await drools_service.check_risk_limits(trade, request.portfolio_data)
-        
+
         return RuleExecutionResponse(**result.to_dict())
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -220,10 +220,10 @@ async def check_compliance(
 ):
     """
     Execute compliance rules for a trade
-    
+
     Args:
         request: Compliance check request
-        
+
     Returns:
         RuleExecutionResponse: Compliance check results
     """
@@ -235,12 +235,12 @@ async def check_compliance(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Trade {request.trade_id} not found"
             )
-        
+
         async with drools_service:
             result = await drools_service.check_compliance(trade, request.client_data)
-        
+
         return RuleExecutionResponse(**result.to_dict())
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -258,10 +258,10 @@ async def process_settlement(
 ):
     """
     Execute settlement processing rules
-    
+
     Args:
         request: Settlement processing request
-        
+
     Returns:
         RuleExecutionResponse: Settlement processing results
     """
@@ -273,12 +273,12 @@ async def process_settlement(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Trade {request.trade_id} not found"
             )
-        
+
         async with drools_service:
             result = await drools_service.process_settlement_rules(trade, request.settlement_data)
-        
+
         return RuleExecutionResponse(**result.to_dict())
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -295,10 +295,10 @@ async def deploy_rules(
 ):
     """
     Deploy new rules to the Drools runtime
-    
+
     Args:
         request: Rule deployment request
-        
+
     Returns:
         Dict: Deployment result
     """
@@ -309,13 +309,13 @@ async def deploy_rules(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions to deploy rules"
             )
-        
+
         async with drools_service:
             success = await drools_service.deploy_rules(
                 rule_content=request.rule_content,
                 rule_name=request.rule_name
             )
-        
+
         if success:
             return {
                 "status": "success",
@@ -328,7 +328,7 @@ async def deploy_rules(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Rule deployment failed"
             )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -346,11 +346,11 @@ async def deploy_rules_from_file(
 ):
     """
     Deploy rules from uploaded DRL file
-    
+
     Args:
         rule_name: Name for the rule set
         file: Uploaded DRL file
-        
+
     Returns:
         Dict: Deployment result
     """
@@ -361,24 +361,24 @@ async def deploy_rules_from_file(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions to deploy rules"
             )
-        
+
         # Validate file type
         if not file.filename.endswith('.drl'):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="File must be a .drl file"
             )
-        
+
         # Read file content
         rule_content = await file.read()
         rule_content_str = rule_content.decode('utf-8')
-        
+
         async with drools_service:
             success = await drools_service.deploy_rules(
                 rule_content=rule_content_str,
                 rule_name=rule_name
             )
-        
+
         if success:
             return {
                 "status": "success",
@@ -391,7 +391,7 @@ async def deploy_rules_from_file(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Rule deployment failed"
             )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -408,23 +408,23 @@ async def validate_rule_syntax(
 ):
     """
     Validate DRL rule syntax without deploying
-    
+
     Args:
         request: Rule validation request
-        
+
     Returns:
         Dict: Validation results
     """
     try:
         async with drools_service:
             validation_result = await drools_service.validate_rule_syntax(request.rule_content)
-        
+
         return {
             **validation_result,
             "validated_by": current_user.email,
             "validation_time": datetime.now().isoformat()
         }
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -437,7 +437,7 @@ async def get_rule_templates(
 ):
     """
     Get predefined rule templates for custodian banking operations
-    
+
     Returns:
         Dict: Available rule templates
     """
@@ -526,14 +526,14 @@ end
                 """
             }
         }
-        
+
         return {
             "templates": templates,
             "total_templates": len(templates),
             "requested_by": current_user.email,
             "timestamp": datetime.now().isoformat()
         }
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -547,7 +547,7 @@ async def get_rules_catalog(
 ):
     """
     Get catalog of all available Drools rules
-    
+
     Returns:
         Dict: Complete catalog of rules organized by category
     """
@@ -567,7 +567,7 @@ async def get_rules_catalog(
                         "line_range": "93-106"
                     },
                     {
-                        "name": "Settlement Date Validation", 
+                        "name": "Settlement Date Validation",
                         "description": "Ensures settlement date is not before trade date",
                         "salience": 90,
                         "trigger_condition": "settlementDate < tradeDate",
@@ -581,7 +581,7 @@ async def get_rules_catalog(
                         "salience": 80,
                         "trigger_condition": "settlementDate on weekend",
                         "actions": ["Create weekend settlement alert"],
-                        "file": "custodian-banking-rules.drl", 
+                        "file": "custodian-banking-rules.drl",
                         "line_range": "121-133"
                     },
                     {
@@ -722,7 +722,7 @@ async def get_rules_catalog(
                         "salience": 80,
                         "trigger_condition": ">=10 trades per day from same counterparty",
                         "actions": ["Require approval", "Create HFT detection alert"],
-                        "file": "custodian-banking-rules.drl", 
+                        "file": "custodian-banking-rules.drl",
                         "line_range": "338-355"
                     }
                 ]
@@ -752,11 +752,11 @@ async def get_rules_catalog(
                 ]
             }
         }
-        
+
         # Calculate summary statistics
         total_rules = sum(len(category["rules"]) for category in catalog.values())
         categories_count = len(catalog)
-        
+
         return {
             "catalog": catalog,
             "summary": {
@@ -770,7 +770,7 @@ async def get_rules_catalog(
                 "version": "1.0.0"
             }
         }
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -785,10 +785,10 @@ async def get_rules_by_category(
 ):
     """
     Get rules for a specific category
-    
+
     Args:
         category: Category name (trade_validation, risk_management, etc.)
-        
+
     Returns:
         Dict: Rules in the specified category
     """
@@ -796,13 +796,13 @@ async def get_rules_by_category(
         # Get full catalog
         full_catalog_response = await get_rules_catalog(current_user)
         catalog = full_catalog_response["catalog"]
-        
+
         if category not in catalog:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Category '{category}' not found"
             )
-        
+
         return {
             "category": category,
             "rules": catalog[category],
@@ -810,7 +810,7 @@ async def get_rules_by_category(
             "requested_by": current_user.email,
             "timestamp": datetime.now().isoformat()
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -828,11 +828,11 @@ async def search_rules(
 ):
     """
     Search rules by name, description, or trigger condition
-    
+
     Args:
         query: Search query string
         category: Optional category filter
-        
+
     Returns:
         Dict: Matching rules
     """
@@ -840,30 +840,30 @@ async def search_rules(
         # Get full catalog
         full_catalog_response = await get_rules_catalog(current_user)
         catalog = full_catalog_response["catalog"]
-        
+
         matching_rules = []
         query_lower = query.lower()
-        
+
         for cat_name, cat_data in catalog.items():
             # Skip if category filter specified and doesn't match
             if category and cat_name != category:
                 continue
-                
+
             for rule in cat_data["rules"]:
                 # Search in name, description, and trigger condition
                 searchable_text = " ".join([
                     rule["name"],
-                    rule["description"], 
+                    rule["description"],
                     rule["trigger_condition"]
                 ]).lower()
-                
+
                 if query_lower in searchable_text:
                     matching_rules.append({
                         **rule,
                         "category": cat_name,
                         "category_name": cat_data["category"]
                     })
-        
+
         return {
             "query": query,
             "category_filter": category,
@@ -872,7 +872,7 @@ async def search_rules(
             "searched_by": current_user.email,
             "timestamp": datetime.now().isoformat()
         }
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

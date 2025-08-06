@@ -35,13 +35,13 @@ def event_loop():
 def test_db():
     """Create a test database for each test function"""
     engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
-    
+
     # Create all tables
     Base.metadata.create_all(bind=engine)
-    
+
     # Create session
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    
+
     try:
         db = TestingSessionLocal()
         yield db
@@ -59,12 +59,12 @@ def client(test_db):
             yield test_db
         finally:
             pass
-    
+
     simple_app.dependency_overrides[get_db] = override_get_db
-    
+
     with TestClient(simple_app) as test_client:
         yield test_client
-    
+
     # Clean up
     simple_app.dependency_overrides.clear()
 
@@ -77,12 +77,12 @@ async def async_client(test_db):
             yield test_db
         finally:
             pass
-    
+
     simple_app.dependency_overrides[get_db] = override_get_db
-    
+
     async with AsyncClient(app=simple_app, base_url="http://test") as ac:
         yield ac
-    
+
     # Clean up
     simple_app.dependency_overrides.clear()
 
@@ -109,7 +109,7 @@ def sample_trade_data():
     }
 
 
-@pytest.fixture  
+@pytest.fixture
 def sample_sop_data():
     """Sample SOP data for testing"""
     return {
@@ -127,7 +127,7 @@ This procedure defines the complete process for settling equity trades.
 
 ## Steps
 1. Trade Validation
-2. Confirmation Generation  
+2. Confirmation Generation
 3. Settlement Instructions
 4. Final Settlement
         """,
@@ -164,22 +164,22 @@ def mock_redis():
     class MockRedis:
         def __init__(self):
             self._data = {}
-        
+
         async def get(self, key):
             return self._data.get(key)
-        
+
         async def set(self, key, value, ex=None):
             self._data[key] = value
-        
+
         async def delete(self, key):
             self._data.pop(key, None)
-        
+
         async def ping(self):
             return True
-        
+
         async def close(self):
             pass
-    
+
     return MockRedis()
 
 
@@ -189,17 +189,17 @@ def mock_kafka():
     class MockKafkaProducer:
         def __init__(self):
             self.messages = []
-        
+
         async def send(self, topic, value, key=None):
             self.messages.append({
                 "topic": topic,
                 "value": value,
                 "key": key
             })
-        
+
         async def stop(self):
             pass
-    
+
     return MockKafkaProducer()
 
 
@@ -212,22 +212,22 @@ def mock_neo4j():
             class MockResult:
                 async def single(self):
                     return {"message": "Neo4j connected"}
-            
+
             return MockResult()
-        
+
         async def __aenter__(self):
             return self
-        
+
         async def __aexit__(self, exc_type, exc_val, exc_tb):
             pass
-    
+
     class MockNeo4jDriver:
         def session(self):
             return MockNeo4jSession()
-        
+
         async def close(self):
             pass
-    
+
     return MockNeo4jDriver()
 
 
@@ -274,7 +274,7 @@ def sample_workflow_data():
             {
                 "step_id": "generate_confirmation",
                 "step_name": "Generate Confirmation",
-                "step_type": "AUTOMATED", 
+                "step_type": "AUTOMATED",
                 "timeout_seconds": 60
             },
             {
@@ -290,7 +290,7 @@ def sample_workflow_data():
 # Pytest markers for test categorization
 pytest_markers = [
     "unit: Unit tests",
-    "integration: Integration tests", 
+    "integration: Integration tests",
     "banking: Banking-specific tests",
     "security: Security tests",
     "performance: Performance tests",

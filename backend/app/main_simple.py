@@ -131,7 +131,7 @@ def generate_sample_data() -> None:
 @app.get("/")
 async def root():
     return {
-        "message": "Otomeshon.ai Banking Platform API", 
+        "message": "Otomeshon.ai Banking Platform API",
         "version": "1.0.0",
         "status": "running",
         "endpoints": {
@@ -156,21 +156,21 @@ async def health_check() -> Dict[str, Any]:
 @app.post("/api/auth/login", response_model=LoginResponse)
 async def login(login_data: LoginRequest):
     """Secure authentication for demo purposes"""
-    
+
     # Log authentication attempt
     security_logger.info(f"Authentication attempt for {login_data.email}")
-    
+
     user = auth_config.verify_password(login_data.email, login_data.password)
     if not user:
         security_logger.warning(f"Failed authentication attempt for {login_data.email}")
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    
+
     # Generate simple tokens (in production, use proper JWT)
     access_token = f"access_{uuid.uuid4()}"
     refresh_token = f"refresh_{uuid.uuid4()}"
-    
+
     security_logger.info(f"Successful authentication for {login_data.email}")
-    
+
     return LoginResponse(
         access_token=access_token,
         refresh_token=refresh_token,
@@ -198,7 +198,7 @@ async def get_current_user():
     user = auth_config.get_user_by_email("admin@otomeshon.ai")
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     return UserResponse(
         id=user.id,
         email=user.email,
@@ -211,18 +211,18 @@ async def get_current_user():
 @app.get("/api/auth/config", response_model=AuthConfigResponse)
 async def get_auth_config():
     """Get authentication configuration"""
-    
+
     # Check if running in Docker (Keycloak available)
     auth_provider = os.getenv("AUTH_PROVIDER", "simple")
     keycloak_available = os.getenv("KEYCLOAK_URL") is not None
-    
+
     return AuthConfigResponse(
         current_provider=auth_provider,
         available_providers=["simple", "keycloak"],
         keycloak_available=keycloak_available,
         endpoints={
             "login": "/api/auth/login",
-            "logout": "/api/auth/logout", 
+            "logout": "/api/auth/logout",
             "me": "/api/auth/me",
             "config": "/api/auth/config"
         }
@@ -231,10 +231,10 @@ async def get_auth_config():
 @app.get("/api/auth/providers")
 async def get_auth_providers():
     """Get available authentication providers"""
-    
+
     auth_provider = os.getenv("AUTH_PROVIDER", "simple")
     keycloak_available = os.getenv("KEYCLOAK_URL") is not None
-    
+
     return {
         "providers": ["simple", "keycloak"],
         "current": auth_provider,
@@ -270,17 +270,17 @@ async def get_records(
     data_type: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Get paginated data records with optional filtering"""
-    
+
     try:
         # Validate pagination parameters
         page, page_size = InputValidator.validate_pagination(page, page_size)
-        
+
         # Validate filter parameters
         if source:
             source = InputValidator.sanitize_string(source, 50)
         if data_type:
             data_type = InputValidator.sanitize_string(data_type, 50)
-    
+
         # Filter data
         filtered_data = sample_data
         if source:
@@ -300,7 +300,7 @@ async def get_records(
             "page_size": page_size,
             "total_pages": (len(filtered_data) + page_size - 1) // page_size,
         }
-        
+
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -311,18 +311,18 @@ async def get_records(
 @app.post("/api/v1/data-sandbox/filter")
 async def filter_records(request: FilterRequest) -> Dict[str, Any]:
     """Advanced filtering of data records with input validation"""
-    
+
     try:
         # Validate pagination parameters
         page, page_size = InputValidator.validate_pagination(request.page, request.page_size)
-        
+
         filtered_data = sample_data
 
         # Apply filters if provided
         if request.filters:
             # Validate all filters
             validated_filters = InputValidator.validate_filter_request(request.filters)
-            
+
             for key, value in validated_filters.items():
                 if key == "source":
                     filtered_data = [r for r in filtered_data if r.source == value]
@@ -345,7 +345,7 @@ async def filter_records(request: FilterRequest) -> Dict[str, Any]:
         if request.sort_by:
             sort_by = InputValidator.sanitize_string(request.sort_by, 50)
             sort_order = InputValidator.sanitize_string(request.sort_order or "asc", 10)
-            
+
             reverse = sort_order == "desc"
             if sort_by == "timestamp":
                 filtered_data.sort(key=lambda x: x.timestamp, reverse=reverse)
@@ -364,7 +364,7 @@ async def filter_records(request: FilterRequest) -> Dict[str, Any]:
             "page_size": page_size,
             "total_pages": (len(filtered_data) + page_size - 1) // page_size,
         }
-        
+
     except ValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

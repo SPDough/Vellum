@@ -1,8 +1,8 @@
 """
 Unified Workflow Execution Service for Otomeshon Custodian Portal
 
-This service provides a unified interface for executing both rules-based and 
-agent-based workflows for custodian banking operations. Combines Drools rules 
+This service provides a unified interface for executing both rules-based and
+agent-based workflows for custodian banking operations. Combines Drools rules
 engine with LangGraph agent workflows for comprehensive automation.
 """
 
@@ -17,8 +17,8 @@ from enum import Enum
 
 from app.services.drools_service import get_drools_service, RuleFact
 from app.flows.rules_engine_node import (
-    TradeValidationNode, 
-    RiskCheckNode, 
+    TradeValidationNode,
+    RiskCheckNode,
     ComplianceCheckNode,
     RulesEngineConfig,
     create_initial_state
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class WorkflowType(str, Enum):
     """Types of workflows supported"""
     RULES_BASED = "rules_based"
-    AGENT_BASED = "agent_based" 
+    AGENT_BASED = "agent_based"
     HYBRID = "hybrid"
     SEQUENTIAL = "sequential"
     PARALLEL = "parallel"
@@ -57,7 +57,7 @@ class WorkflowNodeConfig:
     conditions: Dict[str, Any] = None
     timeout_seconds: int = 300
     retry_count: int = 3
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
@@ -76,7 +76,7 @@ class WorkflowConfig:
     enable_audit: bool = True
     created_by: str = "system"
     version: str = "1.0"
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
@@ -94,7 +94,7 @@ class NodeExecutionResult:
     error_message: Optional[str] = None
     alerts: List[Dict[str, Any]] = None
     metadata: Dict[str, Any] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         result = asdict(self)
         # Convert datetime objects to ISO strings
@@ -115,7 +115,7 @@ class WorkflowExecutionResult:
     final_output: Dict[str, Any]
     summary: Dict[str, Any]
     error_message: Optional[str] = None
-    
+
     def to_dict(self) -> Dict[str, Any]:
         result = asdict(self)
         result['start_time'] = self.start_time.isoformat()
@@ -127,19 +127,19 @@ class WorkflowExecutionService:
     """
     Service for executing configured workflows with both rules and agents
     """
-    
+
     def __init__(self):
         self.settings = get_settings()
         self.drools_service = get_drools_service()
         self.active_executions: Dict[str, WorkflowExecutionResult] = {}
         self.workflow_templates: Dict[str, WorkflowConfig] = {}
-        
+
         # Initialize built-in workflow templates
         self._initialize_builtin_templates()
-    
+
     def _initialize_builtin_templates(self):
         """Initialize built-in workflow templates for custodian banking"""
-        
+
         # Trade Processing Workflow
         trade_processing = WorkflowConfig(
             workflow_id="trade_processing_v1",
@@ -160,7 +160,7 @@ class WorkflowExecutionService:
                 ),
                 WorkflowNodeConfig(
                     node_id="check_risk",
-                    node_type="RULES_ENGINE", 
+                    node_type="RULES_ENGINE",
                     name="Risk Assessment",
                     description="Assess risk limits and concentration",
                     config={
@@ -213,7 +213,7 @@ class WorkflowExecutionService:
                 "failure": "any(node.status == 'failed' for node in nodes)"
             }
         )
-        
+
         # Exception Handling Workflow
         exception_handling = WorkflowConfig(
             workflow_id="exception_handling_v1",
@@ -273,7 +273,7 @@ class WorkflowExecutionService:
                 "manual_review": "ai_resolution_suggestions.status == 'completed'"
             }
         )
-        
+
         # Client Onboarding Workflow
         client_onboarding = WorkflowConfig(
             workflow_id="client_onboarding_v1",
@@ -330,14 +330,14 @@ class WorkflowExecutionService:
                 "rejected": "final_approval.decision == 'rejected'"
             }
         )
-        
+
         # Store templates
         self.workflow_templates = {
             trade_processing.workflow_id: trade_processing,
             exception_handling.workflow_id: exception_handling,
             client_onboarding.workflow_id: client_onboarding
         }
-    
+
     async def execute_workflow(
         self,
         workflow_config: WorkflowConfig,
@@ -347,21 +347,21 @@ class WorkflowExecutionService:
     ) -> WorkflowExecutionResult:
         """
         Execute a workflow with the given configuration and input data
-        
+
         Args:
             workflow_config: Workflow configuration
             input_data: Input data for the workflow
             user_id: User executing the workflow
             execution_options: Optional execution parameters
-            
+
         Returns:
             WorkflowExecutionResult: Complete execution results
         """
         execution_id = str(uuid.uuid4())
         start_time = datetime.now()
-        
+
         logger.info(f"Starting workflow execution: {workflow_config.workflow_id} [{execution_id}]")
-        
+
         # Initialize execution result
         execution_result = WorkflowExecutionResult(
             workflow_id=workflow_config.workflow_id,
@@ -374,10 +374,10 @@ class WorkflowExecutionService:
             final_output={},
             summary={}
         )
-        
+
         # Store active execution
         self.active_executions[execution_id] = execution_result
-        
+
         try:
             # Execute workflow based on type
             if workflow_config.workflow_type == WorkflowType.SEQUENTIAL:
@@ -388,31 +388,31 @@ class WorkflowExecutionService:
                 await self._execute_hybrid_workflow(workflow_config, input_data, execution_result)
             else:
                 raise ValueError(f"Unsupported workflow type: {workflow_config.workflow_type}")
-            
+
             # Mark as completed
             execution_result.status = WorkflowStatus.COMPLETED
             execution_result.end_time = datetime.now()
             execution_result.total_execution_time_ms = (
                 execution_result.end_time - execution_result.start_time
             ).total_seconds() * 1000
-            
+
             # Generate summary
             execution_result.summary = self._generate_execution_summary(execution_result)
-            
+
             logger.info(f"Workflow execution completed: {execution_id}")
-            
+
         except Exception as e:
             logger.error(f"Workflow execution failed: {execution_id} - {str(e)}")
-            
+
             execution_result.status = WorkflowStatus.FAILED
             execution_result.end_time = datetime.now()
             execution_result.error_message = str(e)
             execution_result.total_execution_time_ms = (
                 execution_result.end_time - execution_result.start_time
             ).total_seconds() * 1000
-        
+
         return execution_result
-    
+
     async def _execute_sequential_workflow(
         self,
         config: WorkflowConfig,
@@ -420,43 +420,43 @@ class WorkflowExecutionService:
         execution_result: WorkflowExecutionResult
     ):
         """Execute nodes sequentially based on dependencies"""
-        
+
         current_data = input_data.copy()
         executed_nodes = set()
-        
+
         # Find entry point
         current_node_id = config.entry_point
-        
+
         while current_node_id:
             node_config = next((n for n in config.nodes if n.node_id == current_node_id), None)
             if not node_config:
                 break
-            
+
             # Check dependencies
             if node_config.dependencies:
                 missing_deps = [dep for dep in node_config.dependencies if dep not in executed_nodes]
                 if missing_deps:
                     logger.warning(f"Missing dependencies for node {current_node_id}: {missing_deps}")
                     break
-            
+
             # Execute node
             node_result = await self._execute_node(node_config, current_data)
             execution_result.node_results.append(node_result)
             executed_nodes.add(current_node_id)
-            
+
             # Update current data with node output
             current_data.update(node_result.output_data)
-            
+
             # Check if node failed and should stop execution
             if node_result.status == NodeExecutionStatus.FAILED:
                 raise Exception(f"Node {current_node_id} failed: {node_result.error_message}")
-            
+
             # Find next node (simplified - just execute all in order for now)
             remaining_nodes = [n for n in config.nodes if n.node_id not in executed_nodes]
             current_node_id = remaining_nodes[0].node_id if remaining_nodes else None
-        
+
         execution_result.final_output = current_data
-    
+
     async def _execute_parallel_workflow(
         self,
         config: WorkflowConfig,
@@ -464,34 +464,34 @@ class WorkflowExecutionService:
         execution_result: WorkflowExecutionResult
     ):
         """Execute nodes in parallel where possible"""
-        
+
         # For now, implement simplified parallel execution
         # In production, this would use more sophisticated dependency resolution
-        
+
         parallel_nodes = [n for n in config.nodes if not n.dependencies]
         sequential_nodes = [n for n in config.nodes if n.dependencies]
-        
+
         # Execute parallel nodes
         if parallel_nodes:
             parallel_tasks = [
-                self._execute_node(node_config, input_data) 
+                self._execute_node(node_config, input_data)
                 for node_config in parallel_nodes
             ]
             parallel_results = await asyncio.gather(*parallel_tasks)
             execution_result.node_results.extend(parallel_results)
-        
+
         # Execute sequential nodes
         current_data = input_data.copy()
         for node_result in execution_result.node_results:
             current_data.update(node_result.output_data)
-        
+
         for node_config in sequential_nodes:
             node_result = await self._execute_node(node_config, current_data)
             execution_result.node_results.append(node_result)
             current_data.update(node_result.output_data)
-        
+
         execution_result.final_output = current_data
-    
+
     async def _execute_hybrid_workflow(
         self,
         config: WorkflowConfig,
@@ -499,21 +499,21 @@ class WorkflowExecutionService:
         execution_result: WorkflowExecutionResult
     ):
         """Execute hybrid workflow with both rules and agents"""
-        
+
         # For now, treat as sequential - can be enhanced for more complex routing
         await self._execute_sequential_workflow(config, input_data, execution_result)
-    
+
     async def _execute_node(
         self,
         node_config: WorkflowNodeConfig,
         input_data: Dict[str, Any]
     ) -> NodeExecutionResult:
         """Execute a single workflow node"""
-        
+
         start_time = datetime.now()
-        
+
         logger.info(f"Executing node: {node_config.node_id} ({node_config.node_type})")
-        
+
         node_result = NodeExecutionResult(
             node_id=node_config.node_id,
             node_type=node_config.node_type,
@@ -526,7 +526,7 @@ class WorkflowExecutionService:
             alerts=[],
             metadata={}
         )
-        
+
         try:
             # Execute based on node type
             if node_config.node_type == "RULES_ENGINE":
@@ -539,22 +539,22 @@ class WorkflowExecutionService:
                 await self._execute_transform_node(node_config, input_data, node_result)
             else:
                 raise ValueError(f"Unsupported node type: {node_config.node_type}")
-            
+
             node_result.status = NodeExecutionStatus.COMPLETED
-            
+
         except Exception as e:
             logger.error(f"Node execution failed: {node_config.node_id} - {str(e)}")
             node_result.status = NodeExecutionStatus.FAILED
             node_result.error_message = str(e)
-        
+
         # Finalize timing
         node_result.end_time = datetime.now()
         node_result.execution_time_ms = (
             node_result.end_time - node_result.start_time
         ).total_seconds() * 1000
-        
+
         return node_result
-    
+
     async def _execute_rules_engine_node(
         self,
         node_config: WorkflowNodeConfig,
@@ -562,13 +562,13 @@ class WorkflowExecutionService:
         node_result: NodeExecutionResult
     ):
         """Execute a rules engine node using Drools"""
-        
+
         rule_sets = node_config.config.get("rule_sets", [])
         timeout_seconds = node_config.config.get("timeout_seconds", 30)
-        
+
         # Extract trade data for rules
         trade_data = input_data.get("trade_data", input_data)
-        
+
         # Create rule facts
         from app.services.drools_service import RuleFact
         facts = [
@@ -579,7 +579,7 @@ class WorkflowExecutionService:
                 timestamp=datetime.now()
             )
         ]
-        
+
         # Add portfolio and client data if available
         if "portfolio_data" in input_data:
             facts.append(RuleFact(
@@ -588,7 +588,7 @@ class WorkflowExecutionService:
                 data=input_data["portfolio_data"],
                 timestamp=datetime.now()
             ))
-        
+
         if "client_data" in input_data:
             facts.append(RuleFact(
                 fact_type="Client",
@@ -596,11 +596,11 @@ class WorkflowExecutionService:
                 data=input_data["client_data"],
                 timestamp=datetime.now()
             ))
-        
+
         # Execute rules for each rule set
         all_results = []
         all_alerts = []
-        
+
         async with self.drools_service:
             for rule_set in rule_sets:
                 result = await self.drools_service.execute_rules(
@@ -610,14 +610,14 @@ class WorkflowExecutionService:
                 )
                 all_results.append(result.to_dict())
                 all_alerts.extend(result.actions_triggered)
-        
+
         # Determine overall status
         validation_passed = not any(
-            alert.get("type") in ["ValidationError", "RiskAlert", "ComplianceAlert"] 
+            alert.get("type") in ["ValidationError", "RiskAlert", "ComplianceAlert"]
             and alert.get("severity") in ["HIGH", "CRITICAL"]
             for alert in all_alerts
         )
-        
+
         node_result.output_data = {
             f"{node_config.node_id}_results": all_results,
             f"{node_config.node_id}_passed": validation_passed,
@@ -625,13 +625,13 @@ class WorkflowExecutionService:
             "rules_executed": len(rule_sets),
             "total_rules_fired": sum(len(r.get("rules_fired", [])) for r in all_results)
         }
-        
+
         node_result.alerts = all_alerts
         node_result.metadata = {
             "rule_sets_executed": rule_sets,
             "facts_processed": len(facts)
         }
-    
+
     async def _execute_agent_node(
         self,
         node_config: WorkflowNodeConfig,
@@ -639,9 +639,9 @@ class WorkflowExecutionService:
         node_result: NodeExecutionResult
     ):
         """Execute an AI agent node (mock implementation)"""
-        
+
         agent_type = node_config.config.get("agent_type", "generic")
-        
+
         # Mock agent execution for different types
         if agent_type == "document_generator":
             node_result.output_data = {
@@ -669,10 +669,10 @@ class WorkflowExecutionService:
                 f"{node_config.node_id}_result": "completed",
                 "agent_type": agent_type
             }
-        
+
         # Simulate processing time
         await asyncio.sleep(0.1)
-    
+
     async def _execute_decision_node(
         self,
         node_config: WorkflowNodeConfig,
@@ -680,9 +680,9 @@ class WorkflowExecutionService:
         node_result: NodeExecutionResult
     ):
         """Execute a decision node"""
-        
+
         decision_logic = node_config.config.get("decision_logic", "True")
-        
+
         # Simple decision evaluation (in production, use a proper expression evaluator)
         try:
             # For demo, make simple decisions based on data
@@ -690,7 +690,7 @@ class WorkflowExecutionService:
                 decision = not input_data.get("auto_resolvable", False)
             else:
                 decision = True
-            
+
             node_result.output_data = {
                 f"{node_config.node_id}_decision": "approved" if decision else "rejected",
                 "decision_logic": decision_logic,
@@ -701,7 +701,7 @@ class WorkflowExecutionService:
                 f"{node_config.node_id}_decision": "error",
                 "error": str(e)
             }
-    
+
     async def _execute_transform_node(
         self,
         node_config: WorkflowNodeConfig,
@@ -709,11 +709,11 @@ class WorkflowExecutionService:
         node_result: NodeExecutionResult
     ):
         """Execute a data transformation node"""
-        
+
         transformations = node_config.config.get("transformations", {})
-        
+
         transformed_data = input_data.copy()
-        
+
         # Apply transformations
         for field, transformation in transformations.items():
             if transformation == "uppercase":
@@ -722,21 +722,21 @@ class WorkflowExecutionService:
             elif transformation == "format_currency":
                 if field in transformed_data:
                     transformed_data[field] = f"${float(transformed_data[field]):,.2f}"
-        
+
         node_result.output_data = {
             f"{node_config.node_id}_transformed": transformed_data,
             "transformations_applied": list(transformations.keys())
         }
-    
+
     def _generate_execution_summary(self, execution_result: WorkflowExecutionResult) -> Dict[str, Any]:
         """Generate execution summary"""
-        
+
         total_nodes = len(execution_result.node_results)
         completed_nodes = sum(1 for nr in execution_result.node_results if nr.status == NodeExecutionStatus.COMPLETED)
         failed_nodes = sum(1 for nr in execution_result.node_results if nr.status == NodeExecutionStatus.FAILED)
-        
+
         total_alerts = sum(len(nr.alerts or []) for nr in execution_result.node_results)
-        
+
         return {
             "total_nodes": total_nodes,
             "completed_nodes": completed_nodes,
@@ -747,18 +747,18 @@ class WorkflowExecutionService:
             "workflow_type": execution_result.workflow_id,
             "final_status": execution_result.status.value
         }
-    
+
     def get_workflow_templates(self) -> Dict[str, WorkflowConfig]:
         """Get all available workflow templates"""
         return self.workflow_templates
-    
+
     def get_active_executions(self) -> Dict[str, WorkflowExecutionResult]:
         """Get all currently active workflow executions"""
         return {
             exec_id: result for exec_id, result in self.active_executions.items()
             if result.status == WorkflowStatus.RUNNING
         }
-    
+
     async def get_execution_status(self, execution_id: str) -> Optional[WorkflowExecutionResult]:
         """Get status of a specific workflow execution"""
         return self.active_executions.get(execution_id)

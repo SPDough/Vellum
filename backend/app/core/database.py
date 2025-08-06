@@ -89,7 +89,7 @@ class DatabaseManager:
 
                 await session.run(
                     """
-                    CREATE CONSTRAINT sop_document_number IF NOT EXISTS  
+                    CREATE CONSTRAINT sop_document_number IF NOT EXISTS
                     FOR (s:SOPDocument) REQUIRE s.document_number IS UNIQUE
                 """
                 )
@@ -263,7 +263,7 @@ class Neo4jService:
                 """
                 CALL db.index.vector.queryNodes('sop_embeddings', $limit, $query_embedding)
                 YIELD node, score
-                RETURN node.id as id, 
+                RETURN node.id as id,
                        node.title as title,
                        node.category as category,
                        node.business_area as business_area,

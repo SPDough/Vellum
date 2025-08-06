@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 
 from app.core.database import get_db
 from app.services.workflow_execution_service import (
-    get_workflow_execution_service, 
+    get_workflow_execution_service,
     WorkflowExecutionService,
     WorkflowConfig,
     WorkflowNodeConfig,
@@ -89,13 +89,13 @@ async def get_workflow_templates(
 ):
     """
     Get all available workflow templates
-    
+
     Returns:
         List[WorkflowTemplateResponse]: Available workflow templates
     """
     try:
         templates = workflow_service.get_workflow_templates()
-        
+
         return [
             WorkflowTemplateResponse(
                 workflow_id=template.workflow_id,
@@ -108,7 +108,7 @@ async def get_workflow_templates(
             )
             for template in templates.values()
         ]
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -123,23 +123,23 @@ async def get_workflow_template(
 ):
     """
     Get a specific workflow template
-    
+
     Args:
         workflow_id: ID of the workflow template
-        
+
     Returns:
         WorkflowTemplateResponse: Workflow template details
     """
     try:
         templates = workflow_service.get_workflow_templates()
         template = templates.get(workflow_id)
-        
+
         if not template:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Workflow template {workflow_id} not found"
             )
-        
+
         return WorkflowTemplateResponse(
             workflow_id=template.workflow_id,
             name=template.name,
@@ -149,7 +149,7 @@ async def get_workflow_template(
             entry_point=template.entry_point,
             exit_conditions=template.exit_conditions
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -167,10 +167,10 @@ async def execute_workflow(
 ):
     """
     Execute a workflow with the provided input data
-    
+
     Args:
         request: Workflow execution request
-        
+
     Returns:
         WorkflowExecutionResponse: Execution results
     """
@@ -178,13 +178,13 @@ async def execute_workflow(
         # Get workflow template
         templates = workflow_service.get_workflow_templates()
         workflow_config = templates.get(request.workflow_id)
-        
+
         if not workflow_config:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Workflow {request.workflow_id} not found"
             )
-        
+
         # Execute workflow
         execution_result = await workflow_service.execute_workflow(
             workflow_config=workflow_config,
@@ -192,7 +192,7 @@ async def execute_workflow(
             user_id=current_user.email,
             execution_options=request.execution_options
         )
-        
+
         return WorkflowExecutionResponse(
             execution_id=execution_result.execution_id,
             workflow_id=execution_result.workflow_id,
@@ -205,7 +205,7 @@ async def execute_workflow(
             summary=execution_result.summary,
             error_message=execution_result.error_message
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -225,13 +225,13 @@ async def execute_trade_processing_workflow(
 ):
     """
     Execute the trade processing workflow with trade data
-    
+
     Args:
         trade_data: Trade information
         portfolio_data: Portfolio information (optional)
         client_data: Client information (optional)
         settlement_data: Settlement information (optional)
-        
+
     Returns:
         WorkflowExecutionResponse: Execution results
     """
@@ -243,24 +243,24 @@ async def execute_trade_processing_workflow(
             "client_data": client_data or {},
             "settlement_data": settlement_data or {}
         }
-        
+
         # Get trade processing workflow
         templates = workflow_service.get_workflow_templates()
         workflow_config = templates.get("trade_processing_v1")
-        
+
         if not workflow_config:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Trade processing workflow not found"
             )
-        
+
         # Execute workflow
         execution_result = await workflow_service.execute_workflow(
             workflow_config=workflow_config,
             input_data=input_data,
             user_id=current_user.email
         )
-        
+
         return WorkflowExecutionResponse(
             execution_id=execution_result.execution_id,
             workflow_id=execution_result.workflow_id,
@@ -273,7 +273,7 @@ async def execute_trade_processing_workflow(
             summary=execution_result.summary,
             error_message=execution_result.error_message
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -291,11 +291,11 @@ async def execute_exception_handling_workflow(
 ):
     """
     Execute the exception handling workflow
-    
+
     Args:
         exception_data: Exception information
         trade_data: Related trade data (optional)
-        
+
     Returns:
         WorkflowExecutionResponse: Execution results
     """
@@ -305,24 +305,24 @@ async def execute_exception_handling_workflow(
             "exception_data": exception_data,
             "trade_data": trade_data or {}
         }
-        
+
         # Get exception handling workflow
         templates = workflow_service.get_workflow_templates()
         workflow_config = templates.get("exception_handling_v1")
-        
+
         if not workflow_config:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Exception handling workflow not found"
             )
-        
+
         # Execute workflow
         execution_result = await workflow_service.execute_workflow(
             workflow_config=workflow_config,
             input_data=input_data,
             user_id=current_user.email
         )
-        
+
         return WorkflowExecutionResponse(
             execution_id=execution_result.execution_id,
             workflow_id=execution_result.workflow_id,
@@ -335,7 +335,7 @@ async def execute_exception_handling_workflow(
             summary=execution_result.summary,
             error_message=execution_result.error_message
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -351,13 +351,13 @@ async def get_active_executions(
 ):
     """
     Get all currently active workflow executions
-    
+
     Returns:
         List[Dict]: Active workflow executions
     """
     try:
         active_executions = workflow_service.get_active_executions()
-        
+
         return [
             {
                 "execution_id": exec_id,
@@ -370,7 +370,7 @@ async def get_active_executions(
             }
             for exec_id, result in active_executions.items()
         ]
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -385,22 +385,22 @@ async def get_execution_status(
 ):
     """
     Get status of a specific workflow execution
-    
+
     Args:
         execution_id: ID of the workflow execution
-        
+
     Returns:
         WorkflowExecutionResponse: Execution status and results
     """
     try:
         execution_result = await workflow_service.get_execution_status(execution_id)
-        
+
         if not execution_result:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Workflow execution {execution_id} not found"
             )
-        
+
         return WorkflowExecutionResponse(
             execution_id=execution_result.execution_id,
             workflow_id=execution_result.workflow_id,
@@ -413,7 +413,7 @@ async def get_execution_status(
             summary=execution_result.summary,
             error_message=execution_result.error_message
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -428,7 +428,7 @@ async def get_supported_node_types(
 ):
     """
     Get all supported workflow node types and their configurations
-    
+
     Returns:
         Dict: Supported node types with configuration schemas
     """
@@ -526,7 +526,7 @@ async def get_supported_node_types(
                 }
             }
         }
-        
+
         return {
             "node_types": node_types,
             "total_types": len(node_types),
@@ -534,7 +534,7 @@ async def get_supported_node_types(
                 "SEQUENTIAL", "PARALLEL", "HYBRID", "RULES_BASED", "AGENT_BASED"
             ]
         }
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -547,7 +547,7 @@ async def get_workflow_examples(
 ):
     """
     Get example workflow configurations and input data
-    
+
     Returns:
         Dict: Example workflows and data
     """
@@ -609,7 +609,7 @@ async def get_workflow_examples(
                 "expected_outcome": "Exception classified and resolution suggestions provided"
             }
         }
-        
+
         return {
             "examples": examples,
             "usage_instructions": {
@@ -619,7 +619,7 @@ async def get_workflow_examples(
                 "step4": "Monitor execution using /executions/{execution_id} endpoint"
             }
         }
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

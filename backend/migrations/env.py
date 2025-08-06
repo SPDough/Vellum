@@ -91,7 +91,7 @@ def run_migrations_online() -> None:
     """
     # Override sqlalchemy.url in alembic config
     config.set_main_option("sqlalchemy.url", get_database_url())
-    
+
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
@@ -124,7 +124,7 @@ def create_audit_schema():
     try:
         from sqlalchemy import create_engine, text
         engine = create_engine(get_database_url())
-        
+
         with engine.connect() as conn:
             # Create audit schema if it doesn't exist
             conn.execute(text("CREATE SCHEMA IF NOT EXISTS audit"))

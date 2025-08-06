@@ -65,9 +65,9 @@ async def get_current_user(
     db: Session = Depends(get_db)
 ) -> User:
     """Get current authenticated user using simple auth"""
-    
+
     auth_service = AuthFactory.create_auth_service(db)
-    
+
     # Handle both sync and async auth services
     if hasattr(auth_service, 'get_user_by_token'):
         if hasattr(auth_service.get_user_by_token, '__call__'):
@@ -81,20 +81,20 @@ async def get_current_user(
             user = None
     else:
         user = None
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     return user
 
 @router.get("/providers", response_model=AuthProvidersResponse)
 async def get_auth_providers():
     """Get authentication provider info"""
-    
+
     return AuthProvidersResponse(
         current="simple"
     )
@@ -106,10 +106,10 @@ async def login(
     db: Session = Depends(get_db)
 ):
     """Authenticate user using specified or default auth provider"""
-    
+
     client_info = get_client_info(request)
     auth_service = AuthFactory.create_auth_service(db)
-    
+
     try:
         # Handle both sync and async auth services
         if hasattr(auth_service, 'authenticate_user'):
@@ -133,17 +133,17 @@ async def login(
                 result = None
         else:
             result = None
-        
+
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Incorrect email or password"
             )
-        
+
         # Add provider info to response
         result["auth_provider"] = "simple"
         return result
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -158,9 +158,9 @@ async def refresh_token(
     db: Session = Depends(get_db)
 ):
     """Refresh access token using specified or default auth provider"""
-    
+
     auth_service = AuthFactory.create_auth_service(db)
-    
+
     # Handle both sync and async auth services
     if hasattr(auth_service, 'refresh_access_token'):
         if hasattr(auth_service.refresh_access_token, '__call__'):
@@ -173,13 +173,13 @@ async def refresh_token(
             result = None
     else:
         result = None
-    
+
     if not result:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid refresh token"
         )
-        
+
     return result
 
 @router.post("/logout")
@@ -189,13 +189,13 @@ async def logout(
     db: Session = Depends(get_db)
 ):
     """Logout user using specified or default auth provider"""
-    
+
     client_info = get_client_info(request)
     auth_service = AuthFactory.create_auth_service(db)
-    
+
     # For simple auth, use session token; for Keycloak, would need refresh token
     session_token = "current_session"  # Simplified
-    
+
     # Handle both sync and async auth services
     if hasattr(auth_service, 'logout_user'):
         if hasattr(auth_service.logout_user, '__call__'):
@@ -216,22 +216,22 @@ async def logout(
             success = True
     else:
         success = True
-    
+
     return {"message": "Successfully logged out", "provider": "simple"}
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """Get current user information"""
-    
+
     response_data = UserResponse.model_validate(current_user)
     response_data.auth_provider = getattr(current_user, 'external_auth_provider', 'simple')
-    
+
     return response_data
 
 @router.get("/config")
 async def get_auth_config():
     """Get authentication configuration and endpoints"""
-    
+
     config = {
         "current_provider": "simple",
         "simple": {
@@ -246,11 +246,11 @@ async def get_auth_config():
         },
         "endpoints": {
             "login": "/api/auth/login",
-            "refresh": "/api/auth/refresh", 
+            "refresh": "/api/auth/refresh",
             "logout": "/api/auth/logout",
             "me": "/api/auth/me",
             "providers": "/api/auth/providers"
         }
     }
-    
+
     return config

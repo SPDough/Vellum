@@ -52,6 +52,6 @@ def test_dictionary_operations():
     assert test_dict["key1"] == "value1"
     assert "key1" in test_dict
     assert len(test_dict) == 2
-    
+
     test_dict["key3"] = "value3"
     assert len(test_dict) == 3

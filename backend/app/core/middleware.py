@@ -21,25 +21,25 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     """
     Global error handling middleware for consistent error responses
     """
-    
+
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         request_id = str(uuid4())
         request.state.request_id = request_id
-        
+
         try:
             # Add request timing
             start_time = time.time()
-            
+
             # Process the request
             response = await call_next(request)
-            
+
             # Add timing header
             process_time = time.time() - start_time
             response.headers["X-Process-Time"] = str(process_time)
             response.headers["X-Request-ID"] = request_id
-            
+
             return response
-            
+
         except HTTPException as http_exc:
             # FastAPI HTTPExceptions - preserve them
             return JSONResponse(
@@ -54,7 +54,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                 },
                 headers=http_exc.headers
             )
-            
+
         except ValidationError as validation_exc:
             # Pydantic validation errors
             logger.error(
@@ -75,7 +75,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                     }
                 }
             )
-            
+
         except Exception as exc:
             # Catch-all for unexpected errors
             logger.error(
@@ -86,7 +86,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                 exception=str(exc),
                 traceback=traceback.format_exc()
             )
-            
+
             # In development, include more details
             error_detail = {
                 "code": 500,
@@ -94,7 +94,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                 "type": "internal_error",
                 "request_id": request_id
             }
-            
+
             # Add debug info in development
             try:
                 from app.core.config import get_settings
@@ -106,7 +106,7 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
                     }
             except:
                 pass  # Fail silently if config unavailable
-            
+
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 content={"error": error_detail}
@@ -117,21 +117,21 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """
     Add security headers to all responses
     """
-    
+
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         response = await call_next(request)
-        
+
         # Security headers
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        
+
         # Remove server header for security
         if "server" in response.headers:
             del response.headers["server"]
-            
+
         return response
 
 
@@ -139,7 +139,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """
     Log incoming requests and responses for audit purposes
     """
-    
+
     def __init__(
         self,
         app,
@@ -156,15 +156,15 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         self.log_request_body = log_request_body
         self.log_response_body = log_response_body
         self.exclude_paths = exclude_paths or {"/health", "/metrics", "/docs", "/openapi.json"}
-    
+
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Skip logging for excluded paths
         if request.url.path in self.exclude_paths:
             return await call_next(request)
-        
+
         request_id = getattr(request.state, 'request_id', str(uuid4()))
         start_time = time.time()
-        
+
         # Log request
         if self.log_requests:
             request_data = {
@@ -176,7 +176,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 "content_type": request.headers.get("content-type"),
                 "content_length": request.headers.get("content-length")
             }
-            
+
             # Log request body if enabled (be careful with sensitive data)
             if self.log_request_body and request.method in ["POST", "PUT", "PATCH"]:
                 try:
@@ -189,12 +189,12 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                             request_data["body_size"] = len(body)
                 except Exception:
                     request_data["body"] = "Failed to read body"
-            
+
             logger.info("Incoming request", **request_data)
-        
+
         # Process request
         response = await call_next(request)
-        
+
         # Log response
         if self.log_responses:
             process_time = time.time() - start_time
@@ -204,9 +204,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 "process_time": round(process_time, 3),
                 "response_size": response.headers.get("content-length")
             }
-            
+
             logger.info("Request completed", **response_data)
-        
+
         return response
 
 
@@ -215,7 +215,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
     Simple rate limiting middleware (in-memory, not distributed)
     For production, use Redis-based rate limiting
     """
-    
+
     def __init__(
         self,
         app,
@@ -229,23 +229,23 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         self.burst_limit = burst_limit
         self.exclude_paths = exclude_paths or {"/health", "/metrics"}
         self.request_counts: Dict[str, Dict[str, Any]] = {}
-    
+
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Skip rate limiting for excluded paths
         if request.url.path in self.exclude_paths:
             return await call_next(request)
-        
+
         # Get client identifier (IP address)
         client_ip = request.client.host if request.client else "unknown"
         current_time = time.time()
-        
+
         # Clean old entries (older than 1 minute)
         cutoff_time = current_time - 60
         self.request_counts = {
             ip: data for ip, data in self.request_counts.items()
             if data["last_request"] > cutoff_time
         }
-        
+
         # Initialize or update client data
         if client_ip not in self.request_counts:
             self.request_counts[client_ip] = {
@@ -253,18 +253,18 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
                 "last_request": current_time,
                 "window_start": current_time
             }
-        
+
         client_data = self.request_counts[client_ip]
-        
+
         # Reset window if it's been more than a minute
         if current_time - client_data["window_start"] >= 60:
             client_data["count"] = 0
             client_data["window_start"] = current_time
-        
+
         # Check rate limit
         client_data["count"] += 1
         client_data["last_request"] = current_time
-        
+
         if client_data["count"] > self.requests_per_minute:
             logger.warning(
                 "Rate limit exceeded",
@@ -284,7 +284,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
                 },
                 headers={"Retry-After": "60"}
             )
-        
+
         return await call_next(request)
 
 
