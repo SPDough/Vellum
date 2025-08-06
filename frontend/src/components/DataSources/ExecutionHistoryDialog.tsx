@@ -31,7 +31,8 @@ import {
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 
-import { dataSourceService, DataSourceConfiguration } from '@/services/dataSourceService';
+import { dataSourceService } from '@/services/dataSourceService';
+import type { DataSourceConfiguration } from '@/services/dataSourceService';
 
 interface ExecutionHistoryDialogProps {
   open: boolean;
