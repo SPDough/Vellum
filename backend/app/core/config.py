@@ -46,9 +46,13 @@ class Settings(BaseSettings):
 
     # Authentication
     secret_key: str = Field(
-        default="changeme-secret-key-for-production", alias="SECRET_KEY"
+        default="changeme-secret-key-for-production-use-32-chars-min",
+        alias="SECRET_KEY",
     )
-    jwt_secret_key: str = Field(default="changeme", alias="JWT_SECRET_KEY")
+    jwt_secret_key: str = Field(
+        default="changeme-jwt-secret-key-for-production-use-32-chars-min",
+        alias="JWT_SECRET_KEY",
+    )
 
     # Rules Engine
     drools_url: str = Field(default="http://drools:8080", alias="DROOLS_URL")
