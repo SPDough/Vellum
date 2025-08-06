@@ -3,7 +3,9 @@ Base service classes and interfaces for Otomeshon Banking Platform
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, TypeVar, Generic, Protocol, Callable
+
+from typing import Any, Callable, Dict, List, Optional, TypeVar, Generic, Protocol
+
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum

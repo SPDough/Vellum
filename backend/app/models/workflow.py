@@ -59,6 +59,24 @@ class NodeType(str, Enum):
     API_CALL = "API_CALL"
 
 
+class WorkflowNode(Base):
+    """Individual workflow node definition."""
+
+    __tablename__ = "workflow_nodes"
+
+    id = Column(String, primary_key=True)
+    workflow_definition_id = Column(
+        String, ForeignKey("workflow_definitions.id"), nullable=False, index=True
+    )
+    node_id = Column(String, nullable=False)
+    node_type = Column(String, nullable=False)
+    node_name = Column(String, nullable=False)
+    node_config = Column(JSON)
+    
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 # SQLAlchemy Models
 class WorkflowDefinition(Base):
     """Definition of automated workflows based on SOPs."""

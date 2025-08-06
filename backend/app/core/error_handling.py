@@ -5,7 +5,7 @@ Provides secure error responses that don't leak sensitive information.
 
 import logging
 import traceback
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware

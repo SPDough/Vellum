@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -250,7 +250,7 @@ async def validate_workflow_prompt(prompt: str) -> Dict:
     """Validate and suggest improvements for workflow prompts."""
     try:
         # Basic validation rules
-        validation_results = {
+        validation_results: Dict[str, Any] = {
             "is_valid": True,
             "suggestions": [],
             "warnings": [],
@@ -264,13 +264,13 @@ async def validate_workflow_prompt(prompt: str) -> Dict:
             validation_results["score"] -= 30
 
         # Check for specific data analysis keywords
-        analysis_keywords = ["analyze", "calculate", "identify", "compare", "find", "detect", "summarize"]
+        analysis_keywords: List[str] = ["analyze", "calculate", "identify", "compare", "find", "detect", "summarize"]
         if not any(keyword in prompt.lower() for keyword in analysis_keywords):
             validation_results["suggestions"].append("Consider adding specific action words like 'analyze', 'calculate', or 'identify'.")
             validation_results["score"] -= 10
 
         # Check for data-specific terms
-        data_terms = ["data", "dataset", "columns", "rows", "values", "statistics"]
+        data_terms: List[str] = ["data", "dataset", "columns", "rows", "values", "statistics"]
         if not any(term in prompt.lower() for term in data_terms):
             validation_results["suggestions"].append("Include specific references to data elements you want to analyze.")
             validation_results["score"] -= 10

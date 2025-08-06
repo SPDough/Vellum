@@ -181,4 +181,5 @@ class InputValidator:
         if page > 10000:
             raise ValidationError("Page number too large")
 
+        
         return page, page_size

@@ -2,7 +2,8 @@
 Service factory implementation for Otomeshon Banking Platform
 """
 
-from typing import Dict, Type, Optional, Any
+
+from typing import Optional, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.interfaces import (
@@ -28,8 +29,8 @@ class ServiceFactory(IServiceFactory):
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
         self.settings = get_settings()
-        self._service_cache: Dict[str, Any] = {}
 
+        self._service_cache: dict[str, Any] = {}
     def create_trade_service(self) -> ITradeService:
         """Create trade service instance"""
         if 'trade_service' not in self._service_cache:
@@ -42,10 +43,8 @@ class ServiceFactory(IServiceFactory):
     def create_sop_service(self) -> ISOPService:
         """Create SOP service instance"""
         if 'sop_service' not in self._service_cache:
-            from app.services.sop_service import SOPService
-            self._service_cache['sop_service'] = SOPService(
-                db_session=self.db_session
-            )
+            from app.services.sop_service import SOPExecutionService as SOPService
+            self._service_cache['sop_service'] = SOPService()
         return self._service_cache['sop_service']
 
     def create_risk_service(self) -> IRiskService:
@@ -157,7 +156,7 @@ class BankingServiceRegistry:
     """
 
     def __init__(self):
-        self._factories: Dict[str, ServiceFactory] = {}
+        self._factories: dict[str, ServiceFactory] = {}
         self._environment_configs = {
             'development': {
                 'cache_enabled': True,
@@ -185,9 +184,13 @@ class BankingServiceRegistry:
 
     def get_factory(self, environment: str) -> ServiceFactory:
         """Get service factory for environment"""
-        return self._factories.get(environment)
 
-    def get_environment_config(self, environment: str) -> Dict:
+        factory = self._factories.get(environment)
+        if factory is None:
+            raise ValueError(f"No factory registered for environment: {environment}")
+        return factory
+    
+    def get_environment_config(self, environment: str) -> dict[str, Any]:
         """Get configuration for environment"""
         return self._environment_configs.get(environment, {})
 
@@ -260,7 +263,7 @@ def get_service_factory(db_session: AsyncSession) -> ServiceFactory:
     return ServiceFactory(db_session)
 
 
-def get_banking_services(db_session: AsyncSession) -> Dict[str, any]:
+def get_banking_services(db_session: AsyncSession) -> dict[str, Any]:
     """Get all banking services in a dictionary"""
     factory = ServiceFactory(db_session)
 

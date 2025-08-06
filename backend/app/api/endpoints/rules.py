@@ -89,7 +89,7 @@ async def get_rules_status(
             }
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=500,
             detail=f"Failed to get rules status: {str(e)}"
         )
 

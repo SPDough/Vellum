@@ -171,8 +171,9 @@ async def get_data_source_status(
         recent_executions = await service.get_execution_history(config_id, limit=5)
 
         # Calculate success rate
-        success_rate = 0
+        success_rate = 0.0
         if config.total_runs > 0:
+
             success_rate = (config.successful_runs / config.total_runs) * 100
 
         return {

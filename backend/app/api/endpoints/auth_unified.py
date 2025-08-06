@@ -34,7 +34,9 @@ class RefreshTokenResponse(BaseModel):
     token_type: str
     expires_in: int
 
+
 # UserResponse now imported from app.schemas
+
 
 class AuthProvidersResponse(BaseModel):
     current: str
@@ -42,7 +44,7 @@ class AuthProvidersResponse(BaseModel):
 def get_client_info(request: Request) -> Dict[str, str]:
     """Extract client information from request"""
     return {
-        "ip_address": request.client.host if request.client else None,
+        "ip_address": request.client.host if request.client else "",
         "user_agent": request.headers.get("user-agent", "")
     }
 
@@ -239,4 +241,6 @@ async def get_auth_config():
         }
     }
 
+
     return config
+

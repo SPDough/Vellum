@@ -54,6 +54,15 @@ class Priority(str, Enum):
     URGENT = "URGENT"
 
 
+class ExceptionSeverity(str, Enum):
+    """Exception severity levels."""
+
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
 # SQLAlchemy Models
 class Trade(Base):
     """Core trade entity for post-trade processing."""

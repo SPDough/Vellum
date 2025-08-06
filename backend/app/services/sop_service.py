@@ -403,7 +403,7 @@ class SOPExecutionService:
             output_data.update({
                 "decision_made": "proceed",
                 "decision_rationale": execution_notes or "Standard processing",
-                "requires_review": True
+                "requires_review": "True"
             })
 
         logger.info(f"Manual step executed: {step_title}")
