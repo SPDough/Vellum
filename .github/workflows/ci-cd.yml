@@ -243,6 +243,7 @@ jobs:
         file: ./frontend/Dockerfile
         target: production
         push: true
+        no-cache: true
         tags: ${{ steps.meta-frontend.outputs.tags }}
         labels: ${{ steps.meta-frontend.outputs.labels }}
 
