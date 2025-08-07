@@ -66,6 +66,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: development
     ports:
       - "3000:3000"
     environment:
@@ -78,7 +79,7 @@ services:
       - ./frontend/public:/app/public
     depends_on:
       - backend
-    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+    command: ["npm", "run", "dev"]
 
 volumes:
   db_data:
