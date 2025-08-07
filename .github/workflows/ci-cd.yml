@@ -168,6 +168,7 @@ jobs:
       with:
         sarif_file: 'trivy-results.sarif'
       if: always()
+      continue-on-error: true
 
   # Build and Push Docker Images
   build-and-push:
