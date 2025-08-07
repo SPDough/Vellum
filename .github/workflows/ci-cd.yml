@@ -163,21 +163,14 @@ jobs:
         format: 'sarif'
         output: 'trivy-results.sarif'
 
-    - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: 'trivy-results.sarif'
-      if: always()
-      continue-on-error: true
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
     - name: Display scan results
       run: |
         echo "=== Trivy Security Scan Results ==="
         if [ -f "trivy-results.sarif" ]; then
           echo "Scan completed successfully"
           echo "Results saved to trivy-results.sarif"
+          echo "Scan summary:"
+          cat trivy-results.sarif | head -20
         else
           echo "No scan results found"
         fi
