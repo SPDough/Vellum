@@ -169,6 +169,19 @@ jobs:
         sarif_file: 'trivy-results.sarif'
       if: always()
       continue-on-error: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Display scan results
+      run: |
+        echo "=== Trivy Security Scan Results ==="
+        if [ -f "trivy-results.sarif" ]; then
+          echo "Scan completed successfully"
+          echo "Results saved to trivy-results.sarif"
+        else
+          echo "No scan results found"
+        fi
+      if: always()
 
   # Build and Push Docker Images
   build-and-push:
