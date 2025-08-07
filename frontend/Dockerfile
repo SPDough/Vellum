@@ -54,7 +54,6 @@ RUN apk add --no-cache curl
 # Copy built application from build stage
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
-COPY --from=build /app/public ./public
 
 # Create non-root user
 RUN addgroup -g 1001 -S nextjs && \
