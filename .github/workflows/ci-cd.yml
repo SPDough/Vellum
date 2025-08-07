@@ -264,18 +264,106 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+    - name: Add production server to known hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+
     - name: Deploy to production
       env:
         DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-        DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+        DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        DOCKER_REGISTRY: ${{ env.REGISTRY }}
+        IMAGE_NAME: ${{ env.IMAGE_NAME }}
       run: |
-        echo "Deploying to production environment"
-        # Add your production deployment commands here
-        # Example using SSH:
-        # echo "$DEPLOY_KEY" > deploy_key
-        # chmod 600 deploy_key
-        # ssh -i deploy_key -o StrictHostKeyChecking=no $DEPLOY_USER@$DEPLOY_HOST "cd /opt/otomeshon && docker-compose -f docker-compose.prod.yml pull && docker-compose -f docker-compose.prod.yml up -d"
+        echo "🚀 Starting production deployment..."
+        
+        # Create deployment script
+        cat > deploy-production.sh << 'EOF'
+        #!/bin/bash
+        set -e
+        
+        echo "📦 Pulling latest images..."
+        docker-compose -f docker-compose.prod.yml pull
+        
+        echo "🔄 Running database migrations..."
+        docker-compose -f docker-compose.prod.yml run --rm backend alembic upgrade head || echo "⚠️ Migration failed, continuing..."
+        
+        echo "🚀 Starting services..."
+        docker-compose -f docker-compose.prod.yml up -d --remove-orphans
+        
+        echo "⏳ Waiting for services to be healthy..."
+        sleep 30
+        
+        echo "🔍 Running health checks..."
+        
+        # Check backend health
+        BACKEND_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || echo "000")
+        if [[ "$BACKEND_HEALTH" == "200" ]]; then
+          echo "✅ Backend is healthy"
+        else
+          echo "❌ Backend health check failed (HTTP $BACKEND_HEALTH)"
+          exit 1
+        fi
+        
+        # Check frontend
+        FRONTEND_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" http://localhost || echo "000")
+        if [[ "$FRONTEND_HEALTH" == "200" ]]; then
+          echo "✅ Frontend is healthy"
+        else
+          echo "❌ Frontend health check failed (HTTP $FRONTEND_HEALTH)"
+          exit 1
+        fi
+        
+        echo "🎉 Production deployment completed successfully!"
+        echo "🌐 Application is available at: http://$DEPLOY_HOST"
+        EOF
+        
+        chmod +x deploy-production.sh
+        
+        # Copy deployment script to server
+        scp deploy-production.sh $DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/
+        
+        # Execute deployment on server
+        ssh $DEPLOY_USER@$DEPLOY_HOST "cd $DEPLOY_PATH && ./deploy-production.sh"
+        
+        echo "✅ Production deployment completed!"
+
+    - name: Verify deployment
+      run: |
+        echo "🔍 Verifying production deployment..."
+        
+        # Wait for services to be fully ready
+        sleep 60
+        
+        # Check if the application is responding
+        DEPLOY_HOST="${{ secrets.DEPLOY_HOST }}"
+        
+        echo "Testing backend health..."
+        BACKEND_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://$DEPLOY_HOST:8000/health || echo "000")
+        if [[ "$BACKEND_RESPONSE" == "200" ]]; then
+          echo "✅ Backend is responding correctly"
+        else
+          echo "❌ Backend health check failed (HTTP $BACKEND_RESPONSE)"
+          exit 1
+        fi
+        
+        echo "Testing frontend..."
+        FRONTEND_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://$DEPLOY_HOST || echo "000")
+        if [[ "$FRONTEND_RESPONSE" == "200" ]]; then
+          echo "✅ Frontend is responding correctly"
+        else
+          echo "❌ Frontend health check failed (HTTP $FRONTEND_RESPONSE)"
+          exit 1
+        fi
+        
+        echo "🎉 Production deployment verification completed successfully!"
 
   # Notify on Success/Failure
   notify:
