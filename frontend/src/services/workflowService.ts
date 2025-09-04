@@ -160,6 +160,15 @@ export const workflowService = {
     return api.post(`/workflows/langgraph/${workflowId}/execute`, { input_data: inputData });
   },
 
+  // Update workflow configuration
+  async updateLangchainWorkflowConfiguration(workflowId: string, configuration: any): Promise<any> {
+    return api.put(`/workflows/langchain/${workflowId}/configuration`, configuration);
+  },
+
+  async updateLanggraphWorkflowConfiguration(workflowId: string, configuration: any): Promise<any> {
+    return api.put(`/workflows/langgraph/${workflowId}/configuration`, configuration);
+  },
+
   // Get Langchain workflow info
   async getLangchainWorkflowInfo(workflowId: string): Promise<any> {
     return api.get(`/workflows/langchain/${workflowId}/info`);

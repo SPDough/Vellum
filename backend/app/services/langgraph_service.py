@@ -392,17 +392,174 @@ class LangGraphService:
                 ],
             }
 
+    async def update_workflow_configuration(
+        self, workflow_id: str, configuration: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Update workflow configuration."""
+        if workflow_id not in self.graphs:
+            raise ValueError(f"Workflow {workflow_id} not found")
+
+        graph = self.graphs[workflow_id]
+        
+        # Store configuration for future reference
+        graph.configuration = configuration
+        
+        logger.info(f"Updated configuration for Langgraph workflow: {workflow_id}")
+        
+        return await self.get_workflow_info(workflow_id)
+
     async def get_workflow_info(self, workflow_id: str) -> Optional[Dict[str, Any]]:
-        """Get information about a workflow."""
+        """Get detailed information about a workflow including configuration."""
         if workflow_id not in self.graphs:
             return None
 
-        return {
+        graph = self.graphs[workflow_id]
+        
+        # Get basic workflow info
+        workflow_info = {
             "workflow_id": workflow_id,
             "status": "ACTIVE",
-            "node_count": len(self.graphs[workflow_id].nodes),
+            "workflow_type": "LANGGRAPH",
+            "node_count": len(graph.nodes),
             "created_at": datetime.utcnow().isoformat(),
         }
+        
+        # Add graph structure information
+        workflow_info["graph_config"] = {
+            "type": type(graph).__name__,
+            "nodes": list(graph.nodes.keys()),
+            "has_entry_point": hasattr(graph, 'entry_point'),
+            "has_finish_point": hasattr(graph, 'finish_point'),
+        }
+        
+        # Add node details
+        workflow_info["nodes"] = []
+        for node_id, node in graph.nodes.items():
+            node_info = {
+                "id": node_id,
+                "type": type(node).__name__,
+                "name": getattr(node, 'name', node_id),
+                "description": getattr(node, '__doc__', 'No description available'),
+                "config": getattr(node, 'config', {}),
+                "position": {"x": 0, "y": 0},  # Default position
+                "inputs": [],
+                "outputs": [],
+            }
+            
+            # Add specific node type information
+            if isinstance(node, FIBOPositionMappingNode):
+                node_info["type"] = "FIBO_MAPPING"
+                node_info["name"] = "FIBO Position Mapping"
+                node_info["description"] = "Maps position data to FIBO ontology"
+                node_info["inputs"] = [
+                    {"id": "positions", "name": "Positions", "dataType": "array", "required": True},
+                    {"id": "fibo_context", "name": "FIBO Context", "dataType": "object", "required": False},
+                ]
+                node_info["outputs"] = [
+                    {"id": "mapped_positions", "name": "Mapped Positions", "dataType": "array", "required": True},
+                    {"id": "mapping_metadata", "name": "Mapping Metadata", "dataType": "object", "required": True},
+                ]
+            elif isinstance(node, TradeValidationNode):
+                node_info["type"] = "TRADE_VALIDATION"
+                node_info["name"] = "Trade Validation"
+                node_info["description"] = "Validates trade data using rule-based analysis"
+                node_info["inputs"] = [
+                    {"id": "trade", "name": "Trade Data", "dataType": "object", "required": True},
+                    {"id": "validation_rules", "name": "Validation Rules", "dataType": "array", "required": False},
+                ]
+                node_info["outputs"] = [
+                    {"id": "validation_result", "name": "Validation Result", "dataType": "object", "required": True},
+                    {"id": "validation_details", "name": "Validation Details", "dataType": "object", "required": True},
+                ]
+            
+            workflow_info["nodes"].append(node_info)
+        
+        # Add default parameters based on workflow type
+        if "fibo_mapping" in graph.nodes:
+            workflow_info["parameters"] = [
+                {
+                    "name": "positions_data",
+                    "type": "array",
+                    "value": [],
+                    "description": "Array of position data to map",
+                    "required": True,
+                },
+                {
+                    "name": "fibo_version",
+                    "type": "select",
+                    "value": "latest",
+                    "description": "FIBO ontology version to use",
+                    "required": False,
+                    "options": ["latest", "2023", "2022", "2021"],
+                },
+                {
+                    "name": "mapping_strategy",
+                    "type": "select",
+                    "value": "automatic",
+                    "description": "Mapping strategy to use",
+                    "required": False,
+                    "options": ["automatic", "semi_automatic", "manual"],
+                },
+            ]
+        elif "trade_validation" in graph.nodes:
+            workflow_info["parameters"] = [
+                {
+                    "name": "trade_data",
+                    "type": "object",
+                    "value": {},
+                    "description": "Trade data to validate",
+                    "required": True,
+                },
+                {
+                    "name": "validation_rules",
+                    "type": "array",
+                    "value": [],
+                    "description": "Custom validation rules to apply",
+                    "required": False,
+                },
+                {
+                    "name": "validation_level",
+                    "type": "select",
+                    "value": "standard",
+                    "description": "Validation level to apply",
+                    "required": False,
+                    "options": ["basic", "standard", "comprehensive", "regulatory"],
+                },
+            ]
+        
+        # Add execution settings
+        workflow_info["execution_settings"] = {
+            "maxConcurrentExecutions": 3,
+            "executionTimeoutMinutes": 60,
+            "retryPolicy": {
+                "maxAttempts": 2,
+                "backoffStrategy": "exponential",
+                "delaySeconds": 10,
+                "maxDelaySeconds": 600,
+            },
+            "notificationSettings": {
+                "onSuccess": True,
+                "onFailure": True,
+                "onLongRunning": True,
+                "recipients": [],
+                "channels": ["email"],
+            },
+            "performanceSettings": {
+                "enableCaching": True,
+                "cacheTimeoutSeconds": 7200,
+                "enableParallelProcessing": True,
+                "maxParallelNodes": 5,
+                "enableOptimization": True,
+            },
+            "securitySettings": {
+                "enableEncryption": False,
+                "enableAuditLogging": True,
+                "restrictAccess": False,
+                "allowedUsers": [],
+            },
+        }
+        
+        return workflow_info
 
     def list_workflows(self) -> List[Dict[str, Any]]:
         """List all available workflows."""

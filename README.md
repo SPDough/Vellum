@@ -265,6 +265,7 @@ ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
 - [x] Monitoring with Prometheus + Grafana
 - [x] Production deployment infrastructure
 - [x] Comprehensive API documentation
+- [x] Azure migration planning and documentation
 
 ### 🚧 In Progress
 - [ ] React frontend debugging (mounting issues)
@@ -278,12 +279,25 @@ ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
 - [ ] Real-time collaboration
 - [ ] Advanced AI integrations
 - [ ] Mobile responsive design
+- [ ] Azure production deployment (see [Azure Migration Documentation](docs/azure_migration/README.md))
 
 ## 🐛 Known Issues
 
 1. **Frontend React Mounting** - The React frontend has import conflicts preventing proper mounting
 2. **Authentication** - Currently using demo auto-login for development
 3. **HTTPS** - Production deployment needs SSL certificate configuration
+
+## 🚀 Production Deployment
+
+### Azure Migration
+All Azure migration planning and documentation has been organized in the [`docs/azure_migration/`](docs/azure_migration/README.md) folder to keep development work uncluttered. This includes:
+
+- 📋 Migration planning documents
+- 🔧 Azure configuration files
+- 🚀 Deployment scripts
+- 💰 Cost considerations
+
+**Note**: Azure resources will incur costs when created. The migration folder is for planning only - use when ready for production deployment.
 
 ## 📞 Support
 

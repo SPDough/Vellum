@@ -46,6 +46,8 @@ import {
   AccountTree,
   Psychology,
   Code,
+  Settings,
+  Tune,
 } from '@mui/icons-material';
 import { workflowService } from '../../services/workflowService';
 
@@ -207,6 +209,17 @@ const WorkflowManagement: React.FC = () => {
             />
           </Box>
           <Box>
+            <Tooltip title="Configure Workflow">
+              <IconButton
+                color="primary"
+                onClick={() => {
+                  const workflowType = type === 'LANGCHAIN' ? 'langchain' : 'langgraph';
+                  window.location.href = `/workflow-configuration?id=${workflow.workflow_id}&type=${workflowType}`;
+                }}
+              >
+                <Settings />
+              </IconButton>
+            </Tooltip>
             <Tooltip title="Execute Workflow">
               <IconButton
                 color="primary"
