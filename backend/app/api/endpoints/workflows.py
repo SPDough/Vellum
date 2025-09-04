@@ -461,6 +461,38 @@ async def execute_langgraph_workflow(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.put("/langchain/{workflow_id}/configuration")
+async def update_langchain_workflow_configuration(
+    workflow_id: str,
+    configuration: Dict[str, Any],
+    langchain_service: LangchainService = Depends(get_langchain_service),
+) -> Dict[str, Any]:
+    """Update Langchain workflow configuration."""
+    try:
+        result = await langchain_service.update_workflow_configuration(workflow_id, configuration)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/langgraph/{workflow_id}/configuration")
+async def update_langgraph_workflow_configuration(
+    workflow_id: str,
+    configuration: Dict[str, Any],
+    langgraph_service: LangGraphService = Depends(get_langgraph_service),
+) -> Dict[str, Any]:
+    """Update Langgraph workflow configuration."""
+    try:
+        result = await langgraph_service.update_workflow_configuration(workflow_id, configuration)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/langchain/{workflow_id}/info")
 async def get_langchain_workflow_info(
     workflow_id: str,

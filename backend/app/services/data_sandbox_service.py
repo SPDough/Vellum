@@ -269,17 +269,8 @@ class DataSandboxService:
 
         self.db.add(data_record)
 
-        # Update data source record count
-        data_source.record_count = (
-            self.db.query(DataRecord)
-            .filter(DataRecord.data_source_id == data_source.id)
-            .count()
-            + 1
-        )
-
-        # Update data source record count efficiently
+        # Update data source record count efficiently (avoid N+1 query)
         data_source.record_count = (data_source.record_count or 0) + 1
-
         data_source.last_updated = datetime.utcnow()
 
         self.db.commit()

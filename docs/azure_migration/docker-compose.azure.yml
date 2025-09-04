@@ -1,0 +1,312 @@
+version: '3.8'
+
+services:
+  # Frontend - Azure Container Apps compatible
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    image: ${ACR_LOGIN_SERVER:-otomeshonacr.azurecr.io}/otomeshon-frontend:latest
+    container_name: otomeshon-frontend-azure
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-https://otomeshon-api.azurewebsites.net}
+      - REACT_APP_KEYCLOAK_URL=${REACT_APP_KEYCLOAK_URL:-https://otomeshon-keycloak.azurewebsites.net}
+      - REACT_APP_KEYCLOAK_REALM=${REACT_APP_KEYCLOAK_REALM:-otomeshon}
+      - REACT_APP_KEYCLOAK_CLIENT_ID=${REACT_APP_KEYCLOAK_CLIENT_ID:-otomeshon-client}
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - otomeshon-azure-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Backend - Azure Container Apps compatible
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    image: ${ACR_LOGIN_SERVER:-otomeshonacr.azurecr.io}/otomeshon-backend:latest
+    container_name: otomeshon-backend-azure
+    environment:
+      # Core Application
+      - ENVIRONMENT=production
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      
+      # Azure Database for PostgreSQL
+      - DATABASE_URL=${DATABASE_URL:-postgresql://${AZURE_POSTGRES_USER}:${AZURE_POSTGRES_PASSWORD}@${AZURE_POSTGRES_SERVER}.postgres.database.azure.com:5432/${AZURE_POSTGRES_DATABASE}?sslmode=require}
+      
+      # Azure Cache for Redis
+      - REDIS_URL=${REDIS_URL:-rediss://:${AZURE_REDIS_PASSWORD}@${AZURE_REDIS_HOST}:${AZURE_REDIS_PORT}/0?ssl=true}
+      
+      # Azure Key Vault
+      - AZURE_KEY_VAULT_URL=${AZURE_KEY_VAULT_URL}
+      - AZURE_KEY_VAULT_TENANT_ID=${AZURE_KEY_VAULT_TENANT_ID}
+      - AZURE_KEY_VAULT_CLIENT_ID=${AZURE_KEY_VAULT_CLIENT_ID}
+      - AZURE_KEY_VAULT_CLIENT_SECRET=${AZURE_KEY_VAULT_CLIENT_SECRET}
+      
+      # Azure Storage
+      - AZURE_STORAGE_CONNECTION_STRING=${AZURE_STORAGE_CONNECTION_STRING}
+      - AZURE_STORAGE_ACCOUNT_NAME=${AZURE_STORAGE_ACCOUNT_NAME}
+      - AZURE_STORAGE_ACCOUNT_KEY=${AZURE_STORAGE_ACCOUNT_KEY}
+      
+      # Azure Monitor / Application Insights
+      - APPLICATIONINSIGHTS_CONNECTION_STRING=${APPLICATIONINSIGHTS_CONNECTION_STRING}
+      - APPLICATIONINSIGHTS_INSTRUMENTATION_KEY=${APPLICATIONINSIGHTS_INSTRUMENTATION_KEY}
+      
+      # Azure Service Bus (Kafka replacement)
+      - AZURE_SERVICE_BUS_CONNECTION_STRING=${AZURE_SERVICE_BUS_CONNECTION_STRING}
+      - AZURE_SERVICE_BUS_NAMESPACE=${AZURE_SERVICE_BUS_NAMESPACE}
+      
+      # Azure Cosmos DB (Neo4j replacement)
+      - AZURE_COSMOS_DB_ENDPOINT=${AZURE_COSMOS_DB_ENDPOINT}
+      - AZURE_COSMOS_DB_KEY=${AZURE_COSMOS_DB_KEY}
+      - AZURE_COSMOS_DB_DATABASE=${AZURE_COSMOS_DB_DATABASE}
+      
+      # External Services (if not using Azure alternatives)
+      - NEO4J_URL=${NEO4J_URL:-bolt://neo4j:7687}
+      - NEO4J_USER=${NEO4J_USER:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      - TEMPORAL_HOST=${TEMPORAL_HOST:-temporal}
+      - TEMPORAL_PORT=${TEMPORAL_PORT:-7233}
+      
+      # AI/ML Services
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      
+      # Authentication
+      - KEYCLOAK_URL=${KEYCLOAK_URL:-http://keycloak:8080}
+      - DROOLS_URL=${DROOLS_URL:-http://drools:8080}
+      
+      # Observability
+      - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4318}
+      - OTEL_SERVICE_NAME=${OTEL_SERVICE_NAME:-otomeshon-api}
+      
+      # LangChain
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-true}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT:-otomeshon}
+      
+      # CORS
+      - CORS_ORIGINS=${CORS_ORIGINS:-https://otomeshon.azurewebsites.net,https://www.otomeshon.azurewebsites.net}
+    ports:
+      - "8000:8000"
+    networks:
+      - otomeshon-azure-network
+    depends_on:
+      - neo4j
+      - kafka
+      - temporal
+      - keycloak
+      - jaeger
+      - ollama
+      - drools
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Neo4j (if not using Azure Cosmos DB)
+  neo4j:
+    image: neo4j:5.23-enterprise
+    container_name: otomeshon-neo4j-azure
+    environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-changeme}
+      - NEO4J_server_memory_heap_max__size=4G
+      - NEO4J_PLUGINS=["apoc", "gds"]
+      - NEO4J_db_query__cache__type=none
+      - NEO4J_dbms_security_procedures_unrestricted=gds.*,apoc.*
+    ports:
+      - "7687:7687"
+      - "7474:7474"
+    volumes:
+      - neo4j_azure_data:/data
+      - neo4j_azure_plugins:/plugins
+    networks:
+      - otomeshon-azure-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "${NEO4J_PASSWORD:-changeme}", "RETURN 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Apache Kafka (if not using Azure Service Bus)
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: otomeshon-kafka-azure
+    environment:
+      - KAFKA_ENABLE_KRAFT=yes
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_azure_data:/bitnami/kafka
+    networks:
+      - otomeshon-azure-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Temporal (if not using Azure Durable Functions)
+  temporal:
+    image: temporalio/auto-setup:1.25
+    container_name: otomeshon-temporal-azure
+    environment:
+      - DB=postgresql
+      - POSTGRES_USER=${AZURE_POSTGRES_USER:-otomeshon}
+      - POSTGRES_PWD=${AZURE_POSTGRES_PASSWORD}
+      - POSTGRES_SEEDS=${AZURE_POSTGRES_SERVER:-db}.postgres.database.azure.com
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+    ports:
+      - "7233:7233"
+      - "8233:8233"
+    networks:
+      - otomeshon-azure-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "temporal:7233", "cluster", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Keycloak (if not using Azure AD B2C)
+  keycloak:
+    image: keycloak/keycloak:25.0
+    container_name: otomeshon-keycloak-azure
+    command: start-dev --http-port=8080 --hostname-strict=false
+    environment:
+      - KC_DB=postgres
+      - KC_DB_URL=jdbc:postgresql://${AZURE_POSTGRES_SERVER:-db}.postgres.database.azure.com:5432/${AZURE_POSTGRES_DATABASE:-otomeshon}?sslmode=require
+      - KC_DB_USERNAME=${AZURE_POSTGRES_USER:-otomeshon}
+      - KC_DB_PASSWORD=${AZURE_POSTGRES_PASSWORD}
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN:-admin}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      - KC_HEALTH_ENABLED=true
+    ports:
+      - "8080:8080"
+    networks:
+      - otomeshon-azure-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Jaeger (if not using Azure Application Insights)
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: otomeshon-jaeger-azure
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - otomeshon-azure-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:16686/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Ollama (if not using Azure OpenAI)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: otomeshon-ollama-azure
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_azure_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - otomeshon-azure-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Drools (if not using Azure Logic Apps)
+  drools:
+    image: quay.io/kiegroup/kogito-runtime-jvm:latest
+    container_name: otomeshon-drools-azure
+    ports:
+      - "8090:8080"
+    environment:
+      - QUARKUS_HTTP_PORT=8080
+    volumes:
+      - ./drools:/home/kogito/serverless-workflow-project/src/main/resources
+    networks:
+      - otomeshon-azure-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/q/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # dbt for ELT transformations
+  dbt:
+    build: ./dbt
+    container_name: otomeshon-dbt-azure
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://${AZURE_POSTGRES_USER}:${AZURE_POSTGRES_PASSWORD}@${AZURE_POSTGRES_SERVER}.postgres.database.azure.com:5432/${AZURE_POSTGRES_DATABASE}?sslmode=require}
+      - NEO4J_URL=${NEO4J_URL:-bolt://neo4j:7687}
+      - NEO4J_USER=${NEO4J_USER:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+    volumes:
+      - ./dbt:/usr/app/dbt
+    networks:
+      - otomeshon-azure-network
+    depends_on:
+      - neo4j
+    restart: unless-stopped
+
+networks:
+  otomeshon-azure-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  neo4j_azure_data:
+    driver: local
+  neo4j_azure_plugins:
+    driver: local
+  kafka_azure_data:
+    driver: local
+  ollama_azure_data:
+    driver: local

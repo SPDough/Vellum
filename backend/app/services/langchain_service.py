@@ -450,13 +450,45 @@ class LangchainService:
                 "execution_time": datetime.utcnow().isoformat(),
             }
 
+    async def update_workflow_configuration(
+        self, workflow_id: str, configuration: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Update workflow configuration."""
+        if workflow_id not in self.workflows:
+            raise ValueError(f"Workflow {workflow_id} not found")
+
+        workflow = self.workflows[workflow_id]
+        
+        # Update workflow properties if provided
+        if "name" in configuration:
+            workflow.name = configuration["name"]
+        if "description" in configuration:
+            workflow.description = configuration["description"]
+        
+        # Update LLM configuration if provided
+        if "llm_config" in configuration and hasattr(workflow, 'llm') and workflow.llm:
+            llm_config = configuration["llm_config"]
+            if "temperature" in llm_config:
+                workflow.llm.temperature = llm_config["temperature"]
+            if "max_tokens" in llm_config:
+                workflow.llm.max_tokens = llm_config["max_tokens"]
+        
+        # Store configuration for future reference
+        workflow.configuration = configuration
+        
+        logger.info(f"Updated configuration for Langchain workflow: {workflow_id}")
+        
+        return await self.get_workflow_info(workflow_id)
+
     async def get_workflow_info(self, workflow_id: str) -> Optional[Dict[str, Any]]:
-        """Get information about a workflow."""
+        """Get detailed information about a workflow including configuration."""
         if workflow_id not in self.workflows:
             return None
 
         workflow = self.workflows[workflow_id]
-        return {
+        
+        # Get basic workflow info
+        workflow_info = {
             "workflow_id": workflow_id,
             "name": getattr(workflow, "name", "Unknown"),
             "description": getattr(workflow, "description", ""),
@@ -464,6 +496,146 @@ class LangchainService:
             "workflow_type": "LANGCHAIN",
             "created_at": datetime.utcnow().isoformat(),
         }
+        
+        # Add configuration details
+        if hasattr(workflow, 'chain') and workflow.chain:
+            workflow_info["chain_config"] = {
+                "type": type(workflow.chain).__name__,
+                "components": len(workflow.chain.steps) if hasattr(workflow.chain, 'steps') else 1,
+            }
+        
+        # Add LLM configuration if available
+        if hasattr(workflow, 'llm') and workflow.llm:
+            workflow_info["llm_config"] = {
+                "model": getattr(workflow.llm, 'model_name', 'Unknown'),
+                "temperature": getattr(workflow.llm, 'temperature', 0.0),
+                "max_tokens": getattr(workflow.llm, 'max_tokens', None),
+            }
+        
+        # Add default parameters based on workflow type
+        if isinstance(workflow, LangchainPositionAnalysisWorkflow):
+            workflow_info["parameters"] = [
+                {
+                    "name": "positions_data",
+                    "type": "array",
+                    "value": [],
+                    "description": "Array of position data to analyze",
+                    "required": True,
+                },
+                {
+                    "name": "analysis_depth",
+                    "type": "select",
+                    "value": "basic",
+                    "description": "Depth of analysis to perform",
+                    "required": False,
+                    "options": ["basic", "detailed", "comprehensive"],
+                },
+                {
+                    "name": "include_fibo_mapping",
+                    "type": "boolean",
+                    "value": True,
+                    "description": "Include FIBO ontology mapping",
+                    "required": False,
+                },
+            ]
+            workflow_info["nodes"] = [
+                {
+                    "id": "position_analysis",
+                    "type": "LLM_CALL",
+                    "name": "Position Analysis",
+                    "description": "Analyzes banking positions using LLM",
+                    "config": {
+                        "model": getattr(workflow.llm, 'model_name', 'Unknown'),
+                        "temperature": getattr(workflow.llm, 'temperature', 0.1),
+                    },
+                    "position": {"x": 0, "y": 0},
+                    "inputs": [
+                        {"id": "positions", "name": "Positions", "dataType": "array", "required": True},
+                        {"id": "config", "name": "Configuration", "dataType": "object", "required": False},
+                    ],
+                    "outputs": [
+                        {"id": "analysis", "name": "Analysis Result", "dataType": "object", "required": True},
+                    ],
+                }
+            ]
+        elif isinstance(workflow, LangchainTradeValidationWorkflow):
+            workflow_info["parameters"] = [
+                {
+                    "name": "trade_data",
+                    "type": "object",
+                    "value": {},
+                    "description": "Trade data to validate",
+                    "required": True,
+                },
+                {
+                    "name": "validation_rules",
+                    "type": "array",
+                    "value": [],
+                    "description": "Custom validation rules to apply",
+                    "required": False,
+                },
+                {
+                    "name": "strict_mode",
+                    "type": "boolean",
+                    "value": False,
+                    "description": "Enable strict validation mode",
+                    "required": False,
+                },
+            ]
+            workflow_info["nodes"] = [
+                {
+                    "id": "trade_validation",
+                    "type": "LLM_CALL",
+                    "name": "Trade Validation",
+                    "description": "Validates trade data using LLM-based rules",
+                    "config": {
+                        "model": getattr(workflow.llm, 'model_name', 'Unknown'),
+                        "temperature": getattr(workflow.llm, 'temperature', 0),
+                    },
+                    "position": {"x": 0, "y": 0},
+                    "inputs": [
+                        {"id": "trade", "name": "Trade Data", "dataType": "object", "required": True},
+                        {"id": "rules", "name": "Validation Rules", "dataType": "array", "required": False},
+                    ],
+                    "outputs": [
+                        {"id": "validation", "name": "Validation Result", "dataType": "object", "required": True},
+                    ],
+                }
+            ]
+        
+        # Add execution settings
+        workflow_info["execution_settings"] = {
+            "maxConcurrentExecutions": 5,
+            "executionTimeoutMinutes": 30,
+            "retryPolicy": {
+                "maxAttempts": 3,
+                "backoffStrategy": "exponential",
+                "delaySeconds": 5,
+                "maxDelaySeconds": 300,
+            },
+            "notificationSettings": {
+                "onSuccess": True,
+                "onFailure": True,
+                "onLongRunning": False,
+                "recipients": [],
+                "channels": ["email"],
+            },
+            "performanceSettings": {
+                "enableCaching": True,
+                "cacheTimeoutSeconds": 3600,
+                "enableParallelProcessing": False,
+                "maxParallelNodes": 3,
+                "enableOptimization": True,
+            },
+            "securitySettings": {
+                "enableEncryption": False,
+                "enableAuditLogging": True,
+                "restrictAccess": False,
+                "allowedUsers": [],
+            },
+        }
+        
+        return workflow_info
 
     def list_workflows(self) -> List[Dict[str, Any]]:
         """List all Langchain workflows."""
