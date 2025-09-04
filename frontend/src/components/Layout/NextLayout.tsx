@@ -37,6 +37,7 @@ import {
   CompareArrows as CompareArrowsIcon,
   Rule as RuleIcon,
   DataObject as DataSourceIcon,
+  AccountBalance as CustodianIcon,
 } from '@mui/icons-material';
 
 import { useAuthStore } from '@/store';
@@ -60,6 +61,7 @@ const NextLayout: React.FC<LayoutProps> = ({ children }) => {
     { label: 'Data Integration', path: '/data', icon: <DataIcon /> },
     { label: 'Data Sources', path: '/data-sources', icon: <DataSourceIcon /> },
     { label: 'Workflows', path: '/workflows', icon: <WorkflowIcon /> },
+    { label: 'Custodian LangGraph', path: '/custodian-langgraph', icon: <CustodianIcon /> },
     { label: 'Rules Catalog', path: '/rules', icon: <RuleIcon /> },
     { label: 'AI Agents', path: '/agents', icon: <AgentIcon /> },
     { label: 'Knowledge Graph', path: '/knowledge-graph', icon: <KnowledgeGraphIcon /> },

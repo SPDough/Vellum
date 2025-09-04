@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from app.api.endpoints import (
     auth_unified,
-    custodian_data,
+    custodian_langgraph,
     data_sandbox,
     data_sources,
     data_streams,
@@ -56,5 +56,7 @@ api_router.include_router(
 
 api_router.include_router(fibo.router, prefix="/fibo", tags=["FIBO Ontology"])
 
-# Custodian data router - already has prefix="/custodian-data"
-api_router.include_router(custodian_data.router, tags=["Custodian Data"])
+
+api_router.include_router(
+    custodian_langgraph.router, tags=["Custodian LangGraph"]
+)
