@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -102,7 +104,6 @@ import {
   Monitor,
   BugReport,
   CodeOff,
-  Code,
   DataUsage,
   DeveloperMode,
   IntegrationInstructions,
@@ -169,20 +170,11 @@ import {
   BrightnessLow,
   BrightnessMedium,
   Contrast,
-  Tune,
   Adjust,
   AutoFixHigh,
   AutoFixNormal,
   AutoFixOff,
   AutoFixStandard,
-  AutoStories,
-  AutoAwesome,
-  AutoAwesomeMotion,
-  AutoDelete,
-  AutoMode,
-  AutoGraph,
-  AutoFix,
-  AutoRenew,
   AutoStories,
   AutoAwesome,
   AutoAwesomeMotion,
