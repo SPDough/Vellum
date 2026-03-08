@@ -13,10 +13,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from fastapi import Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.database import get_sync_db
 from app.models.rag import DEFAULT_EMBEDDING_DIMENSION, RAGChunk, RAGDocument
 from app.services.embedding_service import embedding_service
 
@@ -339,6 +341,6 @@ class RAGPipelineService:
         ]
 
 
-def get_rag_pipeline_service(db: Session) -> RAGPipelineService:
+def get_rag_pipeline_service(db: Session = Depends(get_sync_db)) -> RAGPipelineService:
     """Dependency: return RAG pipeline service."""
     return RAGPipelineService(db)
