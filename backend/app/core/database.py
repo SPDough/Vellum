@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.base import Base as DataSandboxBase
 from app.core.config import get_settings
+from app.models.rag import Base as RAGBase
 from app.models.sop import Base as SOPBase
 from app.models.trade import Base as TradeBase
 from app.models.workflow import Base as WorkflowBase
@@ -56,6 +57,7 @@ class DatabaseManager:
                 await conn.run_sync(TradeBase.metadata.create_all)
                 await conn.run_sync(SOPBase.metadata.create_all)
                 await conn.run_sync(WorkflowBase.metadata.create_all)
+                await conn.run_sync(RAGBase.metadata.create_all)
 
             print("✅ PostgreSQL initialized successfully")
 

@@ -10,6 +10,8 @@ from app.api.endpoints import (
     fibo,
     knowledge_graph,
     mcp_servers,
+    rag,
+    rag_findings,
     rules,
     sop_management,
     workflow_execution,
@@ -59,4 +61,9 @@ api_router.include_router(fibo.router, prefix="/fibo", tags=["FIBO Ontology"])
 
 api_router.include_router(
     custodian_langgraph.router, tags=["Custodian LangGraph"]
+)
+
+api_router.include_router(rag.router, prefix="/rag", tags=["RAG Pipeline"])
+api_router.include_router(
+    rag_findings.router, prefix="/rag", tags=["RAG Findings (NAV)"]
 )

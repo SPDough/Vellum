@@ -96,6 +96,13 @@ class Settings(BaseSettings):
     # CORS Settings
     cors_origins: str = Field(default="http://localhost:3000", alias="CORS_ORIGINS")
 
+    # RAG pipeline
+    rag_upload_dir: str = Field(
+        default="data/rag_uploads", alias="RAG_UPLOAD_DIR"
+    )
+    rag_chunk_size: int = Field(default=1000, alias="RAG_CHUNK_SIZE")
+    rag_chunk_overlap: int = Field(default=200, alias="RAG_CHUNK_OVERLAP")
+
     @validator("environment")
     def validate_environment(cls, v):
         valid_envs = ["development", "testing", "staging", "production"]
