@@ -19,6 +19,7 @@ temporalio==1.6.0
 # Database & Graph
 neo4j==5.19.0
 psycopg[binary]==3.1.19
+psycopg2-binary>=2.9.9
 pgvector==0.2.5
 sqlalchemy==2.0.30
 alembic==1.13.1
@@ -62,6 +63,13 @@ aiohttp==3.9.5
 python-dateutil==2.9.0
 pyyaml==6.0.1
 tenacity==8.3.0
+
+# RAG pipeline (document loaders and chunking)
+pypdf==5.1.0
+langchain-text-splitters==0.3.2
+# NAV RAG ingest (ingest.py)
+tiktoken>=0.7.0
+openpyxl>=3.1.0
 
 # Data Transformation
 dbt-core==1.7.14
