@@ -25,6 +25,8 @@ python -m app.rag.ingest --doc weiss_book
 
 Place source files under paths listed in `DOCUMENTS` in `ingest.py` (e.g. `data/raw/`). Set `DATABASE_URL` or `OTOMESHON_DB_DSN` and `OPENAI_API_KEY` (or use app config).
 
+**State Street Custody Accounting:** Ingest key `custody_api` uses `v10_State_Street_Core_Data_Consumption_Model__Custody_Accounting_2026_02_14.xlsx`. The same document is referenced by the app’s State Street API spec (`app.services.custodian_apis.state_street`).
+
 ## Retrieve and prompts
 
 - **retrieve.py** – `RagRetriever.retrieve()` and `retrieve_for_finding()` (purpose: `explain` | `rule` | `report`).

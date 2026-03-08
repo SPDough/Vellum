@@ -409,6 +409,8 @@ class CustodianLangGraphService:
                 entry["capabilities"] = spec.to_capabilities_list()
                 if spec.version:
                     entry["version"] = spec.version
+                if getattr(spec, "source_document", None):
+                    entry["source_document"] = spec.source_document
             result.append(entry)
         return result
     
