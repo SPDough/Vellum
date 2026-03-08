@@ -620,38 +620,51 @@ async def get_mcp_service() -> MCPService:
     return _mcp_service
 
 
-# Predefined MCP server configurations for common custodian/market data providers
-PREDEFINED_MCP_SERVERS = {
-    "state_street": {
-        "id": "state_street",
-        "name": "State Street Global Services",
-        "type": MCPServerType.CUSTODIAN,
-        "base_url": "https://api.statestreet.com/mcp",
-        "auth_type": "api_key",
-        "tools": ["get_positions", "get_transactions", "get_cash_balances"],
-    },
-    "bny_mellon": {
-        "id": "bny_mellon",
-        "name": "BNY Mellon",
-        "type": MCPServerType.CUSTODIAN,
-        "base_url": "https://api.bnymellon.com/mcp",
-        "auth_type": "oauth",
-        "tools": ["positions", "transactions", "corporate_actions"],
-    },
-    "bloomberg": {
-        "id": "bloomberg",
-        "name": "Bloomberg Market Data",
-        "type": MCPServerType.MARKET_DATA,
-        "protocol": "websocket",
-        "ws_url": "wss://api.bloomberg.com/mcp",
-        "tools": ["market_prices", "historical_data", "reference_data"],
-    },
-    "refinitiv": {
-        "id": "refinitiv",
-        "name": "Refinitiv Eikon",
-        "type": MCPServerType.MARKET_DATA,
-        "base_url": "https://api.refinitiv.com/mcp",
-        "auth_type": "oauth",
-        "tools": ["real_time_prices", "fundamentals", "estimates"],
-    },
-}
+# Predefined MCP server configurations for common custodian/market data providers.
+# State Street tools align with app.services.custodian_apis.state_street capability ids.
+def _get_predefined_mcp_servers() -> Dict[str, Dict[str, Any]]:
+    state_street_tools = ["positions", "transactions", "cash_balances", "corporate_actions"]
+    try:
+        from app.services.custodian_apis import get_custodian_api_spec
+        spec = get_custodian_api_spec("state_street")
+        if spec:
+            state_street_tools = [c.id for c in spec.capabilities]
+    except Exception:
+        pass
+    return {
+        "state_street": {
+            "id": "state_street",
+            "name": "State Street Global Services",
+            "type": MCPServerType.CUSTODIAN,
+            "base_url": "https://api.statestreet.com/mcp",
+            "auth_type": "bearer",
+            "tools": state_street_tools,
+        },
+        "bny_mellon": {
+            "id": "bny_mellon",
+            "name": "BNY Mellon",
+            "type": MCPServerType.CUSTODIAN,
+            "base_url": "https://api.bnymellon.com/mcp",
+            "auth_type": "oauth",
+            "tools": ["positions", "transactions", "corporate_actions"],
+        },
+        "bloomberg": {
+            "id": "bloomberg",
+            "name": "Bloomberg Market Data",
+            "type": MCPServerType.MARKET_DATA,
+            "protocol": "websocket",
+            "ws_url": "wss://api.bloomberg.com/mcp",
+            "tools": ["market_prices", "historical_data", "reference_data"],
+        },
+        "refinitiv": {
+            "id": "refinitiv",
+            "name": "Refinitiv Eikon",
+            "type": MCPServerType.MARKET_DATA,
+            "base_url": "https://api.refinitiv.com/mcp",
+            "auth_type": "oauth",
+            "tools": ["real_time_prices", "fundamentals", "estimates"],
+        },
+    }
+
+
+PREDEFINED_MCP_SERVERS = _get_predefined_mcp_servers()
