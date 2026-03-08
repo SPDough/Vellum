@@ -159,15 +159,16 @@ async def get_client_communication(
 def _call_claude(prompt: str, max_tokens: int = 1024) -> str:
     """Call Claude (Anthropic) for generated text. Requires ANTHROPIC_API_KEY."""
     try:
+        import os
+
         from anthropic import Anthropic
+
         from app.core.config import get_settings
+
         settings = get_settings()
-        api_key = getattr(settings, "anthropic_api_key", None) or getattr(settings, "openai_api_key", None)
+        api_key = getattr(settings, "anthropic_api_key", None) or os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
-            import os
-            api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("OPENAI_API_KEY")
-        if not api_key:
-            return "(Set ANTHROPIC_API_KEY or OPENAI_API_KEY and ?generate=true to generate text)"
+            return "(Set ANTHROPIC_API_KEY and ?generate=true to generate text)"
         client = Anthropic(api_key=api_key)
         msg = client.messages.create(
             model="claude-sonnet-4-20250514",
