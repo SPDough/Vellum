@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
 from app.models.data_source import DataSourceType
+from app.services.custodian_apis import get_custodian_api_spec
 from app.services.data_source_service import DataSourceService
 
 logger = logging.getLogger(__name__)
@@ -245,22 +246,30 @@ class CustodianLangGraphService:
     
     def __init__(self):
         self.graphs: Dict[str, StateGraph] = {}
+        self.workflow_custodian: Dict[str, str] = {}
         self.api_configs: Dict[str, CustodianAPIConfig] = {}
         self._register_default_configs()
     
     def _register_default_configs(self):
         """Register default custodian API configurations."""
-        self.api_configs["state_street"] = CustodianAPIConfig(
-            base_url="https://api.statestreet.com/v1",
-            auth_type="bearer"
-        )
+        state_street_spec = get_custodian_api_spec("state_street")
+        if state_street_spec:
+            self.api_configs["state_street"] = CustodianAPIConfig(
+                base_url=state_street_spec.base_url,
+                auth_type=state_street_spec.auth_type,
+            )
+        else:
+            self.api_configs["state_street"] = CustodianAPIConfig(
+                base_url="https://api.statestreet.com/v1",
+                auth_type="bearer",
+            )
         self.api_configs["bny_mellon"] = CustodianAPIConfig(
             base_url="https://api.bnymellon.com/v1",
-            auth_type="bearer"
+            auth_type="bearer",
         )
         self.api_configs["jpmorgan"] = CustodianAPIConfig(
             base_url="https://api.jpmorgan.com/v1",
-            auth_type="bearer"
+            auth_type="bearer",
         )
         logger.info("Registered default custodian API configurations")
     
@@ -303,6 +312,7 @@ class CustodianLangGraphService:
             # Compile workflow
             compiled_graph = workflow.compile()
             self.graphs[workflow_id] = compiled_graph
+            self.workflow_custodian[workflow_id] = custodian_name
             
             logger.info(f"Created custodian analysis workflow: {workflow_id}")
             return workflow_id
@@ -315,35 +325,49 @@ class CustodianLangGraphService:
         self,
         workflow_id: str,
         endpoint: str = "/positions",
+        capability_id: Optional[str] = None,
         params: Optional[Dict[str, Any]] = None,
-        user_question: str = "Analyze this custodian data"
+        user_question: str = "Analyze this custodian data",
     ) -> Dict[str, Any]:
-        """Execute a custodian data analysis workflow."""
+        """Execute a custodian data analysis workflow. If capability_id is set and workflow has a spec-backed custodian, endpoint is resolved from the spec."""
         try:
             if workflow_id not in self.graphs:
                 raise ValueError(f"Workflow {workflow_id} not found")
             
             graph = self.graphs[workflow_id]
+            resolved_endpoint = endpoint
+            if capability_id:
+                custodian_name = self.workflow_custodian.get(workflow_id)
+                spec = get_custodian_api_spec(custodian_name) if custodian_name else None
+                if spec:
+                    cap = spec.get_capability(capability_id)
+                    if cap:
+                        resolved_endpoint = cap.path
+                    else:
+                        raise ValueError(
+                            f"Unknown capability {capability_id} for {custodian_name}. "
+                            f"Available: {[c.id for c in spec.capabilities]}"
+                        )
             
             # Prepare initial state
             initial_state = CustodianDataState(
                 context={
-                    "endpoint": endpoint,
+                    "endpoint": resolved_endpoint,
                     "params": params or {},
                     "user_question": user_question,
                     "workflow_id": workflow_id,
                     "execution_id": str(uuid4()),
-                    "start_time": datetime.utcnow().isoformat()
+                    "start_time": datetime.utcnow().isoformat(),
                 }
             )
             
             logger.info(f"Executing custodian analysis workflow: {workflow_id}")
             
             # Execute workflow
-            result = await graph.ainvoke(initial_state.dict())
+            result = await graph.ainvoke(initial_state.model_dump())
             
             # Convert result to dict
-            result_dict = result.dict() if hasattr(result, 'dict') else dict(result)
+            result_dict = result.model_dump() if hasattr(result, "model_dump") else dict(result)
             result_dict["context"]["end_time"] = datetime.utcnow().isoformat()
             result_dict["context"]["status"] = (
                 "COMPLETED" if not result_dict.get("errors") else "FAILED"
@@ -370,16 +394,23 @@ class CustodianLangGraphService:
             raise
     
     def list_available_custodians(self) -> List[Dict[str, Any]]:
-        """List available custodian configurations."""
-        return [
-            {
+        """List available custodian configurations with capabilities when defined."""
+        result = []
+        for name, config in self.api_configs.items():
+            entry = {
                 "name": name,
                 "base_url": config.base_url,
                 "auth_type": config.auth_type,
-                "configured": config.api_key is not None
+                "configured": config.api_key is not None,
             }
-            for name, config in self.api_configs.items()
-        ]
+            spec = get_custodian_api_spec(name)
+            if spec:
+                entry["display_name"] = spec.display_name
+                entry["capabilities"] = spec.to_capabilities_list()
+                if spec.version:
+                    entry["version"] = spec.version
+            result.append(entry)
+        return result
     
     def add_custodian_config(
         self,

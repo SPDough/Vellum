@@ -25,6 +25,7 @@ class CustodianWorkflowCreate(BaseModel):
 class CustodianAnalysisRequest(BaseModel):
     """Request model for executing custodian analysis."""
     endpoint: str = "/positions"
+    capability_id: Optional[str] = None  # e.g. "positions" — overrides endpoint when spec exists
     params: Optional[Dict[str, Any]] = None
     user_question: str = "Analyze this custodian data"
 
@@ -65,13 +66,14 @@ async def execute_custodian_analysis(
     request: CustodianAnalysisRequest,
     service: CustodianLangGraphService = Depends(get_custodian_langgraph_service)
 ) -> Dict[str, Any]:
-    """Execute a custodian data analysis workflow."""
+    """Execute a custodian data analysis workflow. Use capability_id for spec-backed custodians (e.g. state_street)."""
     try:
         result = await service.execute_custodian_analysis(
             workflow_id=workflow_id,
             endpoint=request.endpoint,
+            capability_id=request.capability_id,
             params=request.params,
-            user_question=request.user_question
+            user_question=request.user_question,
         )
         return result
     except ValueError as e:
@@ -84,11 +86,34 @@ async def execute_custodian_analysis(
 async def list_custodians(
     service: CustodianLangGraphService = Depends(get_custodian_langgraph_service)
 ) -> List[Dict[str, Any]]:
-    """List available custodian configurations."""
+    """List available custodian configurations (includes capabilities for spec-backed custodians)."""
     try:
         return service.list_available_custodians()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/custodians/{custodian_id}/capabilities")
+async def get_custodian_capabilities(
+    custodian_id: str,
+) -> Dict[str, Any]:
+    """Get API capabilities for a custodian (e.g. State Street). Returns endpoints and auth info."""
+    from app.services.custodian_apis import get_custodian_api_spec
+
+    spec = get_custodian_api_spec(custodian_id)
+    if not spec:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No API spec found for custodian: {custodian_id}",
+        )
+    return {
+        "custodian_id": spec.custodian_id,
+        "display_name": spec.display_name,
+        "base_url": spec.base_url,
+        "auth_type": spec.auth_type,
+        "version": spec.version,
+        "capabilities": spec.to_capabilities_list(),
+    }
 
 
 @router.post("/custodians")
@@ -149,6 +174,7 @@ async def delete_workflow(
             raise HTTPException(status_code=404, detail="Workflow not found")
         
         del service.graphs[workflow_id]
+        service.workflow_custodian.pop(workflow_id, None)
         
         return {
             "workflow_id": workflow_id,
