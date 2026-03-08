@@ -106,7 +106,7 @@ async def get_custodian_capabilities(
             status_code=404,
             detail=f"No API spec found for custodian: {custodian_id}",
         )
-    return {
+    out = {
         "custodian_id": spec.custodian_id,
         "display_name": spec.display_name,
         "base_url": spec.base_url,
@@ -114,6 +114,9 @@ async def get_custodian_capabilities(
         "version": spec.version,
         "capabilities": spec.to_capabilities_list(),
     }
+    if getattr(spec, "source_document", None):
+        out["source_document"] = spec.source_document
+    return out
 
 
 @router.post("/custodians")
