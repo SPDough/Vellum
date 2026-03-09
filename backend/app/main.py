@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(
     title="Otomeshon",
-    description="Agentic trading system with LangGraph workflows and knowledge graphs",
+    description="Middle office automations and back office validations for custodian banks — AI-powered workflows, NAV validation, and data sandbox.",
     version="1.0.0",
     lifespan=lifespan,
     docs_url="/docs",
@@ -109,7 +109,7 @@ def custom_openapi() -> Dict[str, Any]:
     openapi_schema = get_openapi(
         title="Otomeshon",
         version="1.0.0",
-        description="Agentic trading system with LangGraph workflows and knowledge graphs",
+        description="Middle office automations and back office validations for custodian banks — AI-powered workflows, NAV validation, and data sandbox.",
         routes=app.routes,
     )
     app.openapi_schema = openapi_schema
