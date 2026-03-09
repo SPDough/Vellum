@@ -1,6 +1,6 @@
 # Otomeshon Architecture Guide
 
-This document provides a comprehensive overview of the Otomeshon banking operations automation platform architecture, including system components, data flow, and integration patterns.
+This document provides a comprehensive overview of the Otomeshon platform architecture. Otomeshon delivers **middle office automations** and **back office validations** for custodian banks, including system components, data flow, and integration patterns.
 
 ## Table of Contents
 
@@ -15,7 +15,7 @@ This document provides a comprehensive overview of the Otomeshon banking operati
 
 ## System Overview
 
-Otomeshon is a microservices-based banking operations automation platform that streamlines post-trade processing through AI-powered workflows and provides advanced data analysis capabilities.
+Otomeshon is a microservices-based platform for **middle office automations** and **back office validations**. It streamlines post-trade processing through AI-powered workflows, supports NAV and custody validation, and provides advanced data analysis capabilities.
 
 ### High-Level Architecture
 

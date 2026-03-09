@@ -1,6 +1,6 @@
 # Otomeshon - Banking Operations Automation Platform
 
-> AI-powered post-trade processing automation for custodian banks with advanced data sandbox capabilities
+> Middle office automations and back office validations for custodian banks — AI-powered post-trade processing, NAV validation, and data sandbox capabilities
 
 ![Otomeshon Architecture](https://img.shields.io/badge/Architecture-Microservices-blue)
 ![Status](https://img.shields.io/badge/Status-In%20Development-yellow)
@@ -8,7 +8,7 @@
 
 ## 🎯 Overview
 
-Otomeshon is a comprehensive banking operations automation platform that streamlines post-trade processing through AI-powered workflows and provides advanced data analysis capabilities through an integrated Data Sandbox.
+Otomeshon is a banking operations platform focused on **middle office automations** and **back office validations**. It streamlines post-trade processing through AI-powered workflows, supports NAV and custody validation, and provides advanced data analysis through an integrated Data Sandbox.
 
 ### Key Features
 
