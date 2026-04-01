@@ -1,53 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Alert,
+  Badge,
   Box,
+  Button,
   Card,
   CardContent,
-  Typography,
-  Button,
   Chip,
-  Grid,
-  Tabs,
-  Tab,
-  IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Alert,
-  Snackbar,
   CircularProgress,
-  Tooltip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControl,
+  Grid,
+  IconButton,
+  InputLabel,
   List,
   ListItem,
   ListItemText,
-  ListItemSecondaryAction,
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Badge,
+  MenuItem,
   Paper,
+  Select,
+  Snackbar,
+  Tab,
+  Tabs,
+  TextField,
+  Tooltip,
+  Typography,
 } from '@mui/material';
 import {
-  PlayArrow,
-  Stop,
-  Edit,
-  Delete,
-  Add,
-  Refresh,
-  Info,
-  ExpandMore,
-  Timeline,
   AccountTree,
+  Add,
+  ExpandMore,
+  Info,
+  PlayArrow,
   Psychology,
-  Code,
+  Refresh,
+  Rule,
   Settings,
-  Tune,
+  Timeline,
 } from '@mui/icons-material';
 import { workflowService } from '../../services/workflowService';
 
@@ -75,15 +70,8 @@ interface TabPanelProps {
 
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
-
   return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`workflow-tabpanel-${index}`}
-      aria-labelledby={`workflow-tab-${index}`}
-      {...other}
-    >
+    <div role="tabpanel" hidden={value !== index} {...other}>
       {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
     </div>
   );
@@ -126,28 +114,24 @@ const WorkflowManagement: React.FC = () => {
         setError('Please select a template');
         return;
       }
-
       if (selectedWorkflowType === 'langchain') {
         await workflowService.createLangchainWorkflow(selectedTemplate);
-        setSuccessMessage('Langchain workflow created successfully');
       } else {
         await workflowService.createLanggraphWorkflow(selectedTemplate);
-        setSuccessMessage('Langgraph workflow created successfully');
       }
-
+      setSuccessMessage('Workflow created successfully');
       setCreateDialogOpen(false);
       setSelectedTemplate('');
       await loadWorkflowData();
     } catch (err) {
       setError('Failed to create workflow');
-      console.error('Error creating workflow:', err);
+      console.error(err);
     }
   };
 
   const handleExecuteWorkflow = async () => {
     try {
       if (!selectedWorkflow) return;
-
       let inputData = {};
       try {
         inputData = JSON.parse(executionInput);
@@ -155,391 +139,160 @@ const WorkflowManagement: React.FC = () => {
         setError('Invalid JSON in execution input');
         return;
       }
-
       if (selectedWorkflow.workflow_type === 'LANGCHAIN') {
         await workflowService.executeLangchainWorkflow(selectedWorkflow.workflow_id, inputData);
       } else if (selectedWorkflow.workflow_type === 'LANGGRAPH') {
         await workflowService.executeLanggraphWorkflow(selectedWorkflow.workflow_id, inputData);
       }
-
       setSuccessMessage('Workflow execution started');
       setExecutionDialogOpen(false);
       setExecutionInput('{}');
     } catch (err) {
       setError('Failed to execute workflow');
-      console.error('Error executing workflow:', err);
+      console.error(err);
     }
   };
 
   const getWorkflowTypeIcon = (type: string) => {
     switch (type) {
-      case 'LANGCHAIN':
-        return <Psychology color="primary" />;
-      case 'LANGGRAPH':
-        return <AccountTree color="secondary" />;
-      default:
-        return <Code color="action" />;
+      case 'LANGCHAIN': return <Psychology color="primary" />;
+      case 'LANGGRAPH': return <AccountTree color="secondary" />;
+      default: return <Rule color="action" />;
     }
   };
 
-  const getWorkflowTypeColor = (type: string) => {
-    switch (type) {
-      case 'LANGCHAIN':
-        return 'primary';
-      case 'LANGGRAPH':
-        return 'secondary';
-      default:
-        return 'default';
-    }
-  };
-
-  const WorkflowCard: React.FC<{ workflow: any; type: string }> = ({ workflow, type }) => (
+  const WorkflowCard: React.FC<{ workflow: any; type: string; framing: string }> = ({ workflow, type, framing }) => (
     <Card sx={{ mb: 2, border: '1px solid', borderColor: 'divider' }}>
       <CardContent>
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
           <Box display="flex" alignItems="center" gap={1}>
             {getWorkflowTypeIcon(type)}
-            <Typography variant="h6" component="h3">
-              {workflow.name || workflow.workflow_id?.substring(0, 8) || 'Unnamed Workflow'}
-            </Typography>
-            <Chip 
-              label={type} 
-              color={getWorkflowTypeColor(type) as any}
-              size="small"
-            />
+            <Typography variant="h6">{workflow.name || workflow.workflow_id?.substring(0, 8) || 'Unnamed Workflow'}</Typography>
+            <Chip label={type} size="small" />
           </Box>
           <Box>
-            <Tooltip title="Configure Workflow">
-              <IconButton
-                color="primary"
-                onClick={() => {
-                  const workflowType = type === 'LANGCHAIN' ? 'langchain' : 'langgraph';
-                  window.location.href = `/workflow-configuration?id=${workflow.workflow_id}&type=${workflowType}`;
-                }}
-              >
-                <Settings />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Execute Workflow">
-              <IconButton
-                color="primary"
-                onClick={() => {
-                  setSelectedWorkflow({ ...workflow, workflow_type: type });
-                  setExecutionDialogOpen(true);
-                }}
-              >
-                <PlayArrow />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Workflow Info">
-              <IconButton color="info">
-                <Info />
-              </IconButton>
-            </Tooltip>
+            <Tooltip title="Configure workflow"><IconButton color="primary" onClick={() => {
+              const workflowType = type === 'LANGCHAIN' ? 'langchain' : 'langgraph';
+              window.location.href = `/workflow-configuration?id=${workflow.workflow_id}&type=${workflowType}`;
+            }}><Settings /></IconButton></Tooltip>
+            <Tooltip title="Execute workflow"><IconButton color="primary" onClick={() => { setSelectedWorkflow({ ...workflow, workflow_type: type }); setExecutionDialogOpen(true); }}><PlayArrow /></IconButton></Tooltip>
+            <Tooltip title="Workflow info"><IconButton color="info"><Info /></IconButton></Tooltip>
           </Box>
         </Box>
-
-        {workflow.description && (
-          <Typography variant="body2" color="text.secondary" mb={2}>
-            {workflow.description}
-          </Typography>
-        )}
-
+        <Typography variant="body2" color="text.secondary" mb={1.5}>{workflow.description || framing}</Typography>
         <Box display="flex" gap={1} flexWrap="wrap">
-          <Chip 
-            label={workflow.status || 'ACTIVE'} 
-            color={workflow.status === 'ACTIVE' ? 'success' : 'default'}
-            size="small"
-          />
-          {workflow.workflow_id && (
-            <Chip 
-              label={`ID: ${workflow.workflow_id.substring(0, 8)}...`}
-              variant="outlined"
-              size="small"
-            />
-          )}
+          <Chip label={workflow.status || 'ACTIVE'} color={workflow.status === 'ACTIVE' ? 'success' : 'default'} size="small" />
+          {workflow.workflow_id && <Chip label={`ID: ${workflow.workflow_id.substring(0, 8)}...`} variant="outlined" size="small" />}
         </Box>
       </CardContent>
     </Card>
   );
 
-  const SummaryCards: React.FC = () => (
-    <Grid container spacing={3} mb={3}>
-      <Grid item xs={12} sm={6} md={3}>
-        <Card sx={{ textAlign: 'center', p: 2 }}>
-          <Typography variant="h4" color="primary">
-            {workflowSummary?.summary.total_workflows || 0}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Total Workflows
-          </Typography>
-        </Card>
-      </Grid>
-      <Grid item xs={12} sm={6} md={3}>
-        <Card sx={{ textAlign: 'center', p: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
-          <Typography variant="h4">
-            {workflowSummary?.summary.langchain_count || 0}
-          </Typography>
-          <Typography variant="body2">
-            Langchain
-          </Typography>
-        </Card>
-      </Grid>
-      <Grid item xs={12} sm={6} md={3}>
-        <Card sx={{ textAlign: 'center', p: 2, bgcolor: 'secondary.light', color: 'secondary.contrastText' }}>
-          <Typography variant="h4">
-            {workflowSummary?.summary.langgraph_count || 0}
-          </Typography>
-          <Typography variant="body2">
-            Langgraph
-          </Typography>
-        </Card>
-      </Grid>
-      <Grid item xs={12} sm={6} md={3}>
-        <Card sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.200' }}>
-          <Typography variant="h4">
-            {workflowSummary?.summary.standard_count || 0}
-          </Typography>
-          <Typography variant="body2">
-            Standard
-          </Typography>
-        </Card>
-      </Grid>
-    </Grid>
-  );
+  if (loading) return <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px"><CircularProgress /></Box>;
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-        <CircularProgress />
-      </Box>
-    );
-  }
+  const langchainWorkflows = workflowSummary?.langchain_workflows || [];
+  const langgraphWorkflows = workflowSummary?.langgraph_workflows || [];
+  const standardWorkflows = workflowSummary?.standard_workflows || [];
+  const langchainTemplates = workflowSummary?.templates?.langchain || [];
+  const langgraphTemplates = workflowSummary?.templates?.langgraph || [];
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
-          Workflow Management
-        </Typography>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+        <Typography variant="h4">Workflow orchestration</Typography>
         <Box>
-          <Button
-            variant="outlined"
-            startIcon={<Refresh />}
-            onClick={loadWorkflowData}
-            sx={{ mr: 2 }}
-          >
-            Refresh
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<Add />}
-            onClick={() => setCreateDialogOpen(true)}
-          >
-            Create Workflow
-          </Button>
+          <Button variant="outlined" startIcon={<Refresh />} onClick={loadWorkflowData} sx={{ mr: 2 }}>Refresh</Button>
+          <Button variant="contained" startIcon={<Add />} onClick={() => setCreateDialogOpen(true)}>Create Workflow</Button>
         </Box>
       </Box>
+      <Typography color="text.secondary" sx={{ mb: 3, maxWidth: 920 }}>
+        Vellum workflows turn deterministic control outcomes into operational action: route ownership, enforce signoff,
+        request evidence, and use AI only where it accelerates investigation and resolution.
+      </Typography>
 
-      {workflowSummary && <SummaryCards />}
+      {workflowSummary && (
+        <Grid container spacing={3} mb={3}>
+          <Grid item xs={12} sm={6} md={3}><Card sx={{ textAlign: 'center', p: 2 }}><Typography variant="h4" color="primary">{workflowSummary.summary.total_workflows}</Typography><Typography variant="body2" color="text.secondary">Total workflows</Typography></Card></Grid>
+          <Grid item xs={12} sm={6} md={3}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}><Typography variant="h4">{workflowSummary.summary.langchain_count}</Typography><Typography variant="body2">AI assist workflows</Typography></Card></Grid>
+          <Grid item xs={12} sm={6} md={3}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'secondary.light', color: 'secondary.contrastText' }}><Typography variant="h4">{workflowSummary.summary.langgraph_count}</Typography><Typography variant="body2">Orchestration graphs</Typography></Card></Grid>
+          <Grid item xs={12} sm={6} md={3}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.200' }}><Typography variant="h4">{workflowSummary.summary.standard_count}</Typography><Typography variant="body2">Standard control flows</Typography></Card></Grid>
+        </Grid>
+      )}
 
       <Paper sx={{ width: '100%', mb: 3 }}>
-        <Tabs
-          value={tabValue}
-          onChange={(_, newValue) => setTabValue(newValue)}
-          indicatorColor="primary"
-          textColor="primary"
-          variant="fullWidth"
-        >
-          <Tab
-            label={
-              <Badge badgeContent={workflowSummary?.summary.langchain_count || 0} color="primary">
-                Langchain Workflows
-              </Badge>
-            }
-            icon={<Psychology />}
-          />
-          <Tab
-            label={
-              <Badge badgeContent={workflowSummary?.summary.langgraph_count || 0} color="secondary">
-                Langgraph Workflows
-              </Badge>
-            }
-            icon={<AccountTree />}
-          />
-          <Tab
-            label={
-              <Badge badgeContent={workflowSummary?.summary.standard_count || 0} color="default">
-                Standard Workflows
-              </Badge>
-            }
-            icon={<Timeline />}
-          />
+        <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} indicatorColor="primary" textColor="primary" variant="fullWidth">
+          <Tab label={<Badge badgeContent={langchainWorkflows.length} color="primary">AI Assist</Badge>} icon={<Psychology />} />
+          <Tab label={<Badge badgeContent={langgraphWorkflows.length} color="secondary">Orchestration</Badge>} icon={<AccountTree />} />
+          <Tab label={<Badge badgeContent={standardWorkflows.length} color="default">Deterministic</Badge>} icon={<Timeline />} />
         </Tabs>
 
         <TabPanel value={tabValue} index={0}>
-          <Typography variant="h6" mb={2}>Langchain Workflows</Typography>
-          {workflowSummary?.langchain_workflows.length === 0 ? (
-            <Alert severity="info">
-              No Langchain workflows found. Create one to get started!
-            </Alert>
-          ) : (
-            workflowSummary?.langchain_workflows.map((workflow, index) => (
-              <WorkflowCard key={index} workflow={workflow} type="LANGCHAIN" />
-            ))
-          )}
+          <Typography variant="h6" mb={2}>AI-assist workflows</Typography>
+          {langchainWorkflows.length === 0 ? <Alert severity="info">No AI-assist workflows found.</Alert> : langchainWorkflows.map((workflow, index) => <WorkflowCard key={index} workflow={workflow} type="LANGCHAIN" framing="Use retrieval, explanation, and drafting to accelerate operator investigation without overriding deterministic control logic." />)}
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
-          <Typography variant="h6" mb={2}>Langgraph Workflows</Typography>
-          {workflowSummary?.langgraph_workflows.length === 0 ? (
-            <Alert severity="info">
-              No Langgraph workflows found. Create one to get started!
-            </Alert>
-          ) : (
-            workflowSummary?.langgraph_workflows.map((workflow, index) => (
-              <WorkflowCard key={index} workflow={workflow} type="LANGGRAPH" />
-            ))
-          )}
+          <Typography variant="h6" mb={2}>Orchestration graphs</Typography>
+          {langgraphWorkflows.length === 0 ? <Alert severity="info">No orchestration graphs found.</Alert> : langgraphWorkflows.map((workflow, index) => <WorkflowCard key={index} workflow={workflow} type="LANGGRAPH" framing="Coordinate exception routing, evidence gathering, signoff, escalation, and downstream case handling across the operating stack." />)}
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
-          <Typography variant="h6" mb={2}>Standard Workflows</Typography>
-          {workflowSummary?.standard_workflows.length === 0 ? (
-            <Alert severity="info">
-              No standard workflows found.
-            </Alert>
-          ) : (
-            workflowSummary?.standard_workflows.map((workflow, index) => (
-              <WorkflowCard key={index} workflow={workflow} type="STANDARD" />
-            ))
-          )}
+          <Typography variant="h6" mb={2}>Deterministic control flows</Typography>
+          {standardWorkflows.length === 0 ? <Alert severity="info">No standard workflows found.</Alert> : standardWorkflows.map((workflow, index) => <WorkflowCard key={index} workflow={workflow} type="STANDARD" framing="Apply rules-first workflow steps that translate control outcomes into governed operational action." />)}
         </TabPanel>
       </Paper>
 
-      {/* Templates Section */}
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMore />}>
-          <Typography variant="h6">Available Templates</Typography>
+          <Typography variant="h6">Template inventory</Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1" mb={2}>Langchain Templates</Typography>
-              <List>
-                {workflowSummary?.templates.langchain.map((template, index) => (
-                  <ListItem key={index}>
-                    <ListItemText
-                      primary={template.name}
-                      secondary={template.description}
-                    />
-                  </ListItem>
-                ))}
-              </List>
+              <Typography variant="subtitle1" mb={2}>Langchain templates</Typography>
+              <List>{langchainTemplates.map((template, index) => <ListItem key={index}><ListItemText primary={template.name} secondary={template.description} /></ListItem>)}</List>
             </Grid>
             <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1" mb={2}>Langgraph Templates</Typography>
-              <List>
-                {workflowSummary?.templates.langgraph.map((template, index) => (
-                  <ListItem key={index}>
-                    <ListItemText
-                      primary={template.class_name}
-                      secondary={template.description}
-                    />
-                  </ListItem>
-                ))}
-              </List>
+              <Typography variant="subtitle1" mb={2}>Langgraph templates</Typography>
+              <List>{langgraphTemplates.map((template, index) => <ListItem key={index}><ListItemText primary={template.class_name} secondary={template.description} /></ListItem>)}</List>
             </Grid>
           </Grid>
         </AccordionDetails>
       </Accordion>
 
-      {/* Create Workflow Dialog */}
       <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Create New Workflow</DialogTitle>
         <DialogContent>
           <FormControl fullWidth margin="normal">
             <InputLabel>Workflow Type</InputLabel>
-            <Select
-              value={selectedWorkflowType}
-              onChange={(e) => setSelectedWorkflowType(e.target.value as 'langchain' | 'langgraph')}
-            >
+            <Select value={selectedWorkflowType} label="Workflow Type" onChange={(e) => setSelectedWorkflowType(e.target.value as 'langchain' | 'langgraph')}>
               <MenuItem value="langchain">Langchain</MenuItem>
               <MenuItem value="langgraph">Langgraph</MenuItem>
             </Select>
           </FormControl>
-
           <FormControl fullWidth margin="normal">
             <InputLabel>Template</InputLabel>
-            <Select
-              value={selectedTemplate}
-              onChange={(e) => setSelectedTemplate(e.target.value)}
-            >
-              {selectedWorkflowType === 'langchain' 
-                ? workflowSummary?.templates.langchain.map((template) => (
-                    <MenuItem key={template.template_id} value={template.template_id}>
-                      {template.name}
-                    </MenuItem>
-                  ))
-                : workflowSummary?.templates.langgraph.map((template) => (
-                    <MenuItem key={template.node_type} value={template.node_type.toLowerCase().replace('_', '_')}>
-                      {template.class_name}
-                    </MenuItem>
-                  ))
-              }
+            <Select value={selectedTemplate} label="Template" onChange={(e) => setSelectedTemplate(e.target.value)}>
+              {selectedWorkflowType === 'langchain'
+                ? langchainTemplates.map((template) => <MenuItem key={template.template_id} value={template.template_id}>{template.name}</MenuItem>)
+                : langgraphTemplates.map((template) => <MenuItem key={template.node_type} value={template.node_type.toLowerCase().replace('_', '_')}>{template.class_name}</MenuItem>)}
             </Select>
           </FormControl>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleCreateWorkflow} variant="contained">Create</Button>
-        </DialogActions>
+        <DialogActions><Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button><Button onClick={handleCreateWorkflow} variant="contained">Create</Button></DialogActions>
       </Dialog>
 
-      {/* Execution Dialog */}
       <Dialog open={executionDialogOpen} onClose={() => setExecutionDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>Execute Workflow</DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" mb={2}>
-            Workflow: {selectedWorkflow?.name || selectedWorkflow?.workflow_id}
-          </Typography>
-          <TextField
-            label="Input Data (JSON)"
-            multiline
-            rows={6}
-            fullWidth
-            value={executionInput}
-            onChange={(e) => setExecutionInput(e.target.value)}
-            placeholder='{"positions": [...], "trades": [...]}'
-            margin="normal"
-          />
+          <Typography variant="body2" color="text.secondary" mb={2}>Workflow: {selectedWorkflow?.name || selectedWorkflow?.workflow_id}</Typography>
+          <TextField label="Input Data (JSON)" multiline rows={6} fullWidth value={executionInput} onChange={(e) => setExecutionInput(e.target.value)} placeholder='{"positions": [...], "trades": [...]}' margin="normal" />
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setExecutionDialogOpen(false)}>Cancel</Button>
-          <Button onClick={handleExecuteWorkflow} variant="contained">Execute</Button>
-        </DialogActions>
+        <DialogActions><Button onClick={() => setExecutionDialogOpen(false)}>Cancel</Button><Button onClick={handleExecuteWorkflow} variant="contained">Execute</Button></DialogActions>
       </Dialog>
 
-      {/* Snackbars */}
-      <Snackbar
-        open={!!error}
-        autoHideDuration={6000}
-        onClose={() => setError(null)}
-      >
-        <Alert severity="error" onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      </Snackbar>
-
-      <Snackbar
-        open={!!successMessage}
-        autoHideDuration={6000}
-        onClose={() => setSuccessMessage(null)}
-      >
-        <Alert severity="success" onClose={() => setSuccessMessage(null)}>
-          {successMessage}
-        </Alert>
-      </Snackbar>
+      <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}><Alert severity="error" onClose={() => setError(null)}>{error}</Alert></Snackbar>
+      <Snackbar open={!!successMessage} autoHideDuration={6000} onClose={() => setSuccessMessage(null)}><Alert severity="success" onClose={() => setSuccessMessage(null)}>{successMessage}</Alert></Snackbar>
     </Box>
   );
 };
