@@ -1,0 +1,91 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "custody.cash_activity_value_date_breach.v1",
+  "payload": {
+    "rule_id": "custody.cash_activity_value_date_breach",
+    "rule_name": "Cash activity value date breach",
+    "rule_family": "custody",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags cash activity where the derived days past value date exceeds threshold while status remains unresolved.",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["CashActivity"],
+    "input_scope": {
+      "group_by": ["payload.account_id", "payload.transaction_id"],
+      "filters": [
+        {
+          "field": "payload.transaction_status",
+          "operator": "not_in",
+          "value": ["RESOLVED", "CANCELLED"]
+        }
+      ]
+    },
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "and": [
+        {
+          ">": [
+            { "var": "derived.days_past_value_date" },
+            1
+          ]
+        },
+        {
+          "!=": [
+            { "var": "payload.transaction_status" },
+            "RESOLVED"
+          ]
+        }
+      ]
+    },
+    "severity": "medium",
+    "materiality": {
+      "mode": "expression",
+      "expression": {
+        ">=": [
+          { "var": "payload.amount" },
+          100000
+        ]
+      }
+    },
+    "outcome": {
+      "result_code": "CASH_ACTIVITY_VALUE_DATE_BREACH",
+      "result_type": "exception",
+      "create_exception": true,
+      "create_reconciliation_break": false,
+      "open_workflow_case": true,
+      "require_approval": false,
+      "explanation_template": "Cash activity {{payload.transaction_id}} is unresolved {{derived.days_past_value_date}} days after value date."
+    },
+    "evidence": {
+      "fields": [
+        "payload.account_id",
+        "payload.transaction_id",
+        "payload.transaction_status",
+        "payload.amount",
+        "payload.currency",
+        "payload.effective_date",
+        "derived.days_past_value_date"
+      ],
+      "rag_enabled": true,
+      "rag_collections": ["custody-cash-playbooks"]
+    },
+    "workflow_binding": {
+      "workflow_name": "cash_exception_resolution",
+      "case_type": "cash_value_date_exception"
+    },
+    "test_cases": [
+      {
+        "name": "cash activity aged two days and unresolved",
+        "expected_result": "triggered"
+      },
+      {
+        "name": "cash activity resolved same day",
+        "expected_result": "not_triggered"
+      }
+    ],
+    "tags": ["custody", "cash", "value-date", "deterministic"]
+  }
+}

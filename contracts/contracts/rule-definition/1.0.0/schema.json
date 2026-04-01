@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vellum/contracts/rule-definition/1.0.0/schema.json",
+  "title": "RuleDefinition",
+  "type": "object",
+  "required": ["contract_type", "contract_version", "payload"],
+  "properties": {
+    "contract_type": { "const": "RuleDefinition" },
+    "contract_version": { "const": "1.0.0" },
+    "source_system": { "type": "string" },
+    "source_type": { "type": "string" },
+    "source_record_id": { "type": "string" },
+    "ingested_at": { "type": "string", "format": "date-time" },
+    "effective_at": { "type": "string", "format": "date-time" },
+    "lineage": { "type": "object", "additionalProperties": true },
+    "payload": {
+      "type": "object",
+      "required": [
+        "rule_id",
+        "rule_name",
+        "rule_family",
+        "version",
+        "status",
+        "determinism_class",
+        "target_contract_types",
+        "expression_language",
+        "predicate",
+        "outcome"
+      ],
+      "properties": {
+        "rule_id": { "type": "string" },
+        "rule_name": { "type": "string" },
+        "rule_family": { "type": "string" },
+        "version": { "type": "string" },
+        "status": { "type": "string", "enum": ["draft", "active", "retired"] },
+        "description": { "type": "string" },
+        "determinism_class": { "type": "string", "enum": ["deterministic"] },
+        "target_contract_types": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "input_scope": {
+          "type": "object",
+          "properties": {
+            "join_keys": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "lookback_window": { "type": "string" },
+            "group_by": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "filters": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["field", "operator", "value"],
+                "properties": {
+                  "field": { "type": "string" },
+                  "operator": { "type": "string" },
+                  "value": {}
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "expression_language": {
+          "type": "string",
+          "enum": ["jsonlogic", "vellum-json"]
+        },
+        "predicate": {
+          "type": ["object", "array"]
+        },
+        "severity": { "type": "string" },
+        "materiality": {
+          "type": "object",
+          "properties": {
+            "mode": { "type": "string", "enum": ["static", "expression"] },
+            "value": {},
+            "expression": { "type": ["object", "array"] }
+          },
+          "additionalProperties": false
+        },
+        "outcome": {
+          "type": "object",
+          "required": ["result_code", "result_type"],
+          "properties": {
+            "result_code": { "type": "string" },
+            "result_type": { "type": "string", "enum": ["pass", "flag", "break", "exception"] },
+            "create_exception": { "type": "boolean" },
+            "create_reconciliation_break": { "type": "boolean" },
+            "open_workflow_case": { "type": "boolean" },
+            "require_approval": { "type": "boolean" },
+            "explanation_template": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "evidence": {
+          "type": "object",
+          "properties": {
+            "fields": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "rag_enabled": { "type": "boolean" },
+            "rag_collections": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        },
+        "workflow_binding": {
+          "type": "object",
+          "properties": {
+            "workflow_name": { "type": "string" },
+            "case_type": { "type": "string" },
+            "approval_type": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "test_cases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "expected_result"],
+            "properties": {
+              "name": { "type": "string" },
+              "description": { "type": "string" },
+              "expected_result": { "type": "string" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

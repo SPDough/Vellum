@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
-Simple FastAPI server for local development and testing
+Demo/dev-only FastAPI server for local development and testing.
+
+This module is intentionally simplified and is not the primary long-term
+production backend entrypoint for Vellum. The canonical full backend lives in
+`app/main.py` and targets the `/api/v1/...` contract.
 """
 
 import json
@@ -17,6 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 
 from app.core.error_handling import EnhancedErrorHandler
+from app.integrations.bootstrap import register_default_providers
 from app.schemas import UserResponse
 
 
@@ -454,6 +459,7 @@ async def metrics() -> Dict[str, Any]:
 @app.on_event("startup")
 async def startup_event() -> None:
     """Initialize the application with sample data"""
+    register_default_providers()
     generate_sample_data()
     print(f"🎯 Generated {len(sample_data)} sample records")
     print("🚀 Simple Otomeshon Backend is ready!")

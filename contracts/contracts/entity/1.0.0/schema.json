@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vellum/contracts/entity/1.0.0/schema.json",
+  "title": "Entity",
+  "type": "object",
+  "required": ["contract_type", "contract_version", "payload"],
+  "properties": {
+    "contract_type": { "const": "Entity" },
+    "contract_version": { "const": "1.0.0" },
+    "source_system": { "type": "string" },
+    "source_type": { "type": "string" },
+    "source_record_id": { "type": "string" },
+    "ingested_at": { "type": "string", "format": "date-time" },
+    "effective_at": { "type": "string", "format": "date-time" },
+    "lineage": { "type": "object", "additionalProperties": true },
+    "payload": {
+      "type": "object",
+      "required": ["entity_id", "entity_name", "entity_type"],
+      "properties": {
+        "entity_id": { "type": "string" },
+        "entity_name": { "type": "string" },
+        "entity_type": { "type": "string" },
+        "domicile": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

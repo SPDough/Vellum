@@ -1,3 +1,12 @@
+"""
+Canonical API router for the full backend application.
+
+First-pass cleanup note:
+- this router is mounted by `app/main.py` under `/api/v1`
+- endpoint paths defined here should therefore be understood as living under
+  `/api/v1/...`
+"""
+
 from fastapi import APIRouter
 
 from app.api.endpoints import (

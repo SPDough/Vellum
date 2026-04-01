@@ -1,3 +1,14 @@
+"""
+Canonical auth router for the full backend application.
+
+First-pass cleanup note:
+- this router uses `prefix="/auth"`
+- when mounted by the full backend API router, the intended contract becomes
+  `/api/v1/auth/...`
+- any `/api/auth/...` behavior in `app/main_simple.py` should be treated as
+  demo/dev compatibility, not the primary long-term contract
+"""
+
 from datetime import datetime
 from typing import Any, Dict, Optional
 
@@ -256,11 +267,11 @@ async def get_auth_config():
             ],
         },
         "endpoints": {
-            "login": "/api/auth/login",
-            "refresh": "/api/auth/refresh",
-            "logout": "/api/auth/logout",
-            "me": "/api/auth/me",
-            "providers": "/api/auth/providers",
+            "login": "/api/v1/auth/login",
+            "refresh": "/api/v1/auth/refresh",
+            "logout": "/api/v1/auth/logout",
+            "me": "/api/v1/auth/me",
+            "providers": "/api/v1/auth/providers",
         },
     }
 

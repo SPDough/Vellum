@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vellum/contracts/approval-request/1.0.0/schema.json",
+  "title": "ApprovalRequest",
+  "type": "object",
+  "required": ["contract_type", "contract_version", "payload"],
+  "properties": {
+    "contract_type": { "const": "ApprovalRequest" },
+    "contract_version": { "const": "1.0.0" },
+    "source_system": { "type": "string" },
+    "source_type": { "type": "string" },
+    "source_record_id": { "type": "string" },
+    "ingested_at": { "type": "string", "format": "date-time" },
+    "effective_at": { "type": "string", "format": "date-time" },
+    "lineage": { "type": "object", "additionalProperties": true },
+    "payload": {
+      "type": "object",
+      "required": ["approval_request_id", "case_id", "approval_type", "required_role", "status", "created_at"],
+      "properties": {
+        "approval_request_id": { "type": "string" },
+        "case_id": { "type": "string" },
+        "approval_type": { "type": "string" },
+        "required_role": { "type": "string" },
+        "status": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "decision_due_at": { "type": "string", "format": "date-time" },
+        "reason": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

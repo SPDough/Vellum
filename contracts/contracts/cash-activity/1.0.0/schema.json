@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vellum/contracts/cash-activity/1.0.0/schema.json",
+  "title": "CashActivity",
+  "type": "object",
+  "required": ["contract_type", "contract_version", "payload"],
+  "properties": {
+    "contract_type": { "const": "CashActivity" },
+    "contract_version": { "const": "1.0.0" },
+    "source_system": { "type": "string" },
+    "source_type": { "type": "string" },
+    "source_record_id": { "type": "string" },
+    "ingested_at": { "type": "string", "format": "date-time" },
+    "effective_at": { "type": "string", "format": "date-time" },
+    "lineage": { "type": "object", "additionalProperties": true },
+    "payload": {
+      "type": "object",
+      "required": ["entity_id", "account_id", "transaction_id", "transaction_type", "transaction_status", "amount", "currency", "effective_date"],
+      "properties": {
+        "entity_id": { "type": "string" },
+        "account_id": { "type": "string" },
+        "transaction_id": { "type": "string" },
+        "transaction_type": { "type": "string" },
+        "transaction_status": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "effective_date": { "type": "string", "format": "date" },
+        "debit_credit_indicator": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "data_quality_flags": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

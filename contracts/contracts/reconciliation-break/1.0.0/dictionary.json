@@ -1,0 +1,17 @@
+{
+  "contract_name": "ReconciliationBreak",
+  "version": "1.0.0",
+  "business_definition": "A Vellum-derived mismatch between expected and observed financial/operational states across one or more sources.",
+  "fields": {
+    "break_id": "The normalized identifier for the reconciliation break.",
+    "break_type": "The normalized mismatch category.",
+    "entity_id": "Entity associated with the break where applicable.",
+    "account_id": "Account associated with the break where applicable.",
+    "related_contract_ids": "The set of source or derived contract records involved in the break.",
+    "severity": "The normalized severity classification.",
+    "status": "The current normalized break lifecycle state.",
+    "detected_at": "Timestamp when the break was detected.",
+    "reason_code": "Deterministic reason or classification code.",
+    "explanation": "A short explanation of the break."
+  }
+}

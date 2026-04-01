@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vellum/contracts/workflow-case/1.0.0/schema.json",
+  "title": "WorkflowCase",
+  "type": "object",
+  "required": ["contract_type", "contract_version", "payload"],
+  "properties": {
+    "contract_type": { "const": "WorkflowCase" },
+    "contract_version": { "const": "1.0.0" },
+    "source_system": { "type": "string" },
+    "source_type": { "type": "string" },
+    "source_record_id": { "type": "string" },
+    "ingested_at": { "type": "string", "format": "date-time" },
+    "effective_at": { "type": "string", "format": "date-time" },
+    "lineage": { "type": "object", "additionalProperties": true },
+    "payload": {
+      "type": "object",
+      "required": ["case_id", "case_type", "workflow_name", "workflow_state", "opened_at", "updated_at"],
+      "properties": {
+        "case_id": { "type": "string" },
+        "case_type": { "type": "string" },
+        "entity_id": { "type": "string" },
+        "account_id": { "type": "string" },
+        "linked_exception_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "workflow_name": { "type": "string" },
+        "workflow_state": { "type": "string" },
+        "assigned_to": { "type": "string" },
+        "opened_at": { "type": "string", "format": "date-time" },
+        "updated_at": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

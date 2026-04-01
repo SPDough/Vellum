@@ -1,3 +1,12 @@
+"""
+Canonical full backend entrypoint for Vellum.
+
+First-pass cleanup note:
+- this is the intended real backend application
+- the primary API contract is mounted under `/api/v1/...`
+- `app/main_simple.py` remains available for demo/dev-only usage
+"""
+
 import asyncio
 import os
 from contextlib import asynccontextmanager
@@ -18,6 +27,7 @@ from app.core.middleware import (
     SecurityHeadersMiddleware,
 )
 from app.core.telemetry import setup_telemetry
+from app.integrations.bootstrap import register_default_providers
 from app.services.kafka_service import kafka_service
 from app.services.knowledge_graph_sync_service import kg_sync_service
 from app.services.neo4j_service import neo4j_service
@@ -31,6 +41,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Setup telemetry
     setup_telemetry(settings)
+
+    # Register generalized integration providers.
+    register_default_providers()
 
     # Initialize database
     await init_db()
@@ -92,7 +105,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include API routes
+# Include canonical API routes.
+#
+# First-pass cleanup rule: the full backend contract is exposed under
+# `/api/v1/...`.
 app.include_router(api_router, prefix="/api/v1")
 
 # Security

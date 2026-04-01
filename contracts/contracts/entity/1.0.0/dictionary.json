@@ -1,0 +1,12 @@
+{
+  "contract_name": "Entity",
+  "version": "1.0.0",
+  "business_definition": "A normalized legal or operating entity used across accounts, positions, transactions, and workflows.",
+  "fields": {
+    "entity_id": "The normalized entity identifier.",
+    "entity_name": "The legal or operating name of the entity.",
+    "entity_type": "The normalized entity classification.",
+    "domicile": "Jurisdiction or domicile of the entity if known.",
+    "status": "Normalized entity lifecycle status."
+  }
+}

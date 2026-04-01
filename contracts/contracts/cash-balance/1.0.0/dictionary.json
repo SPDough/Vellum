@@ -1,0 +1,14 @@
+{
+  "contract_name": "CashBalance",
+  "version": "1.0.0",
+  "business_definition": "A normalized cash balance snapshot for an account/entity/currency as of a specified date.",
+  "fields": {
+    "entity_id": "The legal or operating entity associated with the balance.",
+    "account_id": "The account for which the balance is reported.",
+    "currency": "The balance currency.",
+    "balance_amount": "The reported normalized balance amount.",
+    "balance_date": "The effective date of the balance snapshot.",
+    "balance_type": "Optional subtype such as available, ledger, or settled balance.",
+    "status": "Optional normalized balance record status."
+  }
+}

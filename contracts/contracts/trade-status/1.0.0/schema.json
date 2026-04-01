@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vellum/contracts/trade-status/1.0.0/schema.json",
+  "title": "TradeStatus",
+  "type": "object",
+  "required": ["contract_type", "contract_version", "payload"],
+  "properties": {
+    "contract_type": { "const": "TradeStatus" },
+    "contract_version": { "const": "1.0.0" },
+    "source_system": { "type": "string" },
+    "source_type": { "type": "string" },
+    "source_record_id": { "type": "string" },
+    "ingested_at": { "type": "string", "format": "date-time" },
+    "effective_at": { "type": "string", "format": "date-time" },
+    "lineage": { "type": "object", "additionalProperties": true },
+    "payload": {
+      "type": "object",
+      "required": ["entity_id", "account_id", "trade_id", "security_id", "trade_date", "settlement_date", "settlement_status"],
+      "properties": {
+        "entity_id": { "type": "string" },
+        "account_id": { "type": "string" },
+        "trade_id": { "type": "string" },
+        "client_trade_id": { "type": "string" },
+        "security_id": { "type": "string" },
+        "trade_date": { "type": "string", "format": "date" },
+        "settlement_date": { "type": "string", "format": "date" },
+        "settlement_status": { "type": "string" },
+        "quantity": { "type": "number" },
+        "price": { "type": "number" },
+        "currency": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "data_quality_flags": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}
