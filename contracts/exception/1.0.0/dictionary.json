@@ -1,0 +1,18 @@
+{
+  "contract_name": "Exception",
+  "version": "1.0.0",
+  "business_definition": "A normalized operational issue requiring review, routing, escalation, or resolution.",
+  "fields": {
+    "exception_id": "The normalized identifier for the exception.",
+    "exception_type": "The normalized category of the exception.",
+    "entity_id": "The legal or operating entity associated with the exception where applicable.",
+    "account_id": "The account associated with the exception where applicable.",
+    "source_contract_type": "The contract type from which the exception was derived.",
+    "source_contract_id": "The source contract record identifier associated with the exception.",
+    "severity": "The normalized severity classification.",
+    "priority": "The normalized workflow priority classification.",
+    "status": "The current normalized exception lifecycle state.",
+    "opened_at": "Timestamp when the exception was created/opened.",
+    "summary": "A short human-readable summary of the issue."
+  }
+}

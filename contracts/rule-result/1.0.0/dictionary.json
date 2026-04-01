@@ -1,0 +1,25 @@
+{
+  "contract_name": "RuleResult",
+  "version": "1.0.0",
+  "business_definition": "A deterministic evaluation result emitted when a Vellum rule is run against one or more canonical contract records.",
+  "fields": {
+    "rule_result_id": "Stable identifier for the rule evaluation result.",
+    "rule_id": "Identifier of the rule that was evaluated.",
+    "rule_version": "Version of the rule that was evaluated.",
+    "evaluation_status": "Indicates whether evaluation completed successfully, errored, or was skipped.",
+    "triggered": "Whether the rule condition was met.",
+    "severity": "Severity classification on the emitted result.",
+    "materiality": "Materiality classification or band for the result.",
+    "result_code": "Deterministic result code emitted by the rule.",
+    "result_type": "Outcome classification of the rule result.",
+    "target_contract_ids": "Canonical contract record identifiers evaluated by the rule.",
+    "evaluated_at": "Timestamp when the rule was executed.",
+    "evidence_snapshot": "Structured evidence captured at evaluation time for auditability and explanation.",
+    "explanation": "Deterministic or templated explanation of the result.",
+    "created_exception_id": "Exception created from this result, if any.",
+    "created_reconciliation_break_id": "Reconciliation break created from this result, if any.",
+    "created_workflow_case_id": "Workflow case opened from this result, if any.",
+    "created_approval_request_id": "Approval request created from this result, if any.",
+    "error_message": "Error details if evaluation failed."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "target_contract_ids": ["cash-activity:txn-002"],
+  "payload": {
+    "account_id": "ACCOUNT-001",
+    "transaction_id": "TXN-002",
+    "transaction_status": "RESOLVED",
+    "amount": 1000,
+    "currency": "USD",
+    "effective_date": "2026-03-31"
+  },
+  "derived": {
+    "days_past_value_date": 0
+  }
+}

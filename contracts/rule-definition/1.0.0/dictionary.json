@@ -1,0 +1,31 @@
+{
+  "contract_name": "RuleDefinition",
+  "version": "1.0.0",
+  "business_definition": "A Vellum-native deterministic rule definition stored as JSON and evaluated against canonical contract objects.",
+  "design_principles": [
+    "Rules are deterministic and replayable.",
+    "Rules are versioned data artifacts, not hidden code paths.",
+    "Rules evaluate canonical contracts, not provider-specific payloads.",
+    "LLMs may assist with explanation and enrichment but do not override deterministic outcomes."
+  ],
+  "fields": {
+    "rule_id": "Stable identifier for the rule.",
+    "rule_name": "Human-readable name for the rule.",
+    "rule_family": "Logical grouping such as custody, reconciliation, workflow, or approvals.",
+    "version": "Version of the rule itself.",
+    "status": "Lifecycle state of the rule definition.",
+    "description": "Plain-language description of what the rule checks.",
+    "determinism_class": "Classification of the rule evaluation mode; currently deterministic only.",
+    "target_contract_types": "Canonical contract types the rule is designed to evaluate.",
+    "input_scope": "How records are grouped, filtered, joined, or windowed before rule evaluation.",
+    "expression_language": "JSON-based expression language used by the predicate.",
+    "predicate": "The JSON expression that evaluates to true/false or equivalent deterministic output.",
+    "severity": "Default severity classification if the rule is triggered.",
+    "materiality": "Optional logic for static or expression-based materiality classification.",
+    "outcome": "The deterministic result and workflow/control actions if the rule is triggered.",
+    "evidence": "Fields and optional RAG collections used for explanation and operator context.",
+    "workflow_binding": "Optional routing metadata into workflow cases and approvals.",
+    "test_cases": "Minimal built-in expectation metadata for rule test scenarios.",
+    "tags": "Free-form rule tags for discovery and governance."
+  }
+}

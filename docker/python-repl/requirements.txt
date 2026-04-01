@@ -1,0 +1,31 @@
+# Core dependencies
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+pydantic>=2.7.4
+
+# Data science and analysis
+pandas==2.2.2
+numpy==1.26.4
+matplotlib==3.8.4
+seaborn==0.13.2
+scipy==1.12.0
+scikit-learn==1.4.2
+
+# Math and statistics
+sympy==1.12
+statsmodels==0.14.1
+
+# Date and time
+python-dateutil==2.9.0
+pytz==2024.1
+
+# Utilities
+requests==2.31.0
+python-json-logger==2.0.7
+
+# Security and sandboxing
+RestrictedPython==6.0
+psutil==5.9.8
+
+# Testing (for development)
+pytest==8.2.1

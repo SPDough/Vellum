@@ -1,0 +1,20 @@
+name: production
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+    - name: Deploy to production
+      run: |
+        echo "Production deployment triggered by successful workflow run"
+        echo "Deployment will be handled by the main CI/CD pipeline"

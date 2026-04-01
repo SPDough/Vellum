@@ -1,0 +1,4 @@
+{
+  "enabled": false,
+  "notes": "Exception is primarily a Vellum-native operational control object. Semantic alignment may be added later if useful."
+}

@@ -1,0 +1,15 @@
+{
+  "contract_name": "Security",
+  "version": "1.0.0",
+  "business_definition": "A normalized instrument/security reference object used across positions, trades, balances, and exceptions.",
+  "fields": {
+    "security_id": "The normalized security identifier used within Vellum.",
+    "instrument_id": "A broader instrument identifier where distinct from security_id.",
+    "name": "Human-readable instrument/security name.",
+    "isin": "International Securities Identification Number where available.",
+    "cusip": "CUSIP identifier where available.",
+    "ticker": "Market ticker symbol where available.",
+    "asset_class": "Normalized asset class classification.",
+    "currency": "Primary reporting or issue currency."
+  }
+}

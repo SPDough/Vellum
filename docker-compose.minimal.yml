@@ -1,0 +1,94 @@
+# Minimal Docker Compose for Development
+# This includes only essential services for local development
+# Use this for faster startup and reduced resource usage
+
+services:
+  # PostgreSQL with pgvector - Essential for data storage
+  db:
+    image: ankane/pgvector:latest
+    environment:
+      POSTGRES_DB: otomeshon
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    ports: 
+      - "5432:5432"
+    volumes: 
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d otomeshon"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Redis - Essential for caching and sessions
+  redis:
+    image: redis:7-alpine
+    ports: 
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Backend API - Simple mode for development
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://app:${POSTGRES_PASSWORD:-changeme}@db:5432/otomeshon
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - DEBUG=true
+    volumes:
+      - ./backend:/app
+      - ./backend/logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["uvicorn", "app.main_simple:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend - Development mode
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_WS_URL=ws://localhost:8000
+      - VITE_AUTH_MODE=simple
+      - VITE_ENABLE_DEBUG_MODE=true
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    depends_on:
+      - backend
+    command: ["npm", "run", "dev"]
+
+volumes:
+  db_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# Development network
+networks:
+  default:
+    name: otomeshon-dev
+    driver: bridge

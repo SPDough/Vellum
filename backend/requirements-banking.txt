@@ -1,0 +1,18 @@
+# Banking-Specific Dependencies
+# Components needed for complete custodian banking functionality
+
+# Include core requirements
+-r requirements-core.txt
+
+# AI/LLM for intelligent workflows
+-r requirements-ai.txt
+
+# Infrastructure for enterprise features
+-r requirements-infrastructure.txt
+
+# Observability for compliance and monitoring
+-r requirements-observability.txt
+
+# Additional banking utilities
+pyyaml==6.0.1  # Configuration files
+tenacity==8.3.0  # Retry logic for critical operations

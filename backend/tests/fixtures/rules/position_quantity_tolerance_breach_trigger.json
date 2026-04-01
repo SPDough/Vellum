@@ -1,0 +1,12 @@
+{
+  "target_contract_ids": ["position:acct-001:sec-abc"],
+  "payload": {
+    "account_id": "ACCOUNT-001",
+    "security_id": "SEC-ABC",
+    "quantity": 900
+  },
+  "derived": {
+    "expected_quantity": 1000,
+    "absolute_quantity_difference": 100
+  }
+}

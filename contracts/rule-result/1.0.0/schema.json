@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vellum/contracts/rule-result/1.0.0/schema.json",
+  "title": "RuleResult",
+  "type": "object",
+  "required": ["contract_type", "contract_version", "payload"],
+  "properties": {
+    "contract_type": { "const": "RuleResult" },
+    "contract_version": { "const": "1.0.0" },
+    "source_system": { "type": "string" },
+    "source_type": { "type": "string" },
+    "source_record_id": { "type": "string" },
+    "ingested_at": { "type": "string", "format": "date-time" },
+    "effective_at": { "type": "string", "format": "date-time" },
+    "lineage": { "type": "object", "additionalProperties": true },
+    "payload": {
+      "type": "object",
+      "required": [
+        "rule_result_id",
+        "rule_id",
+        "rule_version",
+        "evaluation_status",
+        "triggered",
+        "evaluated_at",
+        "target_contract_ids"
+      ],
+      "properties": {
+        "rule_result_id": { "type": "string" },
+        "rule_id": { "type": "string" },
+        "rule_version": { "type": "string" },
+        "evaluation_status": { "type": "string", "enum": ["success", "error", "skipped"] },
+        "triggered": { "type": "boolean" },
+        "severity": { "type": "string" },
+        "materiality": { "type": "string" },
+        "result_code": { "type": "string" },
+        "result_type": { "type": "string", "enum": ["pass", "flag", "break", "exception"] },
+        "target_contract_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "evaluated_at": { "type": "string", "format": "date-time" },
+        "evidence_snapshot": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "explanation": { "type": "string" },
+        "created_exception_id": { "type": "string" },
+        "created_reconciliation_break_id": { "type": "string" },
+        "created_workflow_case_id": { "type": "string" },
+        "created_approval_request_id": { "type": "string" },
+        "error_message": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,14 @@
+{
+  "contract_name": "Account",
+  "version": "1.0.0",
+  "business_definition": "A normalized account object used across positions, trades, cash, and exceptions.",
+  "fields": {
+    "account_id": "The normalized account identifier.",
+    "entity_id": "The entity associated with the account.",
+    "account_name": "Human-readable account name.",
+    "account_type": "Normalized account classification.",
+    "base_currency": "Primary base currency for the account.",
+    "custodian_id": "Identifier for the servicing custodian/provider.",
+    "status": "Normalized account lifecycle status."
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "contract_name": "Position",
+  "version": "1.0.0",
+  "business_definition": "A normalized holding or quantity exposure in a security or instrument for an entity/account as of a given date.",
+  "fields": {
+    "entity_id": "The legal or operating entity to which the position belongs.",
+    "account_id": "The account within which the position is held.",
+    "security_id": "Normalized identifier for the security.",
+    "instrument_id": "Normalized identifier for the broader instrument if distinct from security_id.",
+    "quantity": "The number of units, shares, or contracts held.",
+    "currency": "Primary reporting or denomination currency for the position context.",
+    "position_date": "The effective date of the position snapshot.",
+    "status": "Optional normalized lifecycle or record status."
+  }
+}

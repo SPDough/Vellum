@@ -1,0 +1,17 @@
+# AI/LLM Dependencies - Optional AI features
+# Install only if using AI/ML capabilities
+
+# LLM Providers
+openai>=1.54.0
+anthropic>=0.30.0
+
+# LangChain Ecosystem
+langchain==0.3.7
+langchain-anthropic==0.2.4
+langchain-openai==0.2.6
+langchain-ollama==0.2.0
+langgraph==0.2.45
+
+# Vector Operations & ML
+sentence-transformers==2.7.0
+numpy==1.26.4

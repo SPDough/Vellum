@@ -1,0 +1,15 @@
+{
+  "contract_name": "ApprovalRequest",
+  "version": "1.0.0",
+  "business_definition": "A deterministic request for human approval or decision inside a Vellum workflow.",
+  "fields": {
+    "approval_request_id": "The normalized approval request identifier.",
+    "case_id": "The workflow case requiring approval.",
+    "approval_type": "The normalized approval category.",
+    "required_role": "The role or queue authorized to decide.",
+    "status": "The current approval lifecycle state.",
+    "created_at": "Timestamp when the request was created.",
+    "decision_due_at": "Optional deadline for decisioning.",
+    "reason": "Short explanation of why approval is required."
+  }
+}

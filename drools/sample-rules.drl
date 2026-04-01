@@ -1,0 +1,29 @@
+package com.otomeshon.rules
+
+import java.math.BigDecimal
+
+// Sample trading rules for Otomeshon
+rule "High Volume Trade Alert"
+    when
+        $trade : Trade( volume > 100000 )
+    then
+        System.out.println("High volume trade detected: " + $trade.getSymbol() + " volume: " + $trade.getVolume());
+        $trade.setAlert(true);
+end
+
+rule "Risk Limit Check"
+    when
+        $trade : Trade( amount > 1000000 )
+    then
+        System.out.println("Risk limit exceeded for trade: " + $trade.getId());
+        $trade.setRequiresApproval(true);
+end
+
+rule "Market Hours Validation"
+    when
+        $trade : Trade( !isMarketHours() )
+    then
+        System.out.println("Trade attempted outside market hours: " + $trade.getId());
+        $trade.setStatus("REJECTED");
+        $trade.setReason("Outside market hours");
+end
