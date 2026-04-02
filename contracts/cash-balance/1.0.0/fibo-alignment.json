@@ -1,0 +1,9 @@
+{
+  "enabled": true,
+  "notes": "Balance semantics may evolve; keep runtime contract lightweight.",
+  "concepts": [
+    { "field": "entity_id", "fibo_reference": "fibo-be-le-lp:LegalEntity" },
+    { "field": "account_id", "fibo_reference": "fibo-fbc-pas-caa:Account" },
+    { "field": "currency", "fibo_reference": "fibo-fnd-acc-cur:Currency" }
+  ]
+}

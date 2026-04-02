@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "notes": "Security and instrument semantics should remain lightweight while aligned to FIBO references.",
+  "concepts": [
+    { "field": "security_id", "fibo_reference": "fibo-fbc-fi-fi:FinancialInstrument" },
+    { "field": "instrument_id", "fibo_reference": "fibo-fbc-fi-fi:FinancialInstrument" }
+  ]
+}

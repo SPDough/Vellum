@@ -1,0 +1,17 @@
+{
+  "contract_name": "WorkflowCase",
+  "version": "1.0.0",
+  "business_definition": "A deterministic operational case moving through a Vellum workflow state machine.",
+  "fields": {
+    "case_id": "The normalized case identifier.",
+    "case_type": "The normalized workflow/case category.",
+    "entity_id": "Entity associated with the case where applicable.",
+    "account_id": "Account associated with the case where applicable.",
+    "linked_exception_ids": "Exceptions associated with the case.",
+    "workflow_name": "The workflow definition managing the case.",
+    "workflow_state": "The current deterministic workflow state.",
+    "assigned_to": "Current assignee or queue where applicable.",
+    "opened_at": "Timestamp when the case opened.",
+    "updated_at": "Timestamp when the case last changed state."
+  }
+}

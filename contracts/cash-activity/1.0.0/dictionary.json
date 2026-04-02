@@ -1,0 +1,16 @@
+{
+  "contract_name": "CashActivity",
+  "version": "1.0.0",
+  "business_definition": "A normalized operational cash movement or cash activity event for an account/entity.",
+  "fields": {
+    "entity_id": "The legal or operating entity associated with the activity.",
+    "account_id": "The account against which the activity occurred.",
+    "transaction_id": "The source or normalized transaction identifier.",
+    "transaction_type": "The normalized transaction category or activity type.",
+    "transaction_status": "The normalized status of the activity record.",
+    "amount": "The normalized cash amount for the event.",
+    "currency": "The transaction currency.",
+    "effective_date": "The business-effective date of the activity.",
+    "debit_credit_indicator": "Indicates whether the activity is a debit or credit where available."
+  }
+}

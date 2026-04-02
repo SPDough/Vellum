@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vellum/contracts/reconciliation-break/1.0.0/schema.json",
+  "title": "ReconciliationBreak",
+  "type": "object",
+  "required": ["contract_type", "contract_version", "payload"],
+  "properties": {
+    "contract_type": { "const": "ReconciliationBreak" },
+    "contract_version": { "const": "1.0.0" },
+    "source_system": { "type": "string" },
+    "source_type": { "type": "string" },
+    "source_record_id": { "type": "string" },
+    "ingested_at": { "type": "string", "format": "date-time" },
+    "effective_at": { "type": "string", "format": "date-time" },
+    "lineage": { "type": "object", "additionalProperties": true },
+    "payload": {
+      "type": "object",
+      "required": ["break_id", "break_type", "severity", "status", "detected_at", "reason_code"],
+      "properties": {
+        "break_id": { "type": "string" },
+        "break_type": { "type": "string" },
+        "entity_id": { "type": "string" },
+        "account_id": { "type": "string" },
+        "related_contract_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "severity": { "type": "string" },
+        "status": { "type": "string" },
+        "detected_at": { "type": "string", "format": "date-time" },
+        "reason_code": { "type": "string" },
+        "explanation": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

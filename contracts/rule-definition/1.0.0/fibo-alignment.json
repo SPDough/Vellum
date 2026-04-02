@@ -1,0 +1,4 @@
+{
+  "enabled": false,
+  "notes": "RuleDefinition is a Vellum-native control artifact and should not be forced into a heavy external ontology model."
+}

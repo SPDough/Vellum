@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "notes": "Entity is one of the strongest FIBO-aligned concepts in the Vellum contract set.",
+  "concepts": [
+    { "field": "entity_id", "fibo_reference": "fibo-be-le-lp:LegalEntity" }
+  ]
+}

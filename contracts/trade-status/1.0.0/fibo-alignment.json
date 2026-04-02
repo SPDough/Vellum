@@ -1,0 +1,9 @@
+{
+  "enabled": true,
+  "notes": "Trade and settlement semantics should remain implementation-friendly while preserving semantic references.",
+  "concepts": [
+    { "field": "entity_id", "fibo_reference": "fibo-be-le-lp:LegalEntity" },
+    { "field": "account_id", "fibo_reference": "fibo-fbc-pas-caa:Account" },
+    { "field": "security_id", "fibo_reference": "fibo-fbc-fi-fi:FinancialInstrument" }
+  ]
+}

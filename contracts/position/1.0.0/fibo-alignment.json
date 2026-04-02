@@ -1,0 +1,9 @@
+{
+  "enabled": true,
+  "notes": "Lightweight semantic alignment hints only. Runtime contracts remain Vellum-native JSON.",
+  "concepts": [
+    { "field": "entity_id", "fibo_reference": "fibo-be-le-lp:LegalEntity" },
+    { "field": "account_id", "fibo_reference": "fibo-fbc-pas-caa:Account" },
+    { "field": "security_id", "fibo_reference": "fibo-fbc-fi-fi:FinancialInstrument" }
+  ]
+}

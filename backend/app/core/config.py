@@ -7,7 +7,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Application settings."""
+    """Application settings.
+
+    First-pass cleanup note:
+    this settings model currently serves both ambitious full-platform runtime
+    needs and local development defaults. Later passes should modularize heavy
+    startup dependencies more explicitly.
+    """
 
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False
@@ -102,6 +108,19 @@ class Settings(BaseSettings):
     )
     rag_chunk_size: int = Field(default=1000, alias="RAG_CHUNK_SIZE")
     rag_chunk_overlap: int = Field(default=200, alias="RAG_CHUNK_OVERLAP")
+
+    # Generalized integration framework
+    integrations_enabled: bool = Field(default=True, alias="INTEGRATIONS_ENABLED")
+    state_street_enabled: bool = Field(default=False, alias="STATE_STREET_ENABLED")
+    state_street_base_url: str = Field(
+        default="https://api.statestr.com", alias="STATE_STREET_BASE_URL"
+    )
+    state_street_auth_url: Optional[str] = Field(default=None, alias="STATE_STREET_AUTH_URL")
+    state_street_client_id: Optional[str] = Field(default=None, alias="STATE_STREET_CLIENT_ID")
+    state_street_client_secret: Optional[str] = Field(default=None, alias="STATE_STREET_CLIENT_SECRET")
+    state_street_api_key: Optional[str] = Field(default=None, alias="STATE_STREET_API_KEY")
+    state_street_timeout_seconds: int = Field(default=30, alias="STATE_STREET_TIMEOUT_SECONDS")
+    state_street_environment: str = Field(default="sandbox", alias="STATE_STREET_ENVIRONMENT")
 
     @validator("environment")
     def validate_environment(cls, v):

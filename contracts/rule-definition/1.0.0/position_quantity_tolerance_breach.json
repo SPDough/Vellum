@@ -1,0 +1,73 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "reconciliation.position_quantity_tolerance_breach.v1",
+  "payload": {
+    "rule_id": "reconciliation.position_quantity_tolerance_breach",
+    "rule_name": "Position quantity tolerance breach",
+    "rule_family": "reconciliation",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags positions where the absolute quantity difference exceeds the configured tolerance.",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Position"],
+    "input_scope": {
+      "group_by": ["payload.account_id", "payload.security_id"],
+      "filters": []
+    },
+    "expression_language": "jsonlogic",
+    "predicate": {
+      ">": [
+        { "var": "derived.absolute_quantity_difference" },
+        0
+      ]
+    },
+    "severity": "high",
+    "materiality": {
+      "mode": "expression",
+      "expression": {
+        ">=": [
+          { "var": "derived.absolute_quantity_difference" },
+          100
+        ]
+      }
+    },
+    "outcome": {
+      "result_code": "POSITION_QUANTITY_TOLERANCE_BREACH",
+      "result_type": "break",
+      "create_exception": true,
+      "create_reconciliation_break": true,
+      "open_workflow_case": true,
+      "require_approval": false,
+      "explanation_template": "Position mismatch for {{payload.security_id}} in account {{payload.account_id}} exceeds tolerance by {{derived.absolute_quantity_difference}} units."
+    },
+    "evidence": {
+      "fields": [
+        "payload.account_id",
+        "payload.security_id",
+        "payload.quantity",
+        "derived.expected_quantity",
+        "derived.absolute_quantity_difference"
+      ],
+      "rag_enabled": true,
+      "rag_collections": ["position-reconciliation-playbooks"]
+    },
+    "workflow_binding": {
+      "workflow_name": "position_break_resolution",
+      "case_type": "position_reconciliation_break"
+    },
+    "test_cases": [
+      {
+        "name": "position mismatch beyond tolerance",
+        "expected_result": "triggered"
+      },
+      {
+        "name": "position matches expected quantity",
+        "expected_result": "not_triggered"
+      }
+    ],
+    "tags": ["reconciliation", "position", "quantity", "deterministic"]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "contract_name": "TradeStatus",
+  "version": "1.0.0",
+  "business_definition": "A normalized representation of a trade's post-trade and settlement lifecycle state.",
+  "fields": {
+    "entity_id": "The legal or operating entity associated with the trade.",
+    "account_id": "The account associated with the trade.",
+    "trade_id": "The normalized source trade identifier.",
+    "client_trade_id": "The client-originated trade identifier where available.",
+    "security_id": "The security involved in the trade.",
+    "trade_date": "The date the trade was executed.",
+    "settlement_date": "The expected or actual settlement date.",
+    "settlement_status": "The normalized settlement lifecycle status.",
+    "quantity": "The traded quantity.",
+    "price": "The traded price.",
+    "currency": "The trade currency."
+  }
+}

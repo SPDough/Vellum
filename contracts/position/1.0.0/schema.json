@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vellum/contracts/position/1.0.0/schema.json",
+  "title": "Position",
+  "type": "object",
+  "required": ["contract_type", "contract_version", "payload"],
+  "properties": {
+    "contract_type": { "const": "Position" },
+    "contract_version": { "const": "1.0.0" },
+    "source_system": { "type": "string" },
+    "source_type": { "type": "string" },
+    "source_record_id": { "type": "string" },
+    "ingested_at": { "type": "string", "format": "date-time" },
+    "effective_at": { "type": "string", "format": "date-time" },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "payload": {
+      "type": "object",
+      "required": ["entity_id", "account_id", "security_id", "quantity", "currency", "position_date"],
+      "properties": {
+        "entity_id": { "type": "string" },
+        "account_id": { "type": "string" },
+        "security_id": { "type": "string" },
+        "instrument_id": { "type": "string" },
+        "quantity": { "type": "number" },
+        "currency": { "type": "string" },
+        "position_date": { "type": "string", "format": "date" },
+        "status": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "data_quality_flags": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": false
+}

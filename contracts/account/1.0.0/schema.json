@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vellum/contracts/account/1.0.0/schema.json",
+  "title": "Account",
+  "type": "object",
+  "required": ["contract_type", "contract_version", "payload"],
+  "properties": {
+    "contract_type": { "const": "Account" },
+    "contract_version": { "const": "1.0.0" },
+    "source_system": { "type": "string" },
+    "source_type": { "type": "string" },
+    "source_record_id": { "type": "string" },
+    "ingested_at": { "type": "string", "format": "date-time" },
+    "effective_at": { "type": "string", "format": "date-time" },
+    "lineage": { "type": "object", "additionalProperties": true },
+    "payload": {
+      "type": "object",
+      "required": ["account_id", "entity_id", "account_name", "account_type", "base_currency", "custodian_id"],
+      "properties": {
+        "account_id": { "type": "string" },
+        "entity_id": { "type": "string" },
+        "account_name": { "type": "string" },
+        "account_type": { "type": "string" },
+        "base_currency": { "type": "string" },
+        "custodian_id": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

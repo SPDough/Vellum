@@ -1,0 +1,8 @@
+{
+  "enabled": true,
+  "notes": "Account is a strong candidate for semantic alignment while remaining operationally simple.",
+  "concepts": [
+    { "field": "account_id", "fibo_reference": "fibo-fbc-pas-caa:Account" },
+    { "field": "entity_id", "fibo_reference": "fibo-be-le-lp:LegalEntity" }
+  ]
+}
