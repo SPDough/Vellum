@@ -313,6 +313,31 @@ class RagRetriever:
                 filter_tags=tag_filters,
             )
 
+        # Chunks may have empty relevance_tags when keyword tagging misses; tag overlap
+        # then filters out every row. Fall back to pure semantic search.
+        if len(prose_result.chunks) < 2:
+            log.info(
+                "retrieve_for_finding: insufficient chunks with tag filters; retrying without tags"
+            )
+            prose_result = self.retrieve(
+                query=query,
+                top_k=top_k // 2 + 1,
+                purpose=purpose,
+                filter_tags=None,
+            )
+
+        if len(prose_result.chunks) < 2:
+            log.info(
+                "retrieve_for_finding: insufficient chunks at min_score=0.30; retrying at 0.15"
+            )
+            prose_result = self.retrieve(
+                query=query,
+                top_k=top_k // 2 + 1,
+                purpose=purpose,
+                filter_tags=None,
+                min_score=0.15,
+            )
+
         api_chunks: list[RetrievedChunk] = []
         if mart_names:
             for mart in mart_names:

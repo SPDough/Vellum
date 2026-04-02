@@ -5,15 +5,12 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
 import pandas as pd
-from langchain.agents import (
-    AgentExecutor,
-    create_pandas_dataframe_agent,
-    initialize_agent,
-)
+from langchain.agents import AgentExecutor, initialize_agent
 from langchain.agents.agent_types import AgentType
-from langchain.schema import BaseMessage, HumanMessage, SystemMessage
-from langchain.sql_database import SQLDatabase
 from langchain_community.agent_toolkits import create_sql_agent
+from langchain_community.utilities import SQLDatabase
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain_experimental.agents import create_pandas_dataframe_agent
 from langchain_openai import ChatOpenAI
 from sqlalchemy import create_engine
 

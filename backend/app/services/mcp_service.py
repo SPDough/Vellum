@@ -10,7 +10,6 @@ import httpx
 
 from app.core.config import get_settings
 from app.core.telemetry import business_metrics, get_tracer
-from app.models.data import DataFlow, DataStream, MCPServer
 
 logger = logging.getLogger(__name__)
 tracer = get_tracer("mcp_service")

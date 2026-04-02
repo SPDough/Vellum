@@ -17,7 +17,7 @@ from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.config import get_settings
 from app.models.data_source import DataSourceType
@@ -29,7 +29,9 @@ logger = logging.getLogger(__name__)
 
 class CustodianDataState(BaseModel):
     """State model for custodian data analysis workflows."""
-    
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     messages: List[Dict[str, Any]] = Field(default_factory=list)
     data: Dict[str, Any] = Field(default_factory=dict)
     context: Dict[str, Any] = Field(default_factory=dict)

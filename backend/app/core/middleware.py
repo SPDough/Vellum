@@ -10,9 +10,8 @@ from uuid import uuid4
 
 import structlog
 from fastapi import HTTPException, Request, Response, status
-from fastapi.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import RequestResponseEndpoint
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 logger = structlog.get_logger(__name__)
 

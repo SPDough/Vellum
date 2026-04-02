@@ -196,8 +196,8 @@ class OptimizedDataSandboxService:
                     "timestamp": record.timestamp.isoformat() if record.timestamp else None,
                     **record.data,
                 }
-                if record.metadata:
-                    record_dict["_metadata"] = record.metadata
+                if record.record_metadata:
+                    record_dict["_metadata"] = record.record_metadata
                 data.append(record_dict)
 
             execution_time = time.time() - start_time
@@ -303,7 +303,7 @@ class OptimizedDataSandboxService:
             data_record = DataRecord(
                 data_source_id=data_source.id,
                 data=output.data,
-                metadata={
+                record_metadata={
                     "execution_id": output.execution_id,
                     "step_name": output.step_name,
                     **output.metadata,
@@ -363,7 +363,9 @@ class OptimizedDataSandboxService:
 
             # Create data record
             data_record = DataRecord(
-                data_source_id=data_source.id, data=stream.data, metadata=stream.metadata
+                data_source_id=data_source.id,
+                data=stream.data,
+                record_metadata=stream.metadata,
             )
 
             self.db.add(data_record)
@@ -418,7 +420,7 @@ class OptimizedDataSandboxService:
             data_record = DataRecord(
                 data_source_id=data_source.id,
                 data=result.result,
-                metadata={
+                record_metadata={
                     "execution_id": result.execution_id,
                     "task_type": result.task_type,
                     **result.metadata,

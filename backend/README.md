@@ -1,5 +1,36 @@
 # Backend
 
+## Local environment (recommended)
+
+The backend matches **CI and Docker**: **Python 3.12** (see [`.python-version`](.python-version)). Newer interpreters (e.g. 3.14) often lack wheels for transitive native deps—use 3.12 for a reliable install.
+
+**macOS (Homebrew):**
+
+```bash
+brew install python@3.12
+cd backend
+/opt/homebrew/bin/python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -r requirements.txt
+```
+
+Run the API (set real secrets and `DATABASE_URL` for your Postgres):
+
+```bash
+export ENVIRONMENT=development
+export DATABASE_URL=postgresql://user:pass@localhost:5432/dbname
+export SECRET_KEY=…   # 32+ chars
+export JWT_SECRET_KEY=…
+PYTHONPATH=. uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Smoke tests (same as CI):
+
+```bash
+pytest tests/test_basic.py -v
+```
+
 This backend currently supports two different runtime modes:
 
 ## 1. Full backend (canonical product backend)

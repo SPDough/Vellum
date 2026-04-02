@@ -92,7 +92,8 @@ class DataRecord(Base):
     data_source_id = Column(String, ForeignKey("data_sources.id"), nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
     data = Column(JSON, nullable=False)
-    metadata = Column(JSON)  # execution_id, step_name, etc.
+    # SQL column name remains "metadata"; "metadata" is reserved on Declarative Base
+    record_metadata = Column("metadata", JSON)  # execution_id, step_name, etc.
 
     # Relationships
     data_source = relationship("DataSource", back_populates="data_records")
