@@ -186,3 +186,14 @@ venv.bak/
 # Backup files
 *.bak
 *.backup
+# OpenClaw workspace files
+SOUL.md
+AGENTS.md
+TOOLS.md
+USER.md
+IDENTITY.md
+HEARTBEAT.md
+MEMORY.md
+BOOTSTRAP.md
+memory/
+.openclaw/
