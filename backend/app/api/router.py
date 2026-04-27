@@ -25,6 +25,7 @@ from app.api.endpoints import (
     sop_management,
     workflow_execution,
     workflows,
+    procedure_documents,
 )
 
 api_router = APIRouter()
