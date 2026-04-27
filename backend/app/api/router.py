@@ -43,6 +43,13 @@ api_router.include_router(workflow_execution.router, tags=["Workflow Execution"]
 # SOP management router - already has prefix="/sop-management"
 api_router.include_router(sop_management.router, tags=["SOP Management"])
 
+# Procedure documents — NAV validation cell documents served to otomeshon-portal
+api_router.include_router(
+    procedure_documents.router,
+    prefix="/procedure-documents",
+    tags=["Procedure Documents"],
+)
+
 # Additional Feature Routers (these need prefixes defined here)
 api_router.include_router(
     mcp_servers.router, prefix="/mcp-servers", tags=["MCP Servers"]
