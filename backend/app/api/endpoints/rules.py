@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api.endpoints.auth_unified import get_current_user
-from app.core.database import get_db
+from app.core.database import get_sync_db
 from app.models.trade import Trade
 from app.models.user import User
 from app.services.drools_service import (
@@ -173,7 +173,7 @@ async def execute_rules(
 @router.post("/validate-trade", response_model=RuleExecutionResponse)
 async def validate_trade(
     request: TradeValidationRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_sync_db),
     drools_service: DroolsService = Depends(get_drools_service),
     current_user: User = Depends(get_current_user),
 ):
@@ -212,7 +212,7 @@ async def validate_trade(
 @router.post("/check-risk", response_model=RuleExecutionResponse)
 async def check_risk_limits(
     request: RiskCheckRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_sync_db),
     drools_service: DroolsService = Depends(get_drools_service),
     current_user: User = Depends(get_current_user),
 ):
@@ -253,7 +253,7 @@ async def check_risk_limits(
 @router.post("/check-compliance", response_model=RuleExecutionResponse)
 async def check_compliance(
     request: ComplianceCheckRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_sync_db),
     drools_service: DroolsService = Depends(get_drools_service),
     current_user: User = Depends(get_current_user),
 ):
@@ -292,7 +292,7 @@ async def check_compliance(
 @router.post("/process-settlement", response_model=RuleExecutionResponse)
 async def process_settlement(
     request: SettlementProcessingRequest,
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_sync_db),
     drools_service: DroolsService = Depends(get_drools_service),
     current_user: User = Depends(get_current_user),
 ):

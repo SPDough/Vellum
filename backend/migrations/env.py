@@ -22,6 +22,7 @@ from app.models.trade import Trade, TradeExecution, Position
 from app.models.workflow import WorkflowDefinition, WorkflowInstance, WorkflowStep
 from app.models.data_sandbox import DataRecord, DataStream
 from app.models.knowledge_graph import KnowledgeNode, KnowledgeRelation
+from app.models.procedure_document_row import ProcedureDocumentRow  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

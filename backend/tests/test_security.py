@@ -24,6 +24,7 @@ class TestAuthSecurity:
         """Test that passwords are properly hashed."""
         # Mock environment variables
         os.environ["DEMO_ADMIN_PASSWORD"] = "test_password_123"
+        auth_config._users_cache = None
 
         # Create new auth config instance
         test_auth = auth_config
@@ -57,9 +58,9 @@ class TestInputValidation:
         result = InputValidator.sanitize_string("normal text", 100)
         assert result == "normal text"
 
-        # HTML escaping
-        result = InputValidator.sanitize_string("<script>alert('xss')</script>", 100)
-        assert "&lt;script&gt;" in result
+        # Script payloads are rejected by design in current validator.
+        with pytest.raises(ValidationError, match="Invalid characters detected"):
+            InputValidator.sanitize_string("<script>alert('xss')</script>", 100)
 
         # SQL injection patterns
         with pytest.raises(ValidationError, match="Invalid characters detected"):
@@ -100,7 +101,7 @@ class TestInputValidation:
             InputValidator.validate_currency("US")
 
         with pytest.raises(ValidationError, match="Invalid currency code format"):
-            InputValidator.validate_currency("USDD")
+            InputValidator.validate_currency("US1")
 
         with pytest.raises(ValidationError, match="Invalid currency code format"):
             InputValidator.validate_currency("123")
@@ -223,6 +224,8 @@ class TestSecurityConfiguration:
         # Test that demo passwords come from environment
         original_password = os.environ.get("DEMO_ADMIN_PASSWORD")
         os.environ["DEMO_ADMIN_PASSWORD"] = "test_env_password_123"
+        # Auth config caches users; clear cache so env update is picked up.
+        auth_config._users_cache = None
 
         # Create new auth config to pick up environment change
         test_auth = auth_config

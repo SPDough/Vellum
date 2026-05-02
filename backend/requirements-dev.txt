@@ -6,6 +6,8 @@ pytest==8.2.1
 pytest-asyncio==0.23.6
 pytest-cov==4.0.0
 pytest-xdist==3.3.1  # Parallel testing
+pytest-benchmark==4.0.0
+psutil==6.0.0
 
 # Code Quality
 black==24.4.2

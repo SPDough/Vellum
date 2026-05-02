@@ -47,6 +47,21 @@ class Settings(BaseSettings):
     openai_api_key: Optional[str] = Field(default=None, alias="OPENAI_API_KEY")
     anthropic_api_key: Optional[str] = Field(default=None, alias="ANTHROPIC_API_KEY")
 
+    # LLM / embedding policy (see docs/ADR-001-canonical-platform-stack.md)
+    llm_primary_provider: str = Field(default="anthropic", alias="LLM_PRIMARY_PROVIDER")
+    anthropic_default_model: str = Field(
+        default="claude-3-5-sonnet-20241022", alias="ANTHROPIC_DEFAULT_MODEL"
+    )
+    openai_embedding_model: str = Field(
+        default="text-embedding-3-small", alias="OPENAI_EMBEDDING_MODEL"
+    )
+    embedding_primary_provider: str = Field(
+        default="openai", alias="EMBEDDING_PRIMARY_PROVIDER"
+    )
+
+    # Prefect (deterministic orchestration; optional URL for workers / CLI)
+    prefect_api_url: Optional[str] = Field(default=None, alias="PREFECT_API_URL")
+
     # Local Embeddings
     ollama_base_url: str = Field(default="http://ollama:11434", alias="OLLAMA_BASE_URL")
 
@@ -99,8 +114,23 @@ class Settings(BaseSettings):
     # Keycloak (Optional)
     keycloak_url: Optional[str] = Field(default=None, alias="KEYCLOAK_URL")
 
-    # CORS Settings
-    cors_origins: str = Field(default="http://localhost:3000", alias="CORS_ORIGINS")
+    # CORS Settings (comma-separated origins)
+    cors_origins: str = Field(
+        default="http://localhost:3000,http://localhost:8080,http://frontend:3000",
+        alias="CORS_ORIGINS",
+    )
+
+    # Optional infrastructure at startup (set false for local / CI without brokers)
+    startup_enable_neo4j: bool = Field(default=True, alias="STARTUP_ENABLE_NEO4J")
+    startup_enable_kafka: bool = Field(default=True, alias="STARTUP_ENABLE_KAFKA")
+    startup_enable_temporal: bool = Field(default=False, alias="STARTUP_ENABLE_TEMPORAL")
+    startup_enable_kg_sync: bool = Field(default=True, alias="STARTUP_ENABLE_KG_SYNC")
+
+    def cors_origins_list(self) -> list[str]:
+        raw = (self.cors_origins or "").strip()
+        if not raw:
+            return ["http://localhost:3000"]
+        return [p.strip() for p in raw.split(",") if p.strip()]
 
     # RAG pipeline
     rag_upload_dir: str = Field(
@@ -165,6 +195,24 @@ class Settings(BaseSettings):
             raise ValueError(f"Compliance mode must be one of: {valid_modes}")
         return v
 
+    @validator("llm_primary_provider")
+    def validate_llm_primary_provider(cls, v):
+        allowed = {"anthropic", "openai", "ollama"}
+        key = (v or "anthropic").lower()
+        if key not in allowed:
+            raise ValueError(f"LLM_PRIMARY_PROVIDER must be one of: {sorted(allowed)}")
+        return key
+
+    @validator("embedding_primary_provider")
+    def validate_embedding_primary_provider(cls, v):
+        allowed = {"openai", "ollama", "sentence_transformer"}
+        key = (v or "openai").lower()
+        if key not in allowed:
+            raise ValueError(
+                f"EMBEDDING_PRIMARY_PROVIDER must be one of: {sorted(allowed)}"
+            )
+        return key
+
     @field_validator("environment")
     @classmethod
     def validate_production_settings(cls, v, info):
@@ -186,6 +234,10 @@ def get_settings() -> Settings:
         os.environ.setdefault("NEO4J_URL", "bolt://localhost:7687")
         os.environ.setdefault("NEO4J_PASSWORD", "testpassword")
         os.environ.setdefault("ENVIRONMENT", "testing")
+        os.environ.setdefault("STARTUP_ENABLE_NEO4J", "false")
+        os.environ.setdefault("STARTUP_ENABLE_KAFKA", "false")
+        os.environ.setdefault("STARTUP_ENABLE_TEMPORAL", "false")
+        os.environ.setdefault("STARTUP_ENABLE_KG_SYNC", "false")
         return Settings()
 
     # For non-test environments, load from environment variables

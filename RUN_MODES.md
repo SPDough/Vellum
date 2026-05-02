@@ -2,6 +2,8 @@
 
 This file defines the intended run modes for `Vellum-main`.
 
+**Canonical stack (architecture):** see [`docs/ADR-001-canonical-platform-stack.md`](docs/ADR-001-canonical-platform-stack.md).
+
 ## 1. Demo mode
 
 ### Purpose
@@ -61,3 +63,9 @@ The long-term API contract for the main application is:
 - `/api/v1/...`
 
 Any `/api/auth/...` paths currently present in the simplified backend should be treated as demo/dev compatibility behavior, not the final primary contract.
+
+## CI and integration targets
+
+- **Canonical backend for PRs and Portal wiring:** `uvicorn app.main:app` (module `backend/app/main.py`). OpenAPI and contract tests should target this app only.
+- **Demo / no-infra smoke:** `app.main_simple:app` is allowed for quick UI checks; it is **not** a substitute for `app.main` in integration tests.
+- **Environment flags for CI without Neo4j/Kafka/Temporal:** set `ENVIRONMENT=testing` (defaults `STARTUP_ENABLE_NEO4J` etc. to false via `get_settings()`), or override explicitly: `STARTUP_ENABLE_NEO4J=false`, `STARTUP_ENABLE_KAFKA=false`, `STARTUP_ENABLE_TEMPORAL=false`, `STARTUP_ENABLE_KG_SYNC=false`.

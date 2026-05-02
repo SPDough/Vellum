@@ -1,33 +1,30 @@
 """
 Procedure document endpoints.
 
-Serves NAV validation procedure documents with a cell-based structure.
-The in-memory store seeds a sample document; DB persistence is deferred.
+NAV validation procedure documents are persisted in PostgreSQL (`procedure_documents` table)
+as a JSON document; identity fields use the placeholder auth subject from request state.
 """
 
 from __future__ import annotations
 
-import copy
-from datetime import datetime, timezone
-from typing import Dict
+from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.database import get_db
 from app.schemas.procedure_document import (
     ExceptionDecisionRequest,
     ExceptionDecisionResponse,
-    ExceptionResolution,
     ProcedureDocument,
     SignoffRequest,
     SignoffResponse,
 )
+from app.services.procedure_document_service import ProcedureDocumentService
 
 router = APIRouter()
 
-# ---------------------------------------------------------------------------
-# Seed document — mirrors src/lib/mockData.ts in otomeshon-portal.
-# ---------------------------------------------------------------------------
-_SEED: Dict = {
+_SEED: Dict[str, Any] = {
     "id": "doc-apac-eq-01-2026-04-24",
     "title": "Daily NAV Validation",
     "fund_code": "APAC-EQ-01",
@@ -133,28 +130,28 @@ _SEED: Dict = {
     ],
 }
 
-# Mutable in-memory store, keyed by document ID.
-_store: Dict[str, Dict] = {_SEED["id"]: copy.deepcopy(_SEED)}
+
+def get_auth_subject(request: Request) -> str:
+    """Placeholder identity until JWT auth is wired; set by middleware on `request.state`."""
+    return getattr(
+        request.state,
+        "auth_subject",
+        "placeholder-user@vellum.ops",
+    )
 
 
-def _get_doc_or_404(doc_id: str) -> Dict:
-    doc = _store.get(doc_id)
-    if doc is None:
-        raise HTTPException(status_code=404, detail="Procedure document not found")
-    return doc
-
-
-def _get_cell_or_404(doc: Dict, cell_id: str) -> Dict:
-    for cell in doc["cells"]:
-        if cell["cell_id"] == cell_id:
-            return cell
-    raise HTTPException(status_code=404, detail="Cell not found")
+def get_procedure_service(
+    session: AsyncSession = Depends(get_db),
+) -> ProcedureDocumentService:
+    return ProcedureDocumentService(session)
 
 
 @router.get("/{doc_id}", response_model=ProcedureDocument)
-async def get_procedure_document(doc_id: str) -> ProcedureDocument:
-    doc = _get_doc_or_404(doc_id)
-    return ProcedureDocument.model_validate(copy.deepcopy(doc))
+async def get_procedure_document(
+    doc_id: str,
+    service: ProcedureDocumentService = Depends(get_procedure_service),
+) -> ProcedureDocument:
+    return await service.get_document(doc_id, _SEED)
 
 
 @router.post(
@@ -165,29 +162,10 @@ async def decide_exception(
     doc_id: str,
     cell_id: str,
     payload: ExceptionDecisionRequest,
+    service: ProcedureDocumentService = Depends(get_procedure_service),
+    subject: str = Depends(get_auth_subject),
 ) -> ExceptionDecisionResponse:
-    doc = _get_doc_or_404(doc_id)
-    cell = _get_cell_or_404(doc, cell_id)
-
-    if cell["cell_role"] != "exception":
-        raise HTTPException(status_code=400, detail="Cell is not an exception cell")
-
-    option_ids = {o["id"] for o in cell.get("remediation_options", [])}
-    if payload.option_id not in option_ids:
-        raise HTTPException(status_code=400, detail="Unknown remediation option")
-
-    resolution = {
-        "option_id": payload.option_id,
-        "rationale": payload.rationale,
-        "decided_by": "current.user@vellum.ops",  # replaced by JWT identity in auth phase
-        "decided_at": datetime.now(timezone.utc).isoformat(),
-    }
-    cell["resolution"] = resolution
-
-    return ExceptionDecisionResponse(
-        cell_id=cell_id,
-        resolution=ExceptionResolution(**resolution),
-    )
+    return await service.decide_exception(doc_id, cell_id, payload, decided_by=subject)
 
 
 @router.post(
@@ -198,27 +176,7 @@ async def signoff_cell(
     doc_id: str,
     cell_id: str,
     payload: SignoffRequest,
+    service: ProcedureDocumentService = Depends(get_procedure_service),
+    subject: str = Depends(get_auth_subject),
 ) -> SignoffResponse:
-    doc = _get_doc_or_404(doc_id)
-    cell = _get_cell_or_404(doc, cell_id)
-
-    if cell["cell_role"] != "signoff":
-        raise HTTPException(status_code=400, detail="Cell is not a signoff cell")
-
-    unresolved = [
-        c for c in doc["cells"]
-        if c["cell_role"] == "exception" and not c.get("resolution")
-    ]
-    if unresolved:
-        raise HTTPException(
-            status_code=409,
-            detail="Cannot sign off while exceptions remain unresolved",
-        )
-
-    signed_by = "current.user@vellum.ops"  # replaced by JWT identity in auth phase
-    signed_at = datetime.now(timezone.utc).isoformat()
-    cell["signed_by"] = signed_by
-    cell["signed_at"] = signed_at
-    doc["status"] = "signed"
-
-    return SignoffResponse(cell_id=cell_id, signed_by=signed_by, signed_at=signed_at)
+    return await service.signoff_cell(doc_id, cell_id, payload, signed_by=subject)
