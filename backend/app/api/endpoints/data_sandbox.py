@@ -38,6 +38,14 @@ from app.services.websocket_service import connection_manager, data_stream_servi
 router = APIRouter()
 
 
+def _not_implemented(feature: str) -> None:
+    """Stub endpoints return HTTP 501 so clients do not treat mock data as real."""
+    raise HTTPException(
+        status_code=501,
+        detail=f"Not implemented: {feature}",
+    )
+
+
 async def get_data_sandbox_service(
     db: Session = Depends(get_sync_db),
 ) -> DataSandboxService:
@@ -141,11 +149,7 @@ async def execute_sql(
     sql_request: dict, service: DataSandboxService = Depends(get_data_sandbox_service)
 ) -> DataQueryResult:
     """Execute a SQL query."""
-    # This would implement SQL query execution
-    # For now, return a placeholder
-    return DataQueryResult(
-        data=[], total_count=0, schema=None, execution_time=0.0, source=None
-    )
+    _not_implemented("data-sandbox SQL execution")
 
 
 # Workflow Integration
@@ -159,9 +163,7 @@ async def get_workflow_outputs(
     service: DataSandboxService = Depends(get_data_sandbox_service),
 ) -> List[WorkflowOutput]:
     """Get workflow outputs."""
-    # This would integrate with the workflow service
-    # For now, return mock data
-    return []
+    _not_implemented("data-sandbox workflow outputs listing")
 
 
 @router.get("/workflow-outputs/{output_id}", response_model=WorkflowOutput)
@@ -200,9 +202,7 @@ async def get_mcp_data_streams(
     service: DataSandboxService = Depends(get_data_sandbox_service),
 ) -> List[MCPDataStream]:
     """Get MCP data streams."""
-    # This would integrate with the MCP service
-    # For now, return mock data
-    return []
+    _not_implemented("data-sandbox MCP streams listing")
 
 
 @router.get("/mcp-streams/{stream_id}", response_model=MCPDataStream)
@@ -242,9 +242,7 @@ async def get_agent_results(
     service: DataSandboxService = Depends(get_data_sandbox_service),
 ) -> List[AgentResult]:
     """Get agent results."""
-    # This would integrate with the agent service
-    # For now, return mock data
-    return []
+    _not_implemented("data-sandbox agent results listing")
 
 
 @router.get("/agent-results/{result_id}", response_model=AgentResult)
@@ -321,9 +319,7 @@ async def schedule_export(
     request: dict, service: DataSandboxService = Depends(get_data_sandbox_service)
 ) -> Dict[str, str]:
     """Schedule a recurring data export."""
-    # This would implement scheduled exports
-    # For now, return a placeholder
-    return {"message": "Export scheduled successfully", "schedule_id": "schedule_123"}
+    _not_implemented("data-sandbox scheduled exports")
 
 
 # Data Transformation
@@ -378,20 +374,7 @@ async def save_visualization(
     service: DataSandboxService = Depends(get_data_sandbox_service),
 ) -> DataVisualizationResponse:
     """Save a data visualization configuration."""
-    # This would save visualization config to database
-    # For now, return a mock response
-    from datetime import datetime
-
-    return DataVisualizationResponse(
-        id="viz_123",
-        title=config.title,
-        description=config.description,
-        type=config.type,
-        config=config.config,
-        created_by="user_123",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
-    )
+    _not_implemented("data-sandbox visualization persistence")
 
 
 @router.get("/visualizations", response_model=List[DataVisualizationResponse])
@@ -399,9 +382,7 @@ async def get_visualizations(
     service: DataSandboxService = Depends(get_data_sandbox_service),
 ) -> List[DataVisualizationResponse]:
     """Get all saved visualizations."""
-    # This would get visualizations from database
-    # For now, return empty list
-    return []
+    _not_implemented("data-sandbox visualization listing")
 
 
 @router.get("/visualizations/{viz_id}", response_model=DataVisualizationResponse)
@@ -418,8 +399,7 @@ async def delete_visualization(
     viz_id: str, service: DataSandboxService = Depends(get_data_sandbox_service)
 ) -> Dict[str, str]:
     """Delete a visualization."""
-    # This would delete visualization from database
-    return {"message": "Visualization deleted successfully"}
+    _not_implemented("data-sandbox visualization delete")
 
 
 # Real-time Data (WebSocket)
@@ -491,9 +471,7 @@ async def get_data_lineage(
     source_id: str, service: DataSandboxService = Depends(get_data_sandbox_service)
 ) -> DataLineage:
     """Get data lineage for a source."""
-    # This would implement data lineage tracking
-    # For now, return empty lineage
-    return DataLineage(upstream=[], downstream=[])
+    _not_implemented("data-sandbox lineage")
 
 
 # Collaboration
@@ -502,12 +480,7 @@ async def share_data_view(
     request: dict, service: DataSandboxService = Depends(get_data_sandbox_service)
 ) -> Dict[str, str]:
     """Share a data view with others."""
-    # This would implement data view sharing
-    # For now, return a mock response
-    return {
-        "share_id": "share_123",
-        "share_url": "https://app.example.com/shared/share_123",
-    }
+    _not_implemented("data-sandbox shared views")
 
 
 @router.get("/shared-views/{share_id}")

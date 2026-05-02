@@ -95,6 +95,8 @@ loguru==0.7.2
 # Development
 pytest==8.2.1
 pytest-asyncio==0.23.6
+pytest-benchmark==4.0.0
+psutil==6.0.0
 black==24.4.2
 isort==5.13.2
 mypy==1.10.0

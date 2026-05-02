@@ -32,6 +32,12 @@ def setup_telemetry(settings: Settings) -> None:
     trace_provider = TracerProvider(resource=resource)
     trace.set_tracer_provider(trace_provider)
 
+    # Test hardening: avoid background OTLP export threads during local pytest.
+    if settings.environment == "testing":
+        metrics.set_meter_provider(MeterProvider(resource=resource))
+        print("✅ OpenTelemetry configured in local mode (export disabled for testing)")
+        return
+
     # Configure OTLP span exporter
     otlp_span_exporter = OTLPSpanExporter(
         endpoint=settings.otel_exporter_otlp_endpoint,

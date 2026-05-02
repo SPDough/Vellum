@@ -17,7 +17,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
-from app.core.database import get_db
+from app.core.database import get_sync_db
 from app.models.user import User, UserRole, UserStatus
 from app.schemas import UserResponse
 from app.services.auth_factory import AuthFactory
@@ -68,7 +68,7 @@ def get_client_info(request: Request) -> Dict[str, str]:
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_sync_db),
 ) -> User:
     """Get current authenticated user using simple auth"""
 
@@ -108,7 +108,7 @@ async def get_auth_providers():
 
 @router.post("/login", response_model=LoginResponse)
 async def login(
-    login_data: LoginRequest, request: Request, db: Session = Depends(get_db)
+    login_data: LoginRequest, request: Request, db: Session = Depends(get_sync_db)
 ):
     """Authenticate user using specified or default auth provider"""
 
@@ -161,7 +161,7 @@ async def login(
 
 @router.post("/refresh", response_model=RefreshTokenResponse)
 async def refresh_token(
-    refresh_data: RefreshTokenRequest, db: Session = Depends(get_db)
+    refresh_data: RefreshTokenRequest, db: Session = Depends(get_sync_db)
 ):
     """Refresh access token using specified or default auth provider"""
 
@@ -195,7 +195,7 @@ async def refresh_token(
 async def logout(
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: Session = Depends(get_sync_db),
 ):
     """Logout user using specified or default auth provider"""
 

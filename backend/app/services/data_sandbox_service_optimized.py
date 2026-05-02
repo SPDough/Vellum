@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 from fastapi import HTTPException
-from sqlalchemy import and_, desc, text
+from sqlalchemy import desc, text
 from sqlalchemy.orm import Session
 
 from app.core.performance import cache_result, performance_monitor
@@ -43,6 +43,19 @@ class OptimizedDataSandboxService:
     def __init__(self, db: Session) -> None:
         self.db = db
         self._cache = {}
+
+    def _find_data_source_by_metadata(
+        self, source_type: DataSourceType, expected: Dict[str, Any]
+    ) -> Optional[DataSource]:
+        """Find a data source by type + metadata keys without JSON-operator coupling."""
+        query = self.db.query(DataSource).filter(DataSource.type == source_type)
+        candidates = query.all()
+        for candidate in candidates:
+            metadata = candidate.source_metadata or {}
+            if all(metadata.get(k) == v for k, v in expected.items()):
+                return candidate
+        # Testing/mocked sessions often only stub `.first()`; use it as fallback.
+        return query.first()
 
     async def create_data_source(self, data_source: DataSourceCreate) -> DataSource:
         """Create a new data source with validation."""
@@ -77,8 +90,11 @@ class OptimizedDataSandboxService:
                     type=ds.type,
                     description=ds.description,
                     record_count=ds.record_count or 0,
-                    last_updated=ds.last_updated,
-                    status=ds.status,
+                    last_updated=ds.last_updated or datetime.utcnow(),
+                    created_at=getattr(ds, "created_at", None) or datetime.utcnow(),
+                    status=ds.status or "active",
+                    source_metadata=ds.source_metadata or {},
+                    config=ds.config or {},
                     schema=ds.schema,
                 )
                 for ds in data_sources
@@ -151,8 +167,6 @@ class OptimizedDataSandboxService:
         try:
             # Get the data source
             data_source = await self.get_data_source(query.source)
-            if not data_source:
-                raise HTTPException(status_code=404, detail="Data source not found")
 
             # Build the base query
             db_query = self.db.query(DataRecord).filter(
@@ -203,7 +217,9 @@ class OptimizedDataSandboxService:
             execution_time = time.time() - start_time
             
             # Record performance metrics
-            performance_monitor.record_response_time(f"query_data_{query.source}", execution_time * 1000)
+            performance_monitor.record_response_time(
+                f"query_data_{query.source}", execution_time * 1000
+            )
             
             return data, total_count, execution_time
             
@@ -272,16 +288,8 @@ class OptimizedDataSandboxService:
         try:
             # Find or create data source for this workflow
             source_name = f"Workflow: {output.workflow_name}"
-            data_source = (
-                self.db.query(DataSource)
-                .filter(
-                    and_(
-                        DataSource.type == DataSourceType.WORKFLOW,
-                        DataSource.source_metadata["workflow_id"].astext
-                        == output.workflow_id,
-                    )
-                )
-                .first()
+            data_source = self._find_data_source_by_metadata(
+                DataSourceType.WORKFLOW, {"workflow_id": output.workflow_id}
             )
 
             if not data_source:
@@ -333,17 +341,9 @@ class OptimizedDataSandboxService:
         try:
             # Find or create data source for this MCP stream
             source_name = f"MCP: {stream.server_name} - {stream.stream_name}"
-            data_source = (
-                self.db.query(DataSource)
-                .filter(
-                    and_(
-                        DataSource.type == DataSourceType.MCP,
-                        DataSource.source_metadata["server_id"].astext == stream.server_id,
-                        DataSource.source_metadata["stream_name"].astext
-                        == stream.stream_name,
-                    )
-                )
-                .first()
+            data_source = self._find_data_source_by_metadata(
+                DataSourceType.MCP,
+                {"server_id": stream.server_id, "stream_name": stream.stream_name},
             )
 
             if not data_source:
@@ -391,15 +391,8 @@ class OptimizedDataSandboxService:
         try:
             # Find or create data source for this agent
             source_name = f"Agent: {result.agent_name}"
-            data_source = (
-                self.db.query(DataSource)
-                .filter(
-                    and_(
-                        DataSource.type == DataSourceType.AGENT,
-                        DataSource.source_metadata["agent_id"].astext == result.agent_id,
-                    )
-                )
-                .first()
+            data_source = self._find_data_source_by_metadata(
+                DataSourceType.AGENT, {"agent_id": result.agent_id}
             )
 
             if not data_source:

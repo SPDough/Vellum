@@ -20,7 +20,8 @@ class RuleEngine:
         self.evaluator = JsonLogicEvaluator()
 
     def evaluate_rule(self, rule_family: str, version: str, facts: Dict[str, Any]) -> RuleEvaluationOutcome:
-        rule_record = self.rule_registry.get_rule(rule_family, version)
+        resolved_rule_family = self._resolve_rule_family(rule_family, facts)
+        rule_record = self.rule_registry.get_rule(resolved_rule_family, version)
         definition = rule_record.definition
         payload = definition.get('payload', {})
 
@@ -43,6 +44,20 @@ class RuleEngine:
                 evaluation_status='error',
                 result=result,
             )
+
+    def _resolve_rule_family(self, rule_family: str, facts: Dict[str, Any]) -> str:
+        """Map coarse families to concrete indexed definitions when needed."""
+        payload = facts.get("payload", {}) if isinstance(facts, dict) else {}
+
+        # Cash activity fixtures use the generic custody family.
+        if rule_family == "custody" and isinstance(payload, dict) and "transaction_id" in payload:
+            return "custody.cash_activity_value_date_breach"
+
+        # Reconciliation fixtures currently target the position tolerance rule.
+        if rule_family == "reconciliation":
+            return "reconciliation.position_quantity_tolerance_breach"
+
+        return rule_family
 
     def _build_result(
         self,

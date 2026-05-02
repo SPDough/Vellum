@@ -1,3 +1,15 @@
+"""
+Database access
+
+- **Async API code** should depend on ``get_db`` / ``get_async_session`` and use
+  ``AsyncSession`` (SQLAlchemy 2.x style).
+- **Legacy auth** (``auth_unified``) still uses ``get_sync_db`` / sync ``Session``;
+  new endpoints should prefer async; migrate call sites when touched.
+
+Heavy startup (Neo4j init inside ``DatabaseManager``) is skipped when
+``STARTUP_ENABLE_NEO4J`` is false in settings.
+"""
+
 import asyncio
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Generator, Optional
@@ -10,6 +22,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.base import Base as DataSandboxBase
 from app.core.config import get_settings
+from app.models import procedure_document_row as _procedure_document_row  # noqa: F401
 from app.models.rag import Base as RAGBase
 from app.models.sop import Base as SOPBase
 from app.models.trade import Base as TradeBase
@@ -72,70 +85,56 @@ class DatabaseManager:
                 settings.neo4j_url, auth=(settings.neo4j_user, settings.neo4j_password)
             )
 
-            # Test connection
             if self.neo4j_driver:
                 await self.neo4j_driver.verify_connectivity()
 
-                # Create constraints and indexes
                 async with self.neo4j_driver.session() as session:
-                    # SOP Document constraints
                     await session.run(
                         """
-                    CREATE CONSTRAINT sop_document_id IF NOT EXISTS
-                    FOR (s:SOPDocument) REQUIRE s.id IS UNIQUE
-                """
+                        CREATE CONSTRAINT sop_document_id IF NOT EXISTS
+                        FOR (s:SOPDocument) REQUIRE s.id IS UNIQUE
+                        """
                     )
-
-                await session.run(
-                    """
-                    CREATE CONSTRAINT sop_document_number IF NOT EXISTS
-                    FOR (s:SOPDocument) REQUIRE s.document_number IS UNIQUE
-                """
-                )
-
-                # SOP Step constraints
-                await session.run(
-                    """
-                    CREATE CONSTRAINT sop_step_id IF NOT EXISTS
-                    FOR (s:SOPStep) REQUIRE s.id IS UNIQUE
-                """
-                )
-
-                # Process constraints
-                await session.run(
-                    """
-                    CREATE CONSTRAINT process_id IF NOT EXISTS
-                    FOR (p:Process) REQUIRE p.id IS UNIQUE
-                """
-                )
-
-                # Trade constraints
-                await session.run(
-                    """
-                    CREATE CONSTRAINT trade_id IF NOT EXISTS
-                    FOR (t:Trade) REQUIRE t.id IS UNIQUE
-                """
-                )
-
-                # Create vector index for semantic search
-                await session.run(
-                    """
-                    CREATE VECTOR INDEX sop_embeddings IF NOT EXISTS
-                    FOR (s:SOPDocument) ON (s.embeddings)
-                    OPTIONS {indexConfig: {
-                        `vector.dimensions`: 1536,
-                        `vector.similarity_function`: 'cosine'
-                    }}
-                """
-                )
-
-                # Create text indexes for full-text search
-                await session.run(
-                    """
-                    CREATE FULLTEXT INDEX sop_content_fulltext IF NOT EXISTS
-                    FOR (s:SOPDocument) ON EACH [s.title, s.content, s.summary]
-                """
-                )
+                    await session.run(
+                        """
+                        CREATE CONSTRAINT sop_document_number IF NOT EXISTS
+                        FOR (s:SOPDocument) REQUIRE s.document_number IS UNIQUE
+                        """
+                    )
+                    await session.run(
+                        """
+                        CREATE CONSTRAINT sop_step_id IF NOT EXISTS
+                        FOR (s:SOPStep) REQUIRE s.id IS UNIQUE
+                        """
+                    )
+                    await session.run(
+                        """
+                        CREATE CONSTRAINT process_id IF NOT EXISTS
+                        FOR (p:Process) REQUIRE p.id IS UNIQUE
+                        """
+                    )
+                    await session.run(
+                        """
+                        CREATE CONSTRAINT trade_id IF NOT EXISTS
+                        FOR (t:Trade) REQUIRE t.id IS UNIQUE
+                        """
+                    )
+                    await session.run(
+                        """
+                        CREATE VECTOR INDEX sop_embeddings IF NOT EXISTS
+                        FOR (s:SOPDocument) ON (s.embeddings)
+                        OPTIONS {indexConfig: {
+                            `vector.dimensions`: 1536,
+                            `vector.similarity_function`: 'cosine'
+                        }}
+                        """
+                    )
+                    await session.run(
+                        """
+                        CREATE FULLTEXT INDEX sop_content_fulltext IF NOT EXISTS
+                        FOR (s:SOPDocument) ON EACH [s.title, s.content, s.summary]
+                        """
+                    )
 
             print("✅ Neo4j initialized successfully")
 
@@ -199,9 +198,10 @@ async def get_neo4j_session() -> AsyncGenerator:
 
 # Database initialization function
 async def init_db() -> None:
-    """Initialize all databases."""
+    """Initialize PostgreSQL (always) and Neo4j when enabled in settings."""
     await db_manager.init_postgres()
-    await db_manager.init_neo4j()
+    if settings.startup_enable_neo4j:
+        await db_manager.init_neo4j()
 
 
 # Database cleanup function
