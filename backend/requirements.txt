@@ -1,6 +1,7 @@
 # Core Framework
-fastapi[all]==0.110.0
-uvicorn[standard]==0.29.0
+# FastAPI >=0.111 is required by Prefect 3.x
+fastapi[all]>=0.111.0,<0.116.0
+uvicorn[standard]>=0.30.0,<0.35.0
 pydantic>=2.7.4
 pydantic-settings>=2.4.0
 
@@ -16,6 +17,7 @@ langsmith==0.1.143
 
 # Workflow Orchestration
 temporalio==1.6.0
+prefect>=3.0.0,<4
 
 # Database & Graph
 neo4j==5.19.0
@@ -37,13 +39,13 @@ python-dotenv==1.0.1
 openai>=1.54.0
 anthropic>=0.30.0
 
-# Observability
-opentelemetry-api==1.24.0
-opentelemetry-sdk==1.24.0
-opentelemetry-exporter-otlp==1.24.0
-opentelemetry-instrumentation-fastapi==0.45b0
-opentelemetry-instrumentation-psycopg2==0.45b0
-opentelemetry-instrumentation-sqlalchemy==0.45b0
+# Observability (compatible with Prefect 3.x OpenTelemetry constraints)
+opentelemetry-api>=1.27.0,<2.0.0
+opentelemetry-sdk>=1.27.0,<2.0.0
+opentelemetry-exporter-otlp>=1.27.0,<2.0.0
+opentelemetry-instrumentation-fastapi>=0.48b0,<1.0.0
+opentelemetry-instrumentation-psycopg2>=0.48b0,<1.0.0
+opentelemetry-instrumentation-sqlalchemy>=0.48b0,<1.0.0
 
 # Rules Engine Integration
 py4j==0.10.9.7

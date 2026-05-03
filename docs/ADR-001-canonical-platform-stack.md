@@ -31,6 +31,8 @@ Otomeshon spans multiple repositories (`Vellum` backend + UIs, `otomeshon-portal
 | `OPENAI_EMBEDDING_MODEL` | Default `text-embedding-3-small` |
 | `EMBEDDING_PRIMARY_PROVIDER` | `openai` (default when key present), `ollama`, or `sentence_transformer` |
 | `PREFECT_API_URL` | e.g. `http://prefect-server:4200/api` (Compose) or Prefect Cloud API URL |
+| `PREFECT_API_KEY` | Prefect Cloud API key (unset for local server profile) |
+| `PREFECT_WORK_POOL` | Prefect work pool name for worker processes (e.g. `default-agent-pool`) |
 | `STARTUP_ENABLE_TEMPORAL` | Default **`false`** in dev Compose; Temporal retained only during migration |
 
 ## Consequences
@@ -43,3 +45,4 @@ Otomeshon spans multiple repositories (`Vellum` backend + UIs, `otomeshon-portal
 
 - `RUN_MODES.md` — run modes vs canonical backend
 - `backend/flows/canonical_probe.py` — minimal Prefect flow smoke artifact
+- `docs/PREFECT-CLOUD-WORK-POOLS.md` — Cloud work pool runbook and local/CI wiring

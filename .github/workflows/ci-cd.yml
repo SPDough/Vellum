@@ -134,6 +134,14 @@ jobs:
         black --check app/
         isort --check-only app/
 
+    - name: Run Prefect canonical probe smoke
+      env:
+        PREFECT_HOME: ${{ github.workspace }}/backend/.prefect
+        PREFECT_API_DATABASE_CONNECTION_URL: sqlite+aiosqlite:///${{ github.workspace }}/backend/.prefect/prefect.db
+      run: |
+        mkdir -p .prefect
+        python -m flows.canonical_probe
+
     - name: Run tests
       env:
         DATABASE_URL: postgresql://test:test@localhost:5432/test
