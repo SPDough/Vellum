@@ -61,10 +61,12 @@ docker-compose logs -f frontend
 - Neo4j (knowledge graph)
 - Redis (caching)
 - Apache Kafka (event streaming)
-- Temporal (workflow engine)
+- Prefect profile support for deterministic orchestration (`docker compose --profile prefect up`)
 - Keycloak (authentication)
 - Jaeger (observability)
 - Prometheus + Grafana (monitoring)
+
+For Prefect Cloud pool setup and worker wiring, see `docs/PREFECT-CLOUD-WORK-POOLS.md`.
 
 ### 4. Local Development (No Docker)
 

@@ -36,12 +36,14 @@ services:
     environment:
       - DATABASE_URL=postgresql://otomeshon:password@postgres:5432/otomeshon
       - REDIS_URL=redis://redis:6379/0
-      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_URL=bolt://neo4j:7687
       - NEO4J_USER=neo4j
       - NEO4J_PASSWORD=password
       - ENVIRONMENT=development
       - LOG_LEVEL=debug
       - PYTHONPATH=/app
+      # Prefect API can point to local server profile or Prefect Cloud
+      - PREFECT_API_URL=${PREFECT_API_URL:-}
     depends_on:
       - postgres
       - redis
@@ -151,6 +153,36 @@ services:
     networks:
       - otomeshon-dev-network
     restart: unless-stopped
+
+  # Prefect orchestration (optional profile)
+  prefect-server:
+    image: prefecthq/prefect:3-python3.12
+    container_name: otomeshon-prefect-dev
+    command: prefect server start --host 0.0.0.0
+    ports:
+      - "4200:4200"
+    networks:
+      - otomeshon-dev-network
+    restart: unless-stopped
+    profiles:
+      - prefect
+
+  prefect-worker:
+    image: prefecthq/prefect:3-python3.12
+    container_name: otomeshon-prefect-worker-dev
+    command: >
+      sh -c "prefect worker start --pool ${PREFECT_WORK_POOL:-default-agent-pool} --type process"
+    environment:
+      - PREFECT_API_URL=${PREFECT_API_URL:-http://prefect-server:4200/api}
+      - PREFECT_API_KEY=${PREFECT_API_KEY:-}
+      - PREFECT_WORK_POOL=${PREFECT_WORK_POOL:-default-agent-pool}
+    depends_on:
+      - prefect-server
+    networks:
+      - otomeshon-dev-network
+    restart: unless-stopped
+    profiles:
+      - prefect
 
 networks:
   otomeshon-dev-network:
