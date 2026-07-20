@@ -72,6 +72,9 @@ tenacity==8.3.0
 # RAG pipeline (document loaders and chunking)
 pypdf==5.1.0
 langchain-text-splitters==0.3.2
+# Structure-preserving document parsing for knowledge ingestion (tables intact).
+# Heavy dependency (pulls torch); code falls back to pypdf when absent.
+docling>=2.15.0
 # NAV RAG ingest (ingest.py)
 tiktoken>=0.7.0
 openpyxl>=3.1.0

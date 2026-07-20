@@ -138,6 +138,18 @@ class Settings(BaseSettings):
     )
     rag_chunk_size: int = Field(default=1000, alias="RAG_CHUNK_SIZE")
     rag_chunk_overlap: int = Field(default=200, alias="RAG_CHUNK_OVERLAP")
+    # Knowledge ingestion (Phase 1)
+    rag_use_docling: bool = Field(default=True, alias="RAG_USE_DOCLING")
+    rag_enforce_metadata_contract: bool = Field(
+        default=True, alias="RAG_ENFORCE_METADATA_CONTRACT"
+    )
+    rag_contextual_enrichment: bool = Field(
+        default=False, alias="RAG_CONTEXTUAL_ENRICHMENT"
+    )
+    rag_enrichment_model: str = Field(default="gpt-4o-mini", alias="RAG_ENRICHMENT_MODEL")
+    rag_enrichment_doc_context_chars: int = Field(
+        default=6000, alias="RAG_ENRICHMENT_DOC_CONTEXT_CHARS"
+    )
 
     # Generalized integration framework
     integrations_enabled: bool = Field(default=True, alias="INTEGRATIONS_ENABLED")
