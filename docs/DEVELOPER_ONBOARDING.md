@@ -21,7 +21,7 @@ Before you begin, ensure you have the following installed on your development ma
 ### Required Software
 
 - **Python 3.11+**: Backend development
-- **Node.js 18+**: Frontend development
+- **Node.js 18+**: Optional; only if you also work on the custodian portal (separate repo)
 - **Docker & Docker Compose**: For running services
 - **Git**: Version control
 - **PostgreSQL 14+**: Primary database
@@ -75,22 +75,13 @@ pip install -r requirements.txt
 pip install -r requirements-dev.txt
 ```
 
-### 3. Frontend Setup
+### 3. User interface (custodian portal)
 
-```bash
-# Navigate to frontend directory
-cd frontend
+The product UI is developed in the **custodian portal** repository (not in this `Vellum` tree). Clone that repo and follow its README for Node, Vite, and Tailwind setup.
 
-# Install dependencies
-npm install
+### 4. Environment configuration
 
-# Install development dependencies (if not included above)
-npm install --save-dev
-```
-
-### 4. Environment Configuration
-
-Create environment files for both backend and frontend:
+Create a backend environment file:
 
 #### Backend Environment (.env)
 ```bash
@@ -105,16 +96,6 @@ NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=your_password
 OPENAI_API_KEY=your_openai_key
-```
-
-#### Frontend Environment (.env.local)
-```bash
-# Copy example environment file
-cp frontend/.env.example frontend/.env.local
-
-# Edit with your configuration
-VITE_API_URL=http://localhost:8000
-VITE_WS_URL=ws://localhost:8000
 ```
 
 ### 5. Database Setup
@@ -159,19 +140,6 @@ python -m uvicorn app.main:app --reload --port 8000
 curl http://localhost:8000/health
 ```
 
-#### Test Frontend
-```bash
-cd frontend
-
-# Run tests
-npm test
-
-# Start development server
-npm run dev
-
-# Open browser to http://localhost:5173
-```
-
 ### 7. Development Tools Setup
 
 #### VS Code Extensions
@@ -202,7 +170,7 @@ pre-commit run --all-files
 
 Otomeshon is a microservices-based platform with:
 
-- **Frontend**: React 18 + TypeScript SPA
+- **UI**: Custodian portal (separate repository); this repo is backend-focused
 - **Backend**: FastAPI Python application
 - **Databases**: PostgreSQL (primary), Neo4j (graph), Redis (cache)
 - **Key Features**: Data Sandbox, AI Agents, Workflow Automation, Knowledge Graph
@@ -220,17 +188,8 @@ Vellum/
 │   │   └── main.py         # Application entry point
 │   ├── tests/              # Backend tests
 │   └── requirements.txt    # Python dependencies
-├── frontend/               # React TypeScript frontend
-│   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── pages/          # Page components
-│   │   ├── hooks/          # Custom hooks
-│   │   ├── services/       # API services
-│   │   └── types/          # TypeScript types
-│   ├── tests/              # Frontend tests
-│   └── package.json        # Node.js dependencies
 ├── docs/                   # Documentation
-├── docker-compose.yml      # Docker services
+├── docker-compose.*.yml    # Docker Compose stacks (minimal / dev / prod)
 └── README.md              # Project overview
 ```
 
@@ -250,11 +209,9 @@ Start by understanding the key components:
 - `Neo4jService`: Knowledge graph operations
 - `LLMService`: AI model interactions
 
-#### Frontend Components
-- `Layout`: Main application shell
-- `DataSandbox`: Data analysis interface
-- `Agents`: AI agent management
-- `KnowledgeGraph`: Graph visualization
+#### UI (custodian portal)
+
+Screens such as layout, data sandbox, agents, and knowledge graph live in the **custodian portal** repository.
 
 ### 2. Run Your First Test
 
@@ -262,10 +219,6 @@ Start by understanding the key components:
 # Backend test
 cd backend
 python -m pytest tests/test_health.py -v
-
-# Frontend test
-cd frontend
-npm test -- --run components/Layout
 ```
 
 ### 3. Make Your First Change
@@ -284,15 +237,6 @@ async def health_check():
     }
 ```
 
-#### Frontend Change
-```typescript
-// In frontend/src/components/Layout/index.tsx
-// Add a console log in the Layout component
-useEffect(() => {
-  console.log("Layout loaded by [Your Name]!");  // Add your name here
-}, []);
-```
-
 ### 4. Test Your Changes
 
 ```bash
@@ -302,11 +246,6 @@ python -m uvicorn app.main:app --reload
 
 # Test the change
 curl http://localhost:8000/health
-
-# Check frontend
-cd frontend
-npm run dev
-# Open browser console to see your log
 ```
 
 ## Development Workflow
@@ -336,10 +275,6 @@ python -m black .
 python -m isort .
 python -m flake8
 
-# Frontend linting
-cd frontend
-npm run lint
-npm run type-check
 ```
 
 ### 3. Testing
@@ -351,13 +286,6 @@ python -m pytest
 
 # Run specific test file
 python -m pytest tests/test_data_sandbox.py -v
-
-# Run frontend tests
-cd frontend
-npm test
-
-# Run specific test
-npm test -- DataTable.test.tsx
 ```
 
 ### 4. Database Migrations
@@ -604,28 +532,17 @@ pip install -r requirements.txt
 docker-compose -f docker-compose.dev.yml up -d postgres
 ```
 
-#### Frontend Issues
+#### UI (custodian portal) issues
 
-**Issue**: Module not found errors
-```bash
-# Solution: Clear node_modules and reinstall
-rm -rf node_modules package-lock.json
-npm install
-```
-
-**Issue**: TypeScript compilation errors
-```bash
-# Solution: Check TypeScript configuration
-npm run type-check
-```
+Use the custodian portal repository’s troubleshooting docs for Node, Vite, and browser tooling.
 
 ### 5. Development Tips
 
 1. **Use the Simplified Backend**: Start with `main_simple.py` for easier development
-2. **Hot Reloading**: Both backend and frontend support hot reloading
+2. **Hot Reloading**: Backend supports hot reload when run under `uvicorn --reload`
 3. **Database Seeding**: Use the provided seed scripts for test data
 4. **API Testing**: Use the interactive docs at `http://localhost:8000/docs`
-5. **Browser DevTools**: Use React DevTools for frontend debugging
+5. **Browser DevTools**: Use browser devtools while exercising the portal against this API
 
 ## Next Steps
 
