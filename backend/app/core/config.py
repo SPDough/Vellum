@@ -150,6 +150,10 @@ class Settings(BaseSettings):
     rag_enrichment_doc_context_chars: int = Field(
         default=6000, alias="RAG_ENRICHMENT_DOC_CONTEXT_CHARS"
     )
+    # Knowledge retrieval (Phase 2)
+    rag_rerank_enabled: bool = Field(default=False, alias="RAG_RERANK_ENABLED")
+    rag_rerank_model: str = Field(default="BAAI/bge-reranker-v2-m3", alias="RAG_RERANK_MODEL")
+    rag_candidate_pool: int = Field(default=40, alias="RAG_CANDIDATE_POOL")
 
     # Generalized integration framework
     integrations_enabled: bool = Field(default=True, alias="INTEGRATIONS_ENABLED")
