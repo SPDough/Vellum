@@ -141,3 +141,24 @@ class KnowledgeSearchResponse(BaseModel):
     query: str
     reranked: bool
     results: List[KnowledgeSearchResult]
+
+
+# --- Agentic knowledge lookup (Phase 3) --------------------------------------
+
+
+class KnowledgeAskRequest(BaseModel):
+    """Request body for an agentic knowledge question."""
+
+    query: str
+    filters: Optional[Dict[str, str]] = None
+    min_trust: Optional[str] = None
+
+
+class KnowledgeAskResponse(BaseModel):
+    """A cited answer with routing/iteration metadata."""
+
+    query: str
+    answer: str
+    route: str
+    iterations: int
+    citations: List[Citation]

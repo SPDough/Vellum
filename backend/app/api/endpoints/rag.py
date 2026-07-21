@@ -15,6 +15,8 @@ from app.core.database import get_sync_db
 from app.models.rag import RAGDocument
 from app.schemas.rag import (
     Citation,
+    KnowledgeAskRequest,
+    KnowledgeAskResponse,
     KnowledgeSearchRequest,
     KnowledgeSearchResponse,
     KnowledgeSearchResult,
@@ -370,4 +372,30 @@ async def knowledge_search(
             )
             for c in candidates
         ],
+    )
+
+
+@router.post("/knowledge/ask", response_model=KnowledgeAskResponse)
+async def knowledge_ask(
+    body: KnowledgeAskRequest,
+    db: Session = Depends(get_sync_db),
+):
+    """
+    Agentic knowledge lookup: adaptive route → hybrid retrieve → grade → rewrite
+    loop → cited answer. Assistive only; does not decide rule outcomes.
+    """
+    from app.ai.langgraph_workflows.knowledge_tool import knowledge_lookup
+
+    try:
+        result = await knowledge_lookup(
+            body.query, db, filters=body.filters, min_trust=body.min_trust
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return KnowledgeAskResponse(
+        query=result["query"],
+        answer=result["answer"],
+        route=result["route"],
+        iterations=result["iterations"],
+        citations=[Citation(**c) for c in result["citations"]],
     )

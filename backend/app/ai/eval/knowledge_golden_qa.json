@@ -1,0 +1,30 @@
+{
+  "description": "Golden Q&A for knowledge-repository retrieval/answer eval. `must_include` are lowercase substrings expected to appear in a grounded answer; `expected_section` is a hint for the source section (informational). Corpus assumed to contain equity-market modeling material; extend as the repository grows.",
+  "questions": [
+    {"id": "q01", "query": "What is the efficient frontier?", "must_include": ["risk", "return"], "expected_section": "mean-variance"},
+    {"id": "q02", "query": "What are the assumptions of the Capital Asset Pricing Model?", "must_include": ["risk-free", "market"], "expected_section": "capm"},
+    {"id": "q03", "query": "What is the arbitrage pricing theory?", "must_include": ["arbitrage", "factor"], "expected_section": "apt"},
+    {"id": "q04", "query": "How does diversification reduce portfolio risk?", "must_include": ["diversification", "risk"], "expected_section": "diversification"},
+    {"id": "q05", "query": "What is mean-variance analysis?", "must_include": ["variance", "return"], "expected_section": "mean-variance"},
+    {"id": "q06", "query": "What does the GARCH model capture about volatility?", "must_include": ["volatility"], "expected_section": "arch/garch"},
+    {"id": "q07", "query": "What is beta and how does it relate to systematic risk?", "must_include": ["systematic", "market"], "expected_section": "capm"},
+    {"id": "q08", "query": "What is shrinkage estimation of the covariance matrix?", "must_include": ["covariance", "shrink"], "expected_section": "covariance"},
+    {"id": "q09", "query": "How is the Black-Litterman model used to combine investor views with market equilibrium?", "must_include": ["equilibrium", "views"], "expected_section": "black-litterman"},
+    {"id": "q10", "query": "What is a factor model in equity returns?", "must_include": ["factor"], "expected_section": "factor models"},
+    {"id": "q11", "query": "How is principal component analysis used in factor estimation?", "must_include": ["component"], "expected_section": "principal component"},
+    {"id": "q12", "query": "What is cointegration and how is it used in equity modeling?", "must_include": ["cointegration"], "expected_section": "cointegration"},
+    {"id": "q13", "query": "How do transaction costs affect portfolio rebalancing?", "must_include": ["transaction", "rebalanc"], "expected_section": "rebalancing"},
+    {"id": "q14", "query": "What is tracking error in portfolio management?", "must_include": ["tracking"], "expected_section": "tracking error"},
+    {"id": "q15", "query": "What is the difference between systematic and nonsystematic risk?", "must_include": ["systematic"], "expected_section": "risk"},
+    {"id": "q16", "query": "What is the role of the covariance matrix in portfolio optimization?", "must_include": ["covariance", "portfolio"], "expected_section": "optimization"},
+    {"id": "q17", "query": "What are the practical problems with estimating expected returns?", "must_include": ["estimat", "return"], "expected_section": "estimation"},
+    {"id": "q18", "query": "What is an equilibrium asset pricing model?", "must_include": ["equilibrium"], "expected_section": "asset pricing"},
+    {"id": "q19", "query": "How is maximum likelihood estimation applied to factor models?", "must_include": ["likelihood"], "expected_section": "estimation"},
+    {"id": "q20", "query": "What is the market portfolio in CAPM?", "must_include": ["market portfolio"], "expected_section": "capm"},
+    {"id": "q21", "query": "What is volatility clustering?", "must_include": ["volatility"], "expected_section": "arch/garch"},
+    {"id": "q22", "query": "What is a mean-variance efficient portfolio?", "must_include": ["efficient"], "expected_section": "mean-variance"},
+    {"id": "q23", "query": "How are statistical factor models estimated from stock returns?", "must_include": ["factor"], "expected_section": "statistical factor"},
+    {"id": "q24", "query": "What is the capital market line?", "must_include": ["risk-free"], "expected_section": "capm"},
+    {"id": "q25", "query": "What is the difference between CAPM and APT?", "must_include": ["apt", "capm"], "expected_section": "apt"}
+  ]
+}

@@ -9,7 +9,7 @@ product-aligned orchestration shape around deterministic rules.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from app.rules.engine import RuleEngine
 
@@ -22,6 +22,7 @@ class RulesWorkflowState:
     evaluation: Optional[Dict[str, Any]] = None
     next_actions: list[str] = field(default_factory=list)
     rag_context: Dict[str, Any] = field(default_factory=dict)
+    knowledge: Optional[Dict[str, Any]] = None
     summary: str = ''
 
 
@@ -35,8 +36,12 @@ class SampleRulesWorkflow:
     - assemble_response
     """
 
-    def __init__(self):
+    def __init__(self, knowledge_lookup: Optional[Callable[[str], Dict[str, Any]]] = None):
         self.rule_engine = RuleEngine()
+        # Optional advisory hook: a callable taking a question and returning
+        # {"answer": ..., "citations": [...]}. Injected so the workflow stays
+        # decoupled from the DB session and async retrieval stack.
+        self._knowledge_lookup = knowledge_lookup
 
     def load_rule_context(self, state: RulesWorkflowState) -> RulesWorkflowState:
         state.rag_context = {
@@ -44,6 +49,21 @@ class SampleRulesWorkflow:
             'collections': self._infer_rag_collections(state.rule_key),
             'note': 'RAG is advisory context for explanation/workflows; deterministic rule outcome remains authoritative.',
         }
+        return state
+
+    def gather_knowledge(self, state: RulesWorkflowState) -> RulesWorkflowState:
+        """Advisory: fetch cited domain knowledge for the rule, if a lookup is wired.
+
+        Never affects the deterministic outcome; it only enriches explanation.
+        """
+        if self._knowledge_lookup is None:
+            return state
+        question = f"What is the operational and accounting guidance relevant to {state.rule_key}?"
+        try:
+            state.knowledge = self._knowledge_lookup(question)
+        except Exception:
+            # Advisory context must never break rule orchestration.
+            state.knowledge = None
         return state
 
     def evaluate_rule(self, state: RulesWorkflowState) -> RulesWorkflowState:
@@ -97,12 +117,14 @@ class SampleRulesWorkflow:
         state = self.load_rule_context(state)
         state = self.evaluate_rule(state)
         state = self.determine_follow_up(state)
+        state = self.gather_knowledge(state)
         state = self.assemble_response(state)
         return {
             'rule_key': state.rule_key,
             'rule_version': state.rule_version,
             'evaluation': state.evaluation,
             'rag_context': state.rag_context,
+            'knowledge': state.knowledge,
             'next_actions': state.next_actions,
             'summary': state.summary,
         }
