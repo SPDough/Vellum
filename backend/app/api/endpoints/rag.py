@@ -388,12 +388,17 @@ async def knowledge_ask(
 
     try:
         result = await knowledge_lookup(
-            body.query, db, filters=body.filters, min_trust=body.min_trust
+            body.query,
+            db,
+            conversation_id=body.conversation_id,
+            filters=body.filters,
+            min_trust=body.min_trust,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return KnowledgeAskResponse(
         query=result["query"],
+        conversation_id=result.get("conversation_id"),
         answer=result["answer"],
         route=result["route"],
         iterations=result["iterations"],

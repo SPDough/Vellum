@@ -31,13 +31,20 @@ async def knowledge_lookup(
     query: str,
     db: Session,
     *,
+    conversation_id: Optional[str] = None,
     filters: Optional[Dict[str, str]] = None,
     min_trust: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """Run the knowledge agent against the repository and return answer + citations."""
+    """Run the knowledge agent against the repository and return answer + citations.
+
+    Pass `conversation_id` to continue a multi-turn conversation; the returned
+    dict includes the conversation id (minted on the first turn).
+    """
     retrieval = KnowledgeRetrievalService(db)
     agent = KnowledgeAgent(retrieval)
-    return await agent.run(query, filters=filters, min_trust=min_trust)
+    return await agent.run(
+        query, thread_id=conversation_id, filters=filters, min_trust=min_trust
+    )
 
 
 def build_knowledge_tool(db: Session):

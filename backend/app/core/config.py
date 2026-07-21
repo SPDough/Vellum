@@ -158,6 +158,10 @@ class Settings(BaseSettings):
     rag_agent_model: str = Field(default="gpt-4o-mini", alias="RAG_AGENT_MODEL")
     rag_agent_max_iterations: int = Field(default=3, alias="RAG_AGENT_MAX_ITERATIONS")
     rag_agent_top_k: int = Field(default=6, alias="RAG_AGENT_TOP_K")
+    # Knowledge agent multi-turn memory (Phase 1: in-process MemorySaver)
+    rag_agent_memory_enabled: bool = Field(default=True, alias="RAG_AGENT_MEMORY_ENABLED")
+    rag_agent_max_history_turns: int = Field(default=6, alias="RAG_AGENT_MAX_HISTORY_TURNS")
+    rag_agent_checkpointer: str = Field(default="memory", alias="RAG_AGENT_CHECKPOINTER")
 
     # Generalized integration framework
     integrations_enabled: bool = Field(default=True, alias="INTEGRATIONS_ENABLED")

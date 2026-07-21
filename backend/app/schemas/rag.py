@@ -150,6 +150,9 @@ class KnowledgeAskRequest(BaseModel):
     """Request body for an agentic knowledge question."""
 
     query: str
+    conversation_id: Optional[str] = Field(
+        default=None, description="Continue a multi-turn conversation; omit to start a new one"
+    )
     filters: Optional[Dict[str, str]] = None
     min_trust: Optional[str] = None
 
@@ -158,6 +161,7 @@ class KnowledgeAskResponse(BaseModel):
     """A cited answer with routing/iteration metadata."""
 
     query: str
+    conversation_id: Optional[str] = None
     answer: str
     route: str
     iterations: int
