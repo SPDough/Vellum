@@ -108,8 +108,11 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
             "text-embedding-ada-002": 1536,
         }
 
+    # OpenAI caps embeddings requests at 2048 inputs and ~300k tokens; batch below both
+    BATCH_SIZE = 512
+
     async def get_embeddings(self, texts: List[str]) -> List[List[float]]:
-        """Get embeddings from OpenAI."""
+        """Get embeddings from OpenAI, batching large inputs across requests."""
         if not self.client:
             raise ValueError("OpenAI API key not provided")
 
@@ -123,24 +126,28 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
             )
 
             try:
-                response = await self.client.embeddings.create(
-                    model=self.model, input=texts
-                )
-
-                embeddings = [data.embedding for data in response.data]
+                embeddings: List[List[float]] = []
+                total_tokens = 0
+                for start in range(0, len(texts), self.BATCH_SIZE):
+                    batch = texts[start : start + self.BATCH_SIZE]
+                    response = await self.client.embeddings.create(
+                        model=self.model, input=batch
+                    )
+                    embeddings.extend(data.embedding for data in response.data)
+                    total_tokens += response.usage.total_tokens
 
                 # Record metrics
                 business_metrics.record_llm_call(
                     model=self.model,
                     provider="openai",
-                    tokens=response.usage.total_tokens,
-                    cost=self._calculate_cost(response.usage.total_tokens),
+                    tokens=total_tokens,
+                    cost=self._calculate_cost(total_tokens),
                 )
 
                 span.set_attributes(
                     {
                         "embedding.success": True,
-                        "embedding.tokens_used": response.usage.total_tokens,
+                        "embedding.tokens_used": total_tokens,
                     }
                 )
                 return embeddings

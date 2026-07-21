@@ -166,6 +166,31 @@ def test_pdf_uses_docling_when_available(tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------
 
 
+def test_openai_embeddings_are_batched():
+    """Large chunk sets must be split across multiple API requests (OpenAI caps per-request inputs)."""
+    import asyncio
+    from unittest.mock import AsyncMock
+
+    from app.services.embedding_service import OpenAIEmbeddingProvider
+
+    provider = OpenAIEmbeddingProvider(api_key="test-key")
+    calls = []
+
+    async def fake_create(model, input):
+        calls.append(len(input))
+        response = MagicMock()
+        response.data = [MagicMock(embedding=[0.0] * 1536) for _ in input]
+        response.usage.total_tokens = len(input)
+        return response
+
+    provider.client = MagicMock()
+    provider.client.embeddings.create = AsyncMock(side_effect=fake_create)
+    texts = ["chunk"] * (OpenAIEmbeddingProvider.BATCH_SIZE + 10)
+    embeddings = asyncio.run(provider.get_embeddings(texts))
+    assert len(embeddings) == len(texts)
+    assert calls == [OpenAIEmbeddingProvider.BATCH_SIZE, 10]
+
+
 def test_enrichment_disabled_is_noop():
     import asyncio
 
