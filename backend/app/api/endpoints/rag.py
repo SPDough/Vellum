@@ -14,6 +14,12 @@ from app.core.config import get_settings
 from app.core.database import get_sync_db
 from app.models.rag import RAGDocument
 from app.schemas.rag import (
+    Citation,
+    KnowledgeAskRequest,
+    KnowledgeAskResponse,
+    KnowledgeSearchRequest,
+    KnowledgeSearchResponse,
+    KnowledgeSearchResult,
     RAGDocumentCreate,
     RAGDocumentResponse,
     RAGSearchRequest,
@@ -21,6 +27,10 @@ from app.schemas.rag import (
     RAGSearchResult,
 )
 from app.schemas.rag_metadata import CORPUS_FILTER_FIELDS, KnowledgeDocumentMetadata
+from app.services.knowledge_retrieval_service import (
+    KnowledgeRetrievalService,
+    get_knowledge_retrieval_service,
+)
 from app.services.rag_pipeline_service import RAGPipelineService, get_rag_pipeline_service
 
 router = APIRouter()
@@ -324,4 +334,68 @@ async def search(
             )
             for r in results
         ],
+    )
+
+
+@router.post("/knowledge/search", response_model=KnowledgeSearchResponse)
+async def knowledge_search(
+    body: KnowledgeSearchRequest,
+    service: KnowledgeRetrievalService = Depends(get_knowledge_retrieval_service),
+):
+    """
+    Hybrid knowledge search: dense vector + full-text retrieval fused with RRF,
+    optionally reranked with a local cross-encoder. Returns citation-bearing results.
+    """
+    try:
+        candidates = await service.search(
+            query=body.query,
+            top_k=body.top_k,
+            filters=body.filters,
+            min_trust=body.min_trust,
+            use_reranker=body.use_reranker,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    reranked = any(c.rerank_score is not None for c in candidates)
+    return KnowledgeSearchResponse(
+        query=body.query,
+        reranked=reranked,
+        results=[
+            KnowledgeSearchResult(
+                chunk_id=c.chunk_id,
+                content=c.content,
+                citation=Citation(**c.citation()),
+                vector_score=c.vector_score,
+                text_score=c.text_score,
+                fused_score=c.fused_score,
+                rerank_score=c.rerank_score,
+            )
+            for c in candidates
+        ],
+    )
+
+
+@router.post("/knowledge/ask", response_model=KnowledgeAskResponse)
+async def knowledge_ask(
+    body: KnowledgeAskRequest,
+    db: Session = Depends(get_sync_db),
+):
+    """
+    Agentic knowledge lookup: adaptive route → hybrid retrieve → grade → rewrite
+    loop → cited answer. Assistive only; does not decide rule outcomes.
+    """
+    from app.ai.langgraph_workflows.knowledge_tool import knowledge_lookup
+
+    try:
+        result = await knowledge_lookup(
+            body.query, db, filters=body.filters, min_trust=body.min_trust
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return KnowledgeAskResponse(
+        query=result["query"],
+        answer=result["answer"],
+        route=result["route"],
+        iterations=result["iterations"],
+        citations=[Citation(**c) for c in result["citations"]],
     )

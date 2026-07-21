@@ -150,6 +150,14 @@ class Settings(BaseSettings):
     rag_enrichment_doc_context_chars: int = Field(
         default=6000, alias="RAG_ENRICHMENT_DOC_CONTEXT_CHARS"
     )
+    # Knowledge retrieval (Phase 2)
+    rag_rerank_enabled: bool = Field(default=False, alias="RAG_RERANK_ENABLED")
+    rag_rerank_model: str = Field(default="BAAI/bge-reranker-v2-m3", alias="RAG_RERANK_MODEL")
+    rag_candidate_pool: int = Field(default=40, alias="RAG_CANDIDATE_POOL")
+    # Knowledge agent (Phase 3)
+    rag_agent_model: str = Field(default="gpt-4o-mini", alias="RAG_AGENT_MODEL")
+    rag_agent_max_iterations: int = Field(default=3, alias="RAG_AGENT_MAX_ITERATIONS")
+    rag_agent_top_k: int = Field(default=6, alias="RAG_AGENT_TOP_K")
 
     # Generalized integration framework
     integrations_enabled: bool = Field(default=True, alias="INTEGRATIONS_ENABLED")

@@ -9,8 +9,8 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSON, UUID
+from sqlalchemy import Column, Computed, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSON, TSVECTOR, UUID
 from sqlalchemy.orm import DeclarativeBase, relationship
 
 from pgvector.sqlalchemy import Vector
@@ -71,5 +71,12 @@ class RAGChunk(Base):
     metadata_ = Column("metadata", JSON, default=dict)
     # Vector embedding; dimension must match embedding model (e.g. 1536 for OpenAI)
     embedding = Column(Vector(DEFAULT_EMBEDDING_DIMENSION), nullable=True)
+    # Full-text search vector, generated from content in the DB (see migration 004).
+    # Managed by Postgres; read-only from the ORM's perspective.
+    content_tsv = Column(
+        TSVECTOR,
+        Computed("to_tsvector('english', content)", persisted=True),
+        nullable=True,
+    )
 
     document = relationship("RAGDocument", back_populates="chunks")
