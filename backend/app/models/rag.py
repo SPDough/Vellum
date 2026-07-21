@@ -80,3 +80,23 @@ class RAGChunk(Base):
     )
 
     document = relationship("RAGDocument", back_populates="chunks")
+
+
+class KnowledgeConversation(Base):
+    """
+    Index of knowledge-agent conversations (Phase 2 multi-turn memory).
+
+    The actual turn-by-turn state lives in the LangGraph Postgres checkpointer,
+    keyed by id == thread_id. This table provides ownership, listing, titles, and
+    TTL retention metadata.
+    """
+
+    __tablename__ = "knowledge_conversations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)  # == thread_id
+    owner = Column(String(256), nullable=False, index=True)  # user_id; isolation boundary
+    title = Column(String(512), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True, index=True)  # updated_at + TTL
+    message_count = Column(Integer, default=0)
