@@ -275,5 +275,9 @@ def downgrade() -> None:
     op.drop_table('sop_documents')
     op.drop_table('users')
 
-    # Drop audit schema
-    op.execute("DROP SCHEMA IF EXISTS audit CASCADE")
+    # NOTE: intentionally do NOT drop the `audit` schema here. Alembic's own
+    # version table lives in it (env.py sets version_table_schema="audit"), so a
+    # `DROP SCHEMA audit CASCADE` would destroy audit.alembic_version mid-downgrade
+    # and abort the `001 -> base` step. The schema is (re)created idempotently by
+    # env.create_audit_schema() / the upgrade's CREATE SCHEMA IF NOT EXISTS, and the
+    # only object this migration put in it (audit_log) is dropped above.

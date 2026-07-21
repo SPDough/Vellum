@@ -16,12 +16,24 @@ from app.core.config import get_settings
 from app.core.database import Base
 
 # Import all models to ensure they're registered with SQLAlchemy
-from app.models.user import User
-from app.models.sop import SOPDocument, SOPStep, SOPExecution, SOPStepExecution
-from app.models.trade import Trade, TradeExecution, Position
-from app.models.workflow import WorkflowDefinition, WorkflowInstance, WorkflowStep
-from app.models.data_sandbox import DataRecord, DataStream
-from app.models.knowledge_graph import KnowledgeNode, KnowledgeRelation
+from app.models.user import User  # noqa: F401
+from app.models.sop import SOPDocument, SOPStep, SOPExecution, SOPStepExecution  # noqa: F401
+from app.models.trade import Trade, TradeException, ProcessingStep  # noqa: F401
+from app.models.workflow import (  # noqa: F401
+    WorkflowDefinition,
+    WorkflowNode,
+    WorkflowExecution,
+    NodeExecution,
+)
+from app.models.data_sandbox import (  # noqa: F401
+    DataSource,
+    DataRecord,
+    DataTransformation,
+    DataVisualization,
+    SharedDataView,
+)
+# NOTE: app.models.knowledge_graph defines only Pydantic schemas (no SQLAlchemy
+# models), so there is nothing to register here.
 from app.models.procedure_document_row import ProcedureDocumentRow  # noqa: F401
 
 # this is the Alembic Config object, which provides
