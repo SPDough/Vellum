@@ -166,3 +166,32 @@ class KnowledgeAskResponse(BaseModel):
     route: str
     iterations: int
     citations: List[Citation]
+
+
+class ConversationSummary(BaseModel):
+    """A conversation in the caller's list."""
+
+    id: UUID
+    title: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    message_count: int
+
+    model_config = {"from_attributes": True}
+
+
+class ConversationMessage(BaseModel):
+    """One persisted turn in a conversation's history."""
+
+    role: str
+    content: str
+    citations: List[Citation] = Field(default_factory=list)
+    created_at: Optional[str] = None
+
+
+class ConversationDetail(BaseModel):
+    """Full conversation history with its persisted citations."""
+
+    id: UUID
+    title: Optional[str] = None
+    messages: List[ConversationMessage]

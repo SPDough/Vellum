@@ -44,31 +44,6 @@ settings = get_settings()
 # explicit llm=None (run in degraded, no-LLM mode).
 _UNSET = object()
 
-# Shared in-process checkpointer so conversation state persists across requests
-# (each HTTP request builds a fresh KnowledgeAgent, but they share this saver).
-# In-process only — not shared across worker processes; Phase 2 replaces it with
-# a durable Postgres checkpointer.
-_MEMORY_SAVER = None
-
-
-def _get_memory_saver():
-    global _MEMORY_SAVER
-    if _MEMORY_SAVER is None:
-        from langgraph.checkpoint.memory import MemorySaver
-
-        _MEMORY_SAVER = MemorySaver()
-    return _MEMORY_SAVER
-
-
-def _default_checkpointer():
-    """Return the configured checkpointer, or None when memory is disabled."""
-    if not settings.rag_agent_memory_enabled:
-        return None
-    if settings.rag_agent_checkpointer == "memory":
-        return _get_memory_saver()
-    # Phase 2 will add "postgres" here.
-    return _get_memory_saver()
-
 
 class ChatTurn(TypedDict, total=False):
     """One conversation message; assistant turns carry their citations."""
@@ -142,7 +117,13 @@ class KnowledgeAgent:
         self.max_iterations = max_iterations or settings.rag_agent_max_iterations
         self.top_k = top_k or settings.rag_agent_top_k
         self.max_history_turns = max_history_turns or settings.rag_agent_max_history_turns
-        self.checkpointer = _default_checkpointer() if checkpointer is _UNSET else checkpointer
+        if checkpointer is _UNSET:
+            from app.ai.langgraph_workflows.knowledge_checkpointer import (
+                default_sync_checkpointer,
+            )
+
+            checkpointer = default_sync_checkpointer()
+        self.checkpointer = checkpointer
         self._graph = self._build_graph()
 
     # --- helpers ------------------------------------------------------------
@@ -328,7 +309,9 @@ class KnowledgeAgent:
             "created_at": _now(),
         }
         trace = state.get("trace", []) + [{"step": "answer", "chars": len(answer)}]
-        return {"answer": answer, "messages": [assistant_turn], "trace": trace}
+        # Clear candidates from the final persisted state: they are heavy and the
+        # citations we need are carried on the assistant message (design §4.3).
+        return {"answer": answer, "messages": [assistant_turn], "candidates": [], "trace": trace}
 
     # --- graph wiring -------------------------------------------------------
 
@@ -404,14 +387,17 @@ class KnowledgeAgent:
             config = {"configurable": {"thread_id": conversation_id}}
 
         final: KnowledgeAgentState = await self._graph.ainvoke(turn_input, config=config)
-        candidates = final.get("candidates", [])
+        # Citations come from the assistant message (candidates are cleared from
+        # persisted state in `_answer`).
+        messages = final.get("messages", [])
+        citations = messages[-1].get("citations", []) if messages else []
         result = {
             "query": query,
             "conversation_id": conversation_id,
             "answer": final.get("answer", ""),
             "route": final.get("route", "simple"),
             "iterations": final.get("iterations", 0),
-            "citations": [c.citation() for c in candidates],
+            "citations": citations,
             "trace": final.get("trace", []),
         }
         logger.info(

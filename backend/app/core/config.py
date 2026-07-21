@@ -161,7 +161,10 @@ class Settings(BaseSettings):
     # Knowledge agent multi-turn memory (Phase 1: in-process MemorySaver)
     rag_agent_memory_enabled: bool = Field(default=True, alias="RAG_AGENT_MEMORY_ENABLED")
     rag_agent_max_history_turns: int = Field(default=6, alias="RAG_AGENT_MAX_HISTORY_TURNS")
+    # "memory" (in-process, Phase 1) or "postgres" (durable, Phase 2)
     rag_agent_checkpointer: str = Field(default="memory", alias="RAG_AGENT_CHECKPOINTER")
+    rag_agent_pg_pool_size: int = Field(default=5, alias="RAG_AGENT_PG_POOL_SIZE")
+    rag_conversation_ttl_days: int = Field(default=90, alias="RAG_CONVERSATION_TTL_DAYS")
 
     # Generalized integration framework
     integrations_enabled: bool = Field(default=True, alias="INTEGRATIONS_ENABLED")

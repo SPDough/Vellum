@@ -7,6 +7,10 @@ pydantic-settings>=2.4.0
 
 # LangChain Ecosystem
 langgraph==0.2.45
+# Durable conversation memory for the knowledge agent (Postgres checkpointer).
+# Pinned: migration 005 reproduces this version's checkpoint DDL — bump both together.
+langgraph-checkpoint-postgres==2.0.25
+psycopg-pool>=3.2,<4
 langchain==0.3.7
 langchain-experimental==0.3.4
 langchain-community==0.3.5

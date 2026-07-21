@@ -1,12 +1,14 @@
 """RAG pipeline API: document ingest, metadata contract enforcement, and semantic search."""
 
 import json
+import logging
 import os
 import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Body, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Body, Depends, File, Form, Header, HTTPException, UploadFile
+from fastapi.security import HTTPBearer
 from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy.orm import Session
 
@@ -15,6 +17,9 @@ from app.core.database import get_sync_db
 from app.models.rag import RAGDocument
 from app.schemas.rag import (
     Citation,
+    ConversationDetail,
+    ConversationMessage,
+    ConversationSummary,
     KnowledgeAskRequest,
     KnowledgeAskResponse,
     KnowledgeSearchRequest,
@@ -27,6 +32,7 @@ from app.schemas.rag import (
     RAGSearchResult,
 )
 from app.schemas.rag_metadata import CORPUS_FILTER_FIELDS, KnowledgeDocumentMetadata
+from app.services.knowledge_conversation_service import KnowledgeConversationService
 from app.services.knowledge_retrieval_service import (
     KnowledgeRetrievalService,
     get_knowledge_retrieval_service,
@@ -35,6 +41,32 @@ from app.services.rag_pipeline_service import RAGPipelineService, get_rag_pipeli
 
 router = APIRouter()
 settings = get_settings()
+logger = logging.getLogger(__name__)
+
+_optional_bearer = HTTPBearer(auto_error=False)
+
+
+async def get_conversation_owner(
+    credentials=Depends(_optional_bearer),
+    x_user_id: Optional[str] = Header(default=None, alias="X-User-Id"),
+) -> str:
+    """
+    Resolve the conversation owner (the isolation boundary).
+
+    Prefers the authenticated user id (valid bearer token); falls back to an
+    explicit `X-User-Id` header for demo/dev, then "anonymous". Production should
+    enforce real authentication so `owner` is always a trusted user id.
+    """
+    if credentials and getattr(credentials, "credentials", None):
+        try:
+            from app.core.auth import keycloak_auth
+
+            user = await keycloak_auth.validate_token(credentials.credentials)
+            if user and getattr(user, "id", None):
+                return user.id
+        except Exception:
+            pass
+    return x_user_id or "anonymous"
 
 _CONTRACT_REQUIRED = (
     "title, source_type, domain, provider, document_type, effective_date, trust_level, tags"
@@ -379,12 +411,29 @@ async def knowledge_search(
 async def knowledge_ask(
     body: KnowledgeAskRequest,
     db: Session = Depends(get_sync_db),
+    owner: str = Depends(get_conversation_owner),
 ):
     """
     Agentic knowledge lookup: adaptive route → hybrid retrieve → grade → rewrite
-    loop → cited answer. Assistive only; does not decide rule outcomes.
+    loop → cited answer, with multi-turn memory. Assistive only; does not decide
+    rule outcomes.
+
+    Pass `conversation_id` to continue a conversation (must belong to the caller);
+    omit it to start a new one.
     """
     from app.ai.langgraph_workflows.knowledge_tool import knowledge_lookup
+
+    conv_service = KnowledgeConversationService(db)
+
+    # If continuing a conversation, it must belong to the caller.
+    if body.conversation_id:
+        try:
+            requested = uuid.UUID(body.conversation_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="conversation_id must be a UUID")
+        existing = conv_service.exists(requested)
+        if existing is not None and existing.owner != owner:
+            raise HTTPException(status_code=404, detail="Conversation not found")
 
     try:
         result = await knowledge_lookup(
@@ -396,11 +445,87 @@ async def knowledge_ask(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+    # Record/refresh the conversation index row (owner, title, TTL, count).
+    conversation_id = result.get("conversation_id")
+    if conversation_id:
+        try:
+            conv_service.touch(uuid.UUID(conversation_id), owner, title=body.query)
+        except Exception:  # index is best-effort; never fail the answer over it
+            logger.warning("Failed to record conversation %s", conversation_id, exc_info=True)
+
     return KnowledgeAskResponse(
         query=result["query"],
-        conversation_id=result.get("conversation_id"),
+        conversation_id=conversation_id,
         answer=result["answer"],
         route=result["route"],
         iterations=result["iterations"],
         citations=[Citation(**c) for c in result["citations"]],
     )
+
+
+@router.get("/knowledge/conversations", response_model=List[ConversationSummary])
+async def list_conversations(
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_sync_db),
+    owner: str = Depends(get_conversation_owner),
+):
+    """List the caller's conversations, most recently updated first."""
+    convs = KnowledgeConversationService(db).list_for_owner(owner, limit=limit, offset=offset)
+    return [ConversationSummary.model_validate(c) for c in convs]
+
+
+@router.get("/knowledge/conversations/{conversation_id}", response_model=ConversationDetail)
+async def get_conversation(
+    conversation_id: uuid.UUID,
+    db: Session = Depends(get_sync_db),
+    owner: str = Depends(get_conversation_owner),
+):
+    """Full history of a conversation (owner-checked), with persisted citations."""
+    conv = KnowledgeConversationService(db).get_for_owner(conversation_id, owner)
+    if conv is None:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    from app.ai.langgraph_workflows.knowledge_checkpointer import (
+        get_conversation_checkpointer,
+        get_thread_messages,
+    )
+
+    checkpointer = await get_conversation_checkpointer()
+    raw = await get_thread_messages(checkpointer, str(conversation_id)) if checkpointer else None
+    messages = [
+        ConversationMessage(
+            role=m.get("role", "assistant"),
+            content=m.get("content", ""),
+            citations=[Citation(**c) for c in m.get("citations", [])],
+            created_at=m.get("created_at"),
+        )
+        for m in (raw or [])
+    ]
+    return ConversationDetail(id=conv.id, title=conv.title, messages=messages)
+
+
+@router.delete("/knowledge/conversations/{conversation_id}")
+async def delete_conversation(
+    conversation_id: uuid.UUID,
+    db: Session = Depends(get_sync_db),
+    owner: str = Depends(get_conversation_owner),
+):
+    """Delete a conversation (owner-checked) and its checkpointer state."""
+    deleted = KnowledgeConversationService(db).delete_for_owner(conversation_id, owner)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    from app.ai.langgraph_workflows.knowledge_checkpointer import (
+        delete_thread,
+        get_conversation_checkpointer,
+    )
+
+    checkpointer = await get_conversation_checkpointer()
+    if checkpointer is not None:
+        try:
+            await delete_thread(checkpointer, str(conversation_id))
+        except Exception:  # pragma: no cover - infra dependent
+            logger.warning("Failed to delete checkpoint state for %s", conversation_id, exc_info=True)
+    return {"status": "deleted", "id": str(conversation_id)}

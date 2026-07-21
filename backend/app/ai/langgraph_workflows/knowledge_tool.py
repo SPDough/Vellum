@@ -40,8 +40,13 @@ async def knowledge_lookup(
     Pass `conversation_id` to continue a multi-turn conversation; the returned
     dict includes the conversation id (minted on the first turn).
     """
+    from app.ai.langgraph_workflows.knowledge_checkpointer import (
+        get_conversation_checkpointer,
+    )
+
     retrieval = KnowledgeRetrievalService(db)
-    agent = KnowledgeAgent(retrieval)
+    checkpointer = await get_conversation_checkpointer()
+    agent = KnowledgeAgent(retrieval, checkpointer=checkpointer)
     return await agent.run(
         query, thread_id=conversation_id, filters=filters, min_trust=min_trust
     )
