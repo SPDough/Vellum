@@ -43,10 +43,17 @@ class FakeRetrieval:
 class FakeLLM:
     """Async chat stub returning scripted responses by prompt keyword."""
 
-    def __init__(self, route="SIMPLE", grade_sequence=None, rewrite="rewritten query"):
+    def __init__(
+        self,
+        route="SIMPLE",
+        grade_sequence=None,
+        rewrite="rewritten query",
+        standalone="STANDALONE Q",
+    ):
         self.route = route
         self.grade_sequence = list(grade_sequence or ["YES: sufficient"])
         self.rewrite = rewrite
+        self.standalone = standalone
         self.calls: List[str] = []
 
     async def ainvoke(self, prompt: str):
@@ -56,6 +63,8 @@ class FakeLLM:
             def __init__(self, content):
                 self.content = content
 
+        if "standalone question" in prompt:  # contextualize (condense) step
+            return _Resp(self.standalone)
         if "Classify" in prompt:
             return _Resp(self.route)
         if "grading" in prompt or "sufficient to answer" in prompt:
@@ -168,3 +177,78 @@ def test_without_llm_long_query_routes_complex_by_heuristic():
     agent = KnowledgeAgent(retrieval, llm=None)
     result = run(agent.run("compare the relationship between factor models and principal component analysis in equity"))
     assert result["route"] == "complex"
+
+
+# ---------------------------------------------------------------------------
+# Multi-turn memory (Phase 1)
+# ---------------------------------------------------------------------------
+
+
+def _fresh_memory_agent(retrieval, llm):
+    """Agent with an isolated in-process checkpointer (not the shared singleton)."""
+    from langgraph.checkpoint.memory import MemorySaver
+
+    return KnowledgeAgent(retrieval, llm=llm, checkpointer=MemorySaver())
+
+
+def test_conversation_id_minted_and_stable_across_turns():
+    retrieval = FakeRetrieval()
+    agent = _fresh_memory_agent(retrieval, FakeLLM(route="SIMPLE"))
+    r1 = run(agent.run("What is a mezzanine bond?", thread_id="conv-1"))
+    r2 = run(agent.run("How does it accrue interest?", thread_id="conv-1"))
+    assert r1["conversation_id"] == "conv-1"
+    assert r2["conversation_id"] == "conv-1"
+
+
+def test_memory_persists_and_followup_is_contextualized():
+    retrieval = FakeRetrieval()
+    agent = _fresh_memory_agent(retrieval, FakeLLM(route="SIMPLE", standalone="STANDALONE Q"))
+    run(agent.run("What is a mezzanine bond?", thread_id="c"))
+    run(agent.run("How does it accrue interest?", thread_id="c"))
+    # Turn 1 had no history -> retrieval used the raw question.
+    assert retrieval.queries[0] == "What is a mezzanine bond?"
+    # Turn 2 saw persisted history -> contextualize rewrote the follow-up.
+    assert retrieval.queries[-1] == "STANDALONE Q"
+
+
+def test_no_thread_id_turns_are_isolated():
+    retrieval = FakeRetrieval()
+    agent = _fresh_memory_agent(retrieval, FakeLLM(route="SIMPLE", standalone="STANDALONE Q"))
+    r1 = run(agent.run("What is a mezzanine bond?"))
+    r2 = run(agent.run("How does it accrue interest?"))
+    # No shared thread -> turn 2 has no history -> raw query used (not contextualized).
+    assert retrieval.queries[-1] == "How does it accrue interest?"
+    assert r1["conversation_id"] != r2["conversation_id"]
+
+
+def test_working_state_resets_between_turns():
+    retrieval = FakeRetrieval()
+    # Turn 1 is complex and never satisfied -> loops to the iteration cap.
+    llm = FakeLLM(route="COMPLEX", grade_sequence=["NO", "NO", "NO", "NO"])
+    agent = _fresh_memory_agent(retrieval, llm)
+    r1 = run(agent.run("a complex first question", thread_id="c"))
+    assert r1["iterations"] == agent.max_iterations  # looped
+    # Turn 2 is simple; iterations must reset, not carry over from turn 1.
+    llm.route = "SIMPLE"
+    r2 = run(agent.run("a simple follow-up", thread_id="c"))
+    assert r2["iterations"] == 0
+
+
+def test_single_shot_when_memory_disabled():
+    retrieval = FakeRetrieval()
+    agent = KnowledgeAgent(retrieval, llm=FakeLLM(route="SIMPLE"), checkpointer=None)
+    result = run(agent.run("What is beta?"))
+    assert result["conversation_id"] is None
+    assert result["answer"] == "Synthesized answer [1]."
+
+
+def test_assistant_turn_persists_citations():
+    retrieval = FakeRetrieval([_candidate("chunk a")])
+    saver_agent = _fresh_memory_agent(retrieval, FakeLLM(route="SIMPLE"))
+    run(saver_agent.run("q1", thread_id="c"))
+    # Inspect persisted state: assistant turn should carry citations.
+    state = saver_agent._graph.get_state({"configurable": {"thread_id": "c"}})
+    messages = state.values["messages"]
+    assistant = [m for m in messages if m["role"] == "assistant"][-1]
+    assert len(assistant["citations"]) == 1
+    assert assistant["citations"][0]["document_title"] == "Equity Modeling"

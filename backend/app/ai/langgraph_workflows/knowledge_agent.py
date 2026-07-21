@@ -1,17 +1,23 @@
 """
-Agentic knowledge lookup as a LangGraph subgraph.
+Agentic knowledge lookup as a LangGraph subgraph, with multi-turn memory.
 
 Adaptive retrieval over the knowledge repository:
 
-    route ─┬─(simple)──────────────► retrieve ─► answer
-           └─(complex)─► retrieve ─► grade ─┬─(sufficient)─► answer
-                             ▲               └─(insufficient)─► rewrite ─┐
-                             └───────────────────────────────────────────┘
-                                       (loop capped at max_iterations)
+    contextualize ─► classify ─► retrieve ─┬─(simple)──────────► synthesize ─► END
+    (standalone Q)                         └─(complex)─► grade ─┬─(ok|cap)──► synthesize ─► END
+                                               ▲                └─(insufficient)─► rewrite ─┐
+                                               └────────────────────── retrieve ◄───────────┘
+                                                        (loop capped at max_iterations)
 
-Simple, definitional queries take the direct path; complex queries enter a
-retrieve → grade → rewrite loop until the retrieved context is judged sufficient
-or the iteration cap is hit. Every answer carries citations.
+`contextualize` rewrites a follow-up (using recent conversation history) into a
+self-contained question so retrieval works across turns. Simple/definitional
+questions take the direct path; complex ones enter a retrieve → grade → rewrite
+loop until the context is judged sufficient or the cap is hit. Every answer cites.
+
+Memory (Phase 1): a shared in-process checkpointer (LangGraph MemorySaver) keyed
+by `thread_id` (= conversation id) persists the conversation `messages` across
+turns. Per-turn working fields are reset each turn so stale retrieval never leaks.
+Phase 2 swaps the checkpointer for durable Postgres.
 
 Authority note: this tool is assistive. It explains and cites domain knowledge;
 it never overrides deterministic rules or control logic.
@@ -20,7 +26,10 @@ it never overrides deterministic rules or control logic.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, TypedDict
+import operator
+import uuid
+from datetime import datetime, timezone
+from typing import Annotated, Any, Dict, List, Literal, Optional, TypedDict
 
 from app.core.config import get_settings
 from app.services.knowledge_retrieval_service import (
@@ -35,12 +44,49 @@ settings = get_settings()
 # explicit llm=None (run in degraded, no-LLM mode).
 _UNSET = object()
 
+# Shared in-process checkpointer so conversation state persists across requests
+# (each HTTP request builds a fresh KnowledgeAgent, but they share this saver).
+# In-process only — not shared across worker processes; Phase 2 replaces it with
+# a durable Postgres checkpointer.
+_MEMORY_SAVER = None
+
+
+def _get_memory_saver():
+    global _MEMORY_SAVER
+    if _MEMORY_SAVER is None:
+        from langgraph.checkpoint.memory import MemorySaver
+
+        _MEMORY_SAVER = MemorySaver()
+    return _MEMORY_SAVER
+
+
+def _default_checkpointer():
+    """Return the configured checkpointer, or None when memory is disabled."""
+    if not settings.rag_agent_memory_enabled:
+        return None
+    if settings.rag_agent_checkpointer == "memory":
+        return _get_memory_saver()
+    # Phase 2 will add "postgres" here.
+    return _get_memory_saver()
+
+
+class ChatTurn(TypedDict, total=False):
+    """One conversation message; assistant turns carry their citations."""
+
+    role: Literal["user", "assistant"]
+    content: str
+    citations: List[Dict[str, Any]]
+    created_at: str
+
 
 class KnowledgeAgentState(TypedDict, total=False):
     """State threaded through the knowledge-lookup graph."""
 
-    query: str  # current (possibly rewritten) query
-    original_query: str
+    # Conversation history — accumulates across turns (append reducer, persisted).
+    messages: Annotated[List[ChatTurn], operator.add]
+    # Per-turn working fields — reset every turn by `contextualize`.
+    query: str  # current (possibly rewritten) retrieval query
+    original_query: str  # standalone question for this turn
     route: str  # "simple" | "complex"
     filters: Optional[Dict[str, str]]
     min_trust: Optional[str]
@@ -75,8 +121,12 @@ def _llm_text(response: Any) -> str:
     return (getattr(response, "content", "") or "").strip()
 
 
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
 class KnowledgeAgent:
-    """Runs adaptive knowledge lookup against the retrieval service."""
+    """Runs adaptive, multi-turn knowledge lookup against the retrieval service."""
 
     def __init__(
         self,
@@ -84,16 +134,70 @@ class KnowledgeAgent:
         llm: Any = _UNSET,
         max_iterations: Optional[int] = None,
         top_k: Optional[int] = None,
+        checkpointer: Any = _UNSET,
+        max_history_turns: Optional[int] = None,
     ) -> None:
         self.retrieval = retrieval
         self.llm = _get_llm() if llm is _UNSET else llm
         self.max_iterations = max_iterations or settings.rag_agent_max_iterations
         self.top_k = top_k or settings.rag_agent_top_k
+        self.max_history_turns = max_history_turns or settings.rag_agent_max_history_turns
+        self.checkpointer = _default_checkpointer() if checkpointer is _UNSET else checkpointer
         self._graph = self._build_graph()
 
-    # --- graph nodes --------------------------------------------------------
+    # --- helpers ------------------------------------------------------------
 
-    async def _route(self, state: KnowledgeAgentState) -> KnowledgeAgentState:
+    def _recent_history(self, messages: List[ChatTurn], exclude_last: bool) -> List[ChatTurn]:
+        """Last N messages (optionally excluding the just-added current user turn)."""
+        history = messages[:-1] if exclude_last and messages else list(messages)
+        return history[-self.max_history_turns :]
+
+    @staticmethod
+    def _history_text(history: List[ChatTurn]) -> str:
+        return "\n".join(f"{m.get('role', '?')}: {m.get('content', '')}" for m in history)
+
+    # --- graph nodes (return PARTIAL state updates) -------------------------
+
+    async def _contextualize(self, state: KnowledgeAgentState) -> Dict[str, Any]:
+        """Resolve a follow-up into a standalone question and reset per-turn fields.
+
+        The current user turn is already appended to `messages` via the input
+        reducer, so history is everything before it.
+        """
+        messages = state.get("messages", [])
+        question = messages[-1]["content"] if messages else state.get("query", "")
+        history = self._recent_history(messages, exclude_last=True)
+
+        standalone = question
+        if history and self.llm is not None:
+            prompt = (
+                "Given the conversation history, rewrite the user's latest message into a "
+                "standalone question that can be understood on its own (resolve pronouns and "
+                "references). If it is already standalone, return it unchanged. Return only "
+                "the question.\n\n"
+                f"History:\n{self._history_text(history)}\n\nLatest: {question}"
+            )
+            try:
+                rewritten = _llm_text(await self.llm.ainvoke(prompt))
+                if rewritten:
+                    standalone = rewritten
+            except Exception as e:  # pragma: no cover - network dependent
+                logger.warning("Contextualize failed (%s); using raw question", e)
+
+        # Reset all per-turn working fields (checkpointer restored the prior turn's).
+        return {
+            "query": standalone,
+            "original_query": standalone,
+            "route": "",
+            "candidates": [],
+            "iterations": 0,
+            "sufficient": False,
+            "grade_reason": "",
+            "answer": "",
+            "trace": [{"step": "contextualize", "standalone": standalone, "had_history": bool(history)}],
+        }
+
+    async def _route(self, state: KnowledgeAgentState) -> Dict[str, Any]:
         """Classify the query as simple (direct) or complex (agentic loop)."""
         query = state["query"]
         route = "simple"
@@ -111,43 +215,37 @@ class KnowledgeAgent:
             except Exception as e:  # pragma: no cover - network dependent
                 logger.warning("Route classification failed (%s); defaulting to simple", e)
         else:
-            # Heuristic fallback: length / conjunctions hint at complexity
             lowered = query.lower()
             if len(query.split()) > 18 or any(
                 w in lowered for w in (" and ", " versus", " vs ", "compare", "relationship between")
             ):
                 route = "complex"
-        state["route"] = route
-        state.setdefault("trace", []).append({"step": "route", "route": route})
-        return state
+        return {"route": route, "trace": state.get("trace", []) + [{"step": "route", "route": route}]}
 
-    async def _retrieve(self, state: KnowledgeAgentState) -> KnowledgeAgentState:
+    async def _retrieve(self, state: KnowledgeAgentState) -> Dict[str, Any]:
         candidates = await self.retrieval.search(
             state["query"],
             top_k=self.top_k,
             filters=state.get("filters"),
             min_trust=state.get("min_trust"),
         )
-        state["candidates"] = candidates
-        state.setdefault("trace", []).append(
+        trace = state.get("trace", []) + [
             {
                 "step": "retrieve",
                 "query": state["query"],
                 "iteration": state.get("iterations", 0),
                 "chunk_ids": [str(c.chunk_id) for c in candidates],
             }
-        )
-        return state
+        ]
+        return {"candidates": candidates, "trace": trace}
 
-    async def _grade(self, state: KnowledgeAgentState) -> KnowledgeAgentState:
+    async def _grade(self, state: KnowledgeAgentState) -> Dict[str, Any]:
         """Judge whether retrieved context can answer the original question."""
         candidates = state.get("candidates", [])
         if not candidates:
-            state["sufficient"] = False
-            state["grade_reason"] = "no candidates retrieved"
+            sufficient, reason = False, "no candidates retrieved"
         elif self.llm is None:
-            state["sufficient"] = True
-            state["grade_reason"] = "no LLM; accepting retrieved context"
+            sufficient, reason = True, "no LLM; accepting retrieved context"
         else:
             context = "\n\n".join(
                 f"[{i+1}] {c.content[:500]}" for i, c in enumerate(candidates[:5])
@@ -159,23 +257,18 @@ class KnowledgeAgent:
             )
             try:
                 verdict = _llm_text(await self.llm.ainvoke(prompt))
-                state["sufficient"] = verdict.upper().startswith("YES")
-                state["grade_reason"] = verdict
+                sufficient, reason = verdict.upper().startswith("YES"), verdict
             except Exception as e:  # pragma: no cover - network dependent
                 logger.warning("Grading failed (%s); accepting context", e)
-                state["sufficient"] = True
-                state["grade_reason"] = f"grading error: {e}"
-        state.setdefault("trace", []).append(
-            {
-                "step": "grade",
-                "sufficient": state["sufficient"],
-                "reason": state["grade_reason"][:200],
-            }
-        )
-        return state
+                sufficient, reason = True, f"grading error: {e}"
+        trace = state.get("trace", []) + [
+            {"step": "grade", "sufficient": sufficient, "reason": reason[:200]}
+        ]
+        return {"sufficient": sufficient, "grade_reason": reason, "trace": trace}
 
-    async def _rewrite(self, state: KnowledgeAgentState) -> KnowledgeAgentState:
-        state["iterations"] = state.get("iterations", 0) + 1
+    async def _rewrite(self, state: KnowledgeAgentState) -> Dict[str, Any]:
+        iterations = state.get("iterations", 0) + 1
+        query = state["query"]
         if self.llm is not None:
             prompt = (
                 "The previous search did not retrieve enough to answer the question. "
@@ -187,43 +280,55 @@ class KnowledgeAgent:
             try:
                 rewritten = _llm_text(await self.llm.ainvoke(prompt))
                 if rewritten:
-                    state["query"] = rewritten
+                    query = rewritten
             except Exception as e:  # pragma: no cover - network dependent
                 logger.warning("Rewrite failed (%s); reusing previous query", e)
-        state.setdefault("trace", []).append(
-            {"step": "rewrite", "iteration": state["iterations"], "new_query": state["query"]}
-        )
-        return state
+        trace = state.get("trace", []) + [
+            {"step": "rewrite", "iteration": iterations, "new_query": query}
+        ]
+        return {"query": query, "iterations": iterations, "trace": trace}
 
-    async def _answer(self, state: KnowledgeAgentState) -> KnowledgeAgentState:
+    async def _answer(self, state: KnowledgeAgentState) -> Dict[str, Any]:
         candidates = state.get("candidates", [])
         if not candidates:
-            state["answer"] = (
+            answer = (
                 "I could not find supporting material in the knowledge repository for this question."
             )
-            return state
-        if self.llm is None:
-            # Degraded mode: return the top passage verbatim
-            state["answer"] = candidates[0].content.strip()
+        elif self.llm is None:
+            answer = candidates[0].content.strip()
         else:
             context = "\n\n".join(
                 f"[{i+1}] ({c.document_title or c.filename}"
                 f"{' > ' + c.section if c.section else ''}) {c.content[:700]}"
                 for i, c in enumerate(candidates)
             )
+            history = self._recent_history(state.get("messages", []), exclude_last=True)
+            history_block = (
+                f"Conversation so far (for context):\n{self._history_text(history)}\n\n"
+                if history
+                else ""
+            )
             prompt = (
                 "Answer the question using only the numbered context below. Cite sources "
                 "inline as [n]. If the context is insufficient, say so plainly. Be concise "
                 "and precise for a banking-operations audience.\n\n"
-                f"Question: {state['original_query']}\n\nContext:\n{context}"
+                f"{history_block}Question: {state['original_query']}\n\nContext:\n{context}"
             )
             try:
-                state["answer"] = _llm_text(await self.llm.ainvoke(prompt))
+                answer = _llm_text(await self.llm.ainvoke(prompt))
             except Exception as e:  # pragma: no cover - network dependent
                 logger.warning("Answer synthesis failed (%s); returning top passage", e)
-                state["answer"] = candidates[0].content.strip()
-        state.setdefault("trace", []).append({"step": "answer", "chars": len(state["answer"])})
-        return state
+                answer = candidates[0].content.strip()
+
+        citations = [c.citation() for c in candidates]
+        assistant_turn: ChatTurn = {
+            "role": "assistant",
+            "content": answer,
+            "citations": citations,
+            "created_at": _now(),
+        }
+        trace = state.get("trace", []) + [{"step": "answer", "chars": len(answer)}]
+        return {"answer": answer, "messages": [assistant_turn], "trace": trace}
 
     # --- graph wiring -------------------------------------------------------
 
@@ -239,15 +344,16 @@ class KnowledgeAgent:
 
         # Node names must not collide with state keys (e.g. "route", "answer").
         graph = StateGraph(KnowledgeAgentState)
+        graph.add_node("contextualize", self._contextualize)
         graph.add_node("classify", self._route)
         graph.add_node("retrieve", self._retrieve)
         graph.add_node("grade", self._grade)
         graph.add_node("rewrite", self._rewrite)
         graph.add_node("synthesize", self._answer)
 
-        graph.set_entry_point("classify")
+        graph.set_entry_point("contextualize")
+        graph.add_edge("contextualize", "classify")
         graph.add_edge("classify", "retrieve")
-        # After retrieve: simple route answers directly; complex route grades.
         graph.add_conditional_edges(
             "retrieve",
             lambda s: "synthesize" if s.get("route") == "simple" else "grade",
@@ -258,7 +364,7 @@ class KnowledgeAgent:
         )
         graph.add_edge("rewrite", "retrieve")
         graph.add_edge("synthesize", END)
-        return graph.compile()
+        return graph.compile(checkpointer=self.checkpointer)
 
     # --- public API ---------------------------------------------------------
 
@@ -266,22 +372,42 @@ class KnowledgeAgent:
         self,
         query: str,
         *,
+        thread_id: Optional[str] = None,
         filters: Optional[Dict[str, str]] = None,
         min_trust: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Run the graph and return answer, citations, route, and trace."""
-        initial: KnowledgeAgentState = {
+        """Run one turn and return answer, citations, route, and conversation id.
+
+        Pass `thread_id` (conversation id) to continue a conversation; omit it for
+        a one-off question. With memory enabled, an omitted thread_id gets an
+        ephemeral id so the turn is isolated.
+        """
+        user_turn: ChatTurn = {
+            "role": "user",
+            "content": query,
+            "citations": [],
+            "created_at": _now(),
+        }
+        # Input carries the new user turn (appended via reducer) + per-turn inputs.
+        turn_input: KnowledgeAgentState = {
+            "messages": [user_turn],
             "query": query,
             "original_query": query,
             "filters": filters,
             "min_trust": min_trust,
-            "iterations": 0,
-            "trace": [],
         }
-        final: KnowledgeAgentState = await self._graph.ainvoke(initial)
+
+        config = None
+        conversation_id = thread_id
+        if self.checkpointer is not None:
+            conversation_id = thread_id or uuid.uuid4().hex
+            config = {"configurable": {"thread_id": conversation_id}}
+
+        final: KnowledgeAgentState = await self._graph.ainvoke(turn_input, config=config)
         candidates = final.get("candidates", [])
         result = {
             "query": query,
+            "conversation_id": conversation_id,
             "answer": final.get("answer", ""),
             "route": final.get("route", "simple"),
             "iterations": final.get("iterations", 0),
@@ -289,7 +415,8 @@ class KnowledgeAgent:
             "trace": final.get("trace", []),
         }
         logger.info(
-            "knowledge_lookup: route=%s iterations=%s citations=%s query=%r",
+            "knowledge_lookup: conv=%s route=%s iterations=%s citations=%s query=%r",
+            conversation_id,
             result["route"],
             result["iterations"],
             len(result["citations"]),
