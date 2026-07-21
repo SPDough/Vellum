@@ -97,6 +97,13 @@ def test_markdown_chunks_carry_section_path():
     assert all(m.get("source") == "test.md" for m in metadatas)
 
 
+def test_markdown_tiny_fragments_are_dropped():
+    # A bare heading chunk (e.g. a part-number page) should not become its own chunk
+    text = "# One\n\n## Two\n\n## Real section\n\n" + ("Meaningful accrual content here. " * 5)
+    texts, metadatas = pipeline._split_markdown(text, {})
+    assert all(len(t.strip()) >= 40 for t in texts)
+
+
 def test_markdown_oversized_section_is_split(monkeypatch):
     monkeypatch.setattr(pipeline, "RAG_CHUNK_SIZE", 200)
     monkeypatch.setattr(pipeline, "RAG_CHUNK_OVERLAP", 20)

@@ -109,6 +109,9 @@ def _split_markdown(text: str, base_metadata: Dict[str, Any]) -> tuple[List[str]
     texts: List[str] = []
     metadatas: List[Dict[str, Any]] = []
     for c in chunks:
+        # Skip fragments too small to be meaningful (e.g. a bare heading chunk)
+        if len(c.page_content.strip()) < 40:
+            continue
         meta = dict(base_metadata)
         headers = [c.metadata.get(k) for _, k in _MD_HEADERS]
         section = " > ".join(h for h in headers if h)
