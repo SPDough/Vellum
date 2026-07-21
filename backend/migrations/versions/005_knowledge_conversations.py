@@ -29,10 +29,20 @@ _CHECKPOINT_TABLES = [
 
 def upgrade() -> None:
     # 1) LangGraph checkpointer tables — run the library's own migration SQL.
+    #
+    # Some of these statements are `CREATE INDEX CONCURRENTLY`, which Postgres
+    # refuses to run inside a transaction block. Alembic wraps each migration in a
+    # transaction, so those statements are executed in an autocommit_block (the SQL
+    # text is kept verbatim to stay faithful to the pinned library DDL — see the
+    # module docstring). The remaining table/column statements stay transactional.
     from langgraph.checkpoint.postgres import PostgresSaver
 
     for statement in PostgresSaver.MIGRATIONS:
-        op.execute(statement)
+        if "CONCURRENTLY" in statement.upper():
+            with op.get_context().autocommit_block():
+                op.execute(statement)
+        else:
+            op.execute(statement)
 
     # 2) Conversation index table.
     op.create_table(
