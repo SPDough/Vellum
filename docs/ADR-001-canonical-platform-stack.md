@@ -18,7 +18,7 @@ Otomeshon spans multiple repositories (`Vellum` backend + UIs, `otomeshon-portal
 | **Agentic workflows** | **LangGraph** for branching / tool-using automation (not for simple cron DAGs) |
 | **Reasoning LLM** | **Anthropic Claude** as primary chat/reasoning provider when `ANTHROPIC_API_KEY` is set |
 | **Embeddings** | **OpenAI `text-embedding-3-small`** as primary embedding model when `OPENAI_API_KEY` is set (pgvector dimensions must match 1536 for this model) |
-| **Frontend** | **Vite + React 18 + React Router + MUI v7**; **no Tailwind** in product UIs; Radix primitives allowed only where MUI does not cover a11y needs (revisit periodically) |
+| **Frontend** | **Product UI:** [`otomeshon-portal`](https://github.com/SPDough/otomeshon-portal) — Vite + React 18 + React Router + MUI. In-repo `Vellum/frontend` (Next.js) is non-canonical reference only. |
 | **Local dev** | **Docker Compose** (`docker-compose.dev.yml`) for integrated services |
 | **Scheduled / cloud orchestration** | **Prefect Cloud** (free tier) for managed work pools; API URL via `PREFECT_API_URL` |
 
@@ -38,8 +38,8 @@ Otomeshon spans multiple repositories (`Vellum` backend + UIs, `otomeshon-portal
 ## Consequences
 
 - **Temporal**: phased deprecation; new deterministic pipelines should be Prefect flows.
-- **`Vellum/frontend` (Next.js)**: non-canonical; migrate toward Vite + RR + MUI to match `otomeshon-portal` (see `docs/FRONTEND-MIGRATION-VITE.md`).
-- **Two frontends**: allowed, but both must target this stack document for framework and API conventions.
+- **`Vellum/frontend` (Next.js)**: non-canonical reference only; product UI is **otomeshon-portal**.
+- **Two frontends temporarily**: allowed during cleanup, but both must target this stack document for API conventions (`/api/v1/...`).
 
 ## References
 

@@ -1,0 +1,41 @@
+[
+  {
+    "entity_id": "ENT-ACME",
+    "account_id": "ACCOUNT-001",
+    "security_id": "SEC-ABC",
+    "instrument_id": "US0378331005",
+    "quantity": 900,
+    "currency": "USD",
+    "position_date": "2026-07-24",
+    "status": "open",
+    "source_system": "abor",
+    "source_record_id": "abor-acct-001-sec-abc",
+    "custodian": "state_street"
+  },
+  {
+    "entity_id": "ENT-ACME",
+    "account_id": "ACCOUNT-001",
+    "security_id": "SEC-XYZ",
+    "instrument_id": "US5949181045",
+    "quantity": 500,
+    "currency": "USD",
+    "position_date": "2026-07-24",
+    "status": "open",
+    "source_system": "abor",
+    "source_record_id": "abor-acct-001-sec-xyz",
+    "custodian": "state_street"
+  },
+  {
+    "entity_id": "ENT-ACME",
+    "account_id": "ACCOUNT-002",
+    "security_id": "SEC-DEF",
+    "instrument_id": "US0231351067",
+    "quantity": 240,
+    "currency": "USD",
+    "position_date": "2026-07-24",
+    "status": "open",
+    "source_system": "abor",
+    "source_record_id": "abor-acct-002-sec-def",
+    "custodian": "state_street"
+  }
+]
