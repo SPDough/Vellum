@@ -15,16 +15,15 @@ This document is the first-pass truth source for `Vellum-main`.
 
 The repository currently contains two frontend shapes:
 
-1. **Next.js App Router** under `frontend/app/*`
+1. **Next.js App Router** under `frontend/app/*` (legacy / in-repo reference)
 2. **Legacy SPA entry files** under `frontend/src/main.tsx` and `frontend/src/App.tsx`
 
-For this repo going forward, the canonical frontend runtime is:
+**Canonical product UI (P0):** [`otomeshon-portal`](https://github.com/SPDough/otomeshon-portal)
+(`Vite + React + MUI`). Custodian oversight screens such as Position
+Reconciliation live there and call this backend under `/api/v1/...`.
 
-- `frontend/app/layout.tsx`
-- `frontend/app/page.tsx`
-- `frontend/app/**/page.tsx`
-
-The SPA entry files remain in the repo temporarily for migration reference only. They are not the intended long-term runtime path.
+The in-repo `frontend/` tree is not the long-term product home. Keep it only
+as migration/reference until removed.
 
 ## Backend truth
 

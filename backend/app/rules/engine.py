@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, UTC
 from typing import Any, Dict
 from uuid import uuid4
@@ -131,9 +132,9 @@ class RuleEngine:
         if not template:
             return 'Rule triggered.' if triggered else 'Rule did not trigger.'
         rendered = template
-        for key in ['payload.trade_id', 'payload.account_id', 'payload.security_id', 'payload.trade_date', 'payload.settlement_date', 'payload.settlement_status', 'derived.days_past_settlement']:
+        # Replace {{dotted.path}} placeholders from facts (payload.*, derived.*, …).
+        for key in re.findall(r'\{\{([a-zA-Z0-9_.]+)\}\}', template):
             placeholder = '{{' + key + '}}'
-            if placeholder in rendered:
-                value = self.evaluator.evaluate({'var': key}, facts)
-                rendered = rendered.replace(placeholder, '' if value is None else str(value))
+            value = self.evaluator.evaluate({'var': key}, facts)
+            rendered = rendered.replace(placeholder, '' if value is None else str(value))
         return rendered

@@ -1,0 +1,38 @@
+[
+  {
+    "entity_id": "ENT-ACME",
+    "account_id": "ACCOUNT-001",
+    "security_id": "SEC-ABC",
+    "instrument_id": "US0378331005",
+    "quantity": 1000,
+    "currency": "USD",
+    "position_date": "2026-07-24",
+    "status": "open",
+    "source_system": "oms",
+    "source_record_id": "oms-acct-001-sec-abc"
+  },
+  {
+    "entity_id": "ENT-ACME",
+    "account_id": "ACCOUNT-001",
+    "security_id": "SEC-XYZ",
+    "instrument_id": "US5949181045",
+    "quantity": 500,
+    "currency": "USD",
+    "position_date": "2026-07-24",
+    "status": "open",
+    "source_system": "oms",
+    "source_record_id": "oms-acct-001-sec-xyz"
+  },
+  {
+    "entity_id": "ENT-ACME",
+    "account_id": "ACCOUNT-002",
+    "security_id": "SEC-DEF",
+    "instrument_id": "US0231351067",
+    "quantity": 250,
+    "currency": "USD",
+    "position_date": "2026-07-24",
+    "status": "open",
+    "source_system": "oms",
+    "source_record_id": "oms-acct-002-sec-def"
+  }
+]

@@ -19,6 +19,8 @@ from app.api.endpoints import (
     fibo,
     knowledge_graph,
     mcp_servers,
+    native_rules,
+    oversight,
     rag,
     rag_findings,
     rules,
@@ -34,8 +36,14 @@ api_router = APIRouter()
 # Authentication router - already has prefix="/auth"
 api_router.include_router(auth_unified.router, tags=["Authentication"])
 
-# Rules engine router - already has prefix="/rules"
-api_router.include_router(rules.router, tags=["Rules Engine"])
+# JSON-first native rules (product path) — /rules/evaluate, /rules/definitions
+api_router.include_router(native_rules.router, tags=["Native Rules"])
+
+# Drools rules router retained but dormant for P0 — /rules/*
+api_router.include_router(rules.router, tags=["Rules Engine (Drools)"])
+
+# Custodian oversight vertical slice
+api_router.include_router(oversight.router, tags=["Custodian Oversight"])
 
 # Workflow execution router - already has prefix="/workflow-execution"
 api_router.include_router(workflow_execution.router, tags=["Workflow Execution"])
