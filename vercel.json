@@ -3,6 +3,7 @@
   "framework": "nextjs",
   "installCommand": "npm install && npm ci --prefix frontend --legacy-peer-deps",
   "buildCommand": "cd frontend && npm run build",
+  "outputDirectory": "frontend/.next",
   "build": {
     "env": {
       "NEXT_BUILD": "1"
