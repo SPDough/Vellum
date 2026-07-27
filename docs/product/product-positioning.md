@@ -14,8 +14,11 @@ Legacy operating models were built around static books of record, batch processi
 
 ## What Vellum is
 - a workflow and control platform for buy-side operations
-- a deterministic rules engine for exception detection and routing
-- a data-integration layer across OMS, IBOR, ABOR, and CBOR environments
+- a deterministic rules engine for exception detection and routing, built on proprietary
+  **versioned JSON rule contracts** (not Drools, not black-box code)
+- a data-integration layer across OMS, IBOR, ABOR, and CBOR environments, normalized into a
+  **proprietary domain ontology** with selective FIBO intersections
+- a **curated knowledge repository** with a cited, multi-turn knowledge assistant for operators
 - an AI-enhanced operator-assistance system using RAG, LLMs, and agentic workflows
 - a path away from brittle legacy IBOR-heavy operating models
 
@@ -38,6 +41,25 @@ It helps firms:
 
 ## Core product thesis
 Vellum is designed to reduce reliance on traditional IBOR-heavy operating models by replacing manual reconciliation and fragmented exception handling with a rules-based, AI-enhanced control layer.
+
+## Defensibility (MOAT)
+The moat is not the LLM — anyone can call one. It is the deterministic domain scaffolding around
+it, which compounds and is expensive to reproduce:
+
+1. **Proprietary ontology + canonical data contracts** — the curated domain model everything
+   evaluates against, with selective FIBO intersections.
+2. **An accumulating library of versioned, tested rule contracts** — encoded custodian/accounting
+   expertise as inspectable data artifacts, not scattered code.
+3. **A curated, governed knowledge repository** with trust levels and citations, tuned for domain
+   retrieval quality.
+4. **The authority-order architecture (neuro-symbolic by design)** — deterministic control governs;
+   AI assists and cites; probabilistic output can never overrule a rule. Regulated buyers require
+   this, and a generic AI copilot cannot bolt it on after the fact.
+5. **Integration + normalization breadth** across OMS/IBOR/ABOR/CBOR — high-switching-cost work
+   under everything else.
+
+See [Offering, Value, and MOAT](offering-value-moat.md) for the full articulation, and the
+[Rule Definition contract](../contracts/RULE_DEFINITION_CONTRACT.md) for how the rules layer works.
 
 ## Tagline options
 - Match everything. Escalate only exceptions.
