@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 
 from app.oversight.csv_ingest import PositionCsvIngestError, parse_position_csv
+from app.oversight.lifecycle import BreakTransitionError
 from app.oversight.repository import InMemoryOversightRepository, OversightRepository
 from app.oversight.store import OversightSnapshot
 from app.rules.engine import RuleEngine
@@ -87,6 +88,32 @@ class OversightService:
 
     async def list_runs(self, limit: int = 20) -> List[Dict[str, Any]]:
         return await self.repository.list_runs(limit=limit)
+
+    async def update_break_status(
+        self,
+        break_id: str,
+        *,
+        new_status: str,
+        actor: str = "portal-user",
+        note: Optional[str] = None,
+        assignee: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Official break state transition — portal may request; backend decides."""
+        try:
+            return await self.repository.update_break_status(
+                break_id,
+                new_status=new_status,
+                actor=actor,
+                note=note,
+                assignee=assignee,
+            )
+        except BreakTransitionError:
+            raise
+        except KeyError:
+            raise
+
+    async def list_break_events(self, break_id: str) -> List[Dict[str, Any]]:
+        return await self.repository.list_break_events(break_id)
 
     def _evaluate_books(
         self,

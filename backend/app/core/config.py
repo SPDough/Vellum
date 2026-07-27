@@ -123,11 +123,15 @@ class Settings(BaseSettings):
         alias="CORS_ORIGINS",
     )
 
-    # Optional infrastructure at startup (set false for local / CI without brokers)
-    startup_enable_neo4j: bool = Field(default=True, alias="STARTUP_ENABLE_NEO4J")
-    startup_enable_kafka: bool = Field(default=True, alias="STARTUP_ENABLE_KAFKA")
+    # Optional infrastructure at startup (Postgres-first defaults for local / oversight path)
+    startup_enable_neo4j: bool = Field(default=False, alias="STARTUP_ENABLE_NEO4J")
+    startup_enable_kafka: bool = Field(default=False, alias="STARTUP_ENABLE_KAFKA")
     startup_enable_temporal: bool = Field(default=False, alias="STARTUP_ENABLE_TEMPORAL")
-    startup_enable_kg_sync: bool = Field(default=True, alias="STARTUP_ENABLE_KG_SYNC")
+    startup_enable_kg_sync: bool = Field(default=False, alias="STARTUP_ENABLE_KG_SYNC")
+
+    # When True, requests without a valid Bearer token are rejected (production).
+    # Dev/test default False so portal local DX works; invalid tokens still rejected.
+    auth_required: bool = Field(default=False, alias="AUTH_REQUIRED")
 
     def cors_origins_list(self) -> list[str]:
         raw = (self.cors_origins or "").strip()

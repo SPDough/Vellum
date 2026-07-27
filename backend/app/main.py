@@ -19,7 +19,7 @@ from fastapi.security import HTTPBearer
 from app.api.router import api_router
 from app.core.config import get_settings
 from app.core.database import init_db
-from app.core.placeholder_auth import PlaceholderAuthMiddleware
+from app.core.jwt_auth import JwtAuthMiddleware
 from app.core.middleware import (
     ErrorHandlingMiddleware,
     RateLimitingMiddleware,
@@ -150,8 +150,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 5. Placeholder auth (runs innermost / closest to routes; sets request.state.auth_subject)
-app.add_middleware(PlaceholderAuthMiddleware)
+# 5. JWT auth (innermost / closest to routes; sets request.state.auth_subject)
+app.add_middleware(JwtAuthMiddleware)
 
 # Include canonical API routes.
 #
