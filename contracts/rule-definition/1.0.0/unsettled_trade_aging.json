@@ -1,0 +1,75 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "custody.unsettled_trade_aging.v1",
+  "payload": {
+    "rule_id": "custody.unsettled_trade_aging",
+    "rule_name": "Unsettled trade aging exceeds threshold",
+    "rule_family": "custody",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags trades whose settlement date is before the evaluation date and whose settlement status remains unsettled beyond the configured threshold.",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["TradeStatus"],
+    "input_scope": {
+      "group_by": ["payload.account_id", "payload.trade_id"],
+      "filters": [
+        {
+          "field": "payload.settlement_status",
+          "operator": "not_in",
+          "value": ["SETTLED", "CANCELLED"]
+        }
+      ]
+    },
+    "expression_language": "jsonlogic",
+    "predicate": {
+      ">": [
+        { "var": "derived.days_past_settlement" },
+        2
+      ]
+    },
+    "severity": "high",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "UNSETTLED_TRADE_AGING_BREACH",
+      "result_type": "break",
+      "create_exception": true,
+      "create_reconciliation_break": true,
+      "open_workflow_case": true,
+      "require_approval": false,
+      "explanation_template": "Trade {{payload.trade_id}} remains unsettled {{derived.days_past_settlement}} days after settlement date."
+    },
+    "evidence": {
+      "fields": [
+        "payload.trade_id",
+        "payload.account_id",
+        "payload.security_id",
+        "payload.trade_date",
+        "payload.settlement_date",
+        "payload.settlement_status"
+      ],
+      "rag_enabled": true,
+      "rag_collections": ["custody-ops-playbooks", "market-settlement-conventions"]
+    },
+    "workflow_binding": {
+      "workflow_name": "custody_break_resolution",
+      "case_type": "trade_settlement_break"
+    },
+    "test_cases": [
+      {
+        "name": "trade aged three business days",
+        "expected_result": "triggered"
+      },
+      {
+        "name": "trade settled on time",
+        "expected_result": "not_triggered"
+      }
+    ],
+    "tags": ["custody", "settlement", "aging", "deterministic"]
+  }
+}

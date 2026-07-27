@@ -35,6 +35,13 @@ from app.models.data_sandbox import (  # noqa: F401
 # NOTE: app.models.knowledge_graph defines only Pydantic schemas (no SQLAlchemy
 # models), so there is nothing to register here.
 from app.models.procedure_document_row import ProcedureDocumentRow  # noqa: F401
+from app.models.oversight import (  # noqa: F401
+    OversightBreakRow,
+    OversightComparisonRow,
+    OversightPositionRow,
+    OversightRuleResultRow,
+    OversightRunRow,
+)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

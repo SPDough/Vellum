@@ -1,0 +1,3 @@
+entity_id,account_id,security_id,instrument_id,quantity,market_value,currency,position_date,status,source_record_id,custodian
+ENT-ACME,ACCOUNT-001,SEC-ABC,US0378331005,900,135000,USD,2026-07-24,open,csv-abor-abc,state_street
+ENT-ACME,ACCOUNT-001,SEC-XYZ,US5949181045,500,91000,USD,2026-07-24,open,csv-abor-xyz,state_street

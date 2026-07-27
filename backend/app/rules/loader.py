@@ -14,8 +14,11 @@ class RuleLoader:
 
     RULE_INDEX = {
         ('custody', '1.0.0'): 'example.json',
+        ('custody.unsettled_trade_aging', '1.0.0'): 'unsettled_trade_aging.json',
         ('custody.cash_activity_value_date_breach', '1.0.0'): 'cash_activity_value_date_breach.json',
         ('reconciliation.position_quantity_tolerance_breach', '1.0.0'): 'position_quantity_tolerance_breach.json',
+        ('reconciliation.position_missing_leg', '1.0.0'): 'position_missing_leg.json',
+        ('reconciliation.valuation_mismatch', '1.0.0'): 'valuation_mismatch.json',
     }
 
     def __init__(self, rules_root: Optional[Path] = None):
