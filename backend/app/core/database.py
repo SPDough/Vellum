@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.core.base import Base as DataSandboxBase
 from app.core.config import get_settings
 from app.models import procedure_document_row as _procedure_document_row  # noqa: F401
+from app.models import oversight as _oversight_models  # noqa: F401
 from app.models.rag import Base as RAGBase
 from app.models.sop import Base as SOPBase
 from app.models.trade import Base as TradeBase

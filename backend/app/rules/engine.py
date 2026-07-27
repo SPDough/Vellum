@@ -48,11 +48,18 @@ class RuleEngine:
 
     def _resolve_rule_family(self, rule_family: str, facts: Dict[str, Any]) -> str:
         """Map coarse families to concrete indexed definitions when needed."""
+        # Prefer exact indexed families; only alias coarse names.
+        if '.' in rule_family:
+            return rule_family
+
         payload = facts.get("payload", {}) if isinstance(facts, dict) else {}
 
         # Cash activity fixtures use the generic custody family.
         if rule_family == "custody" and isinstance(payload, dict) and "transaction_id" in payload:
             return "custody.cash_activity_value_date_breach"
+
+        if rule_family == "custody" and isinstance(payload, dict) and "trade_id" in payload:
+            return "custody.unsettled_trade_aging"
 
         # Reconciliation fixtures currently target the position tolerance rule.
         if rule_family == "reconciliation":

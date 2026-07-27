@@ -1,0 +1,78 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "reconciliation.valuation_mismatch.v1",
+  "payload": {
+    "rule_id": "reconciliation.valuation_mismatch",
+    "rule_name": "Valuation mismatch with aligned quantity",
+    "rule_family": "reconciliation",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags positions where quantity matches across books but absolute market-value difference exceeds tolerance.",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Position"],
+    "input_scope": {
+      "group_by": ["payload.account_id", "payload.security_id"],
+      "filters": []
+    },
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "and": [
+        {
+          "==": [
+            { "var": "derived.absolute_quantity_difference" },
+            0
+          ]
+        },
+        {
+          ">": [
+            { "var": "derived.absolute_market_value_difference" },
+            0
+          ]
+        }
+      ]
+    },
+    "severity": "medium",
+    "materiality": {
+      "mode": "expression",
+      "expression": {
+        ">=": [
+          { "var": "derived.absolute_market_value_difference" },
+          1000
+        ]
+      }
+    },
+    "outcome": {
+      "result_code": "POSITION_VALUATION_MISMATCH",
+      "result_type": "break",
+      "create_exception": true,
+      "create_reconciliation_break": true,
+      "open_workflow_case": true,
+      "require_approval": false,
+      "explanation_template": "Quantity aligns for {{payload.security_id}} in {{payload.account_id}}, but market value differs by {{derived.absolute_market_value_difference}}."
+    },
+    "evidence": {
+      "fields": [
+        "payload.account_id",
+        "payload.security_id",
+        "payload.quantity",
+        "derived.oms_market_value",
+        "derived.abor_market_value",
+        "derived.absolute_market_value_difference"
+      ],
+      "rag_enabled": true,
+      "rag_collections": ["position-reconciliation-playbooks"]
+    },
+    "workflow_binding": {
+      "workflow_name": "position_break_resolution",
+      "case_type": "position_valuation_mismatch"
+    },
+    "test_cases": [
+      { "name": "qty match value mismatch", "expected_result": "triggered" },
+      { "name": "qty and value match", "expected_result": "not_triggered" }
+    ],
+    "tags": ["reconciliation", "position", "valuation", "deterministic"]
+  }
+}

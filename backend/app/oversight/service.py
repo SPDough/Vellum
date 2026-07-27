@@ -4,37 +4,96 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, UTC
-from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import uuid4
 
-from app.oversight.store import OversightSnapshot, OversightStore, get_oversight_store
+from app.oversight.csv_ingest import PositionCsvIngestError, parse_position_csv
+from app.oversight.repository import InMemoryOversightRepository, OversightRepository
+from app.oversight.store import OversightSnapshot
 from app.rules.engine import RuleEngine
 
 
 class OversightService:
-    """P0 custodian oversight slice using synthetic OMS vs ABOR fixtures."""
+    """Custodian oversight slice: industry meaning stays in backend control objects."""
 
     RULE_FAMILY = "reconciliation.position_quantity_tolerance_breach"
     RULE_VERSION = "1.0.0"
+    QUANTITY_RULE = "reconciliation.position_quantity_tolerance_breach"
+    MISSING_LEG_RULE = "reconciliation.position_missing_leg"
+    VALUATION_RULE = "reconciliation.valuation_mismatch"
 
     def __init__(
         self,
-        store: Optional[OversightStore] = None,
+        repository: Optional[OversightRepository] = None,
         engine: Optional[RuleEngine] = None,
         fixtures_dir: Optional[Path] = None,
     ) -> None:
-        self.store = store or get_oversight_store()
+        self.repository: OversightRepository = repository or InMemoryOversightRepository()
         self.engine = engine or RuleEngine()
         self.fixtures_dir = fixtures_dir or (
             Path(__file__).resolve().parent / "fixtures"
         )
 
-    def run_fixture_slice(self) -> Dict[str, Any]:
+    async def run_fixture_slice(self) -> Dict[str, Any]:
         oms_rows = self._load_fixture("oms_positions.json")
         abor_rows = self._load_fixture("abor_positions.json")
+        snapshot = self._evaluate_books(oms_rows, abor_rows, source="fixture")
+        return await self.repository.save_snapshot(snapshot)
 
+    async def run_csv_slice(
+        self,
+        oms_csv: str | bytes,
+        abor_csv: str | bytes,
+        *,
+        custodian: str | None = "state_street",
+    ) -> Dict[str, Any]:
+        """Ingest OMS + ABOR position CSVs, normalize, evaluate rules, persist."""
+        try:
+            oms_rows = parse_position_csv(
+                oms_csv, book="oms", source_system="oms"
+            )
+            abor_rows = parse_position_csv(
+                abor_csv,
+                book="abor",
+                source_system="abor",
+                custodian=custodian,
+            )
+        except PositionCsvIngestError:
+            raise
+        snapshot = self._evaluate_books(oms_rows, abor_rows, source="csv_ingest")
+        return await self.repository.save_snapshot(snapshot)
+
+    async def run_sample_csv_slice(self) -> Dict[str, Any]:
+        oms_path = self.fixtures_dir / "sample_oms_positions.csv"
+        abor_path = self.fixtures_dir / "sample_abor_positions.csv"
+        return await self.run_csv_slice(
+            oms_path.read_text(encoding="utf-8"),
+            abor_path.read_text(encoding="utf-8"),
+            custodian="state_street",
+        )
+
+    async def get_snapshot(self, run_id: Optional[str] = None) -> Dict[str, Any]:
+        if run_id:
+            found = await self.repository.get_by_run_id(run_id)
+            if found is None:
+                raise KeyError(f"Oversight run not found: {run_id}")
+            return found
+
+        latest = await self.repository.get_latest()
+        if latest is None:
+            return await self.run_fixture_slice()
+        return latest
+
+    async def list_runs(self, limit: int = 20) -> List[Dict[str, Any]]:
+        return await self.repository.list_runs(limit=limit)
+
+    def _evaluate_books(
+        self,
+        oms_rows: List[Dict[str, Any]],
+        abor_rows: List[Dict[str, Any]],
+        source: str,
+    ) -> OversightSnapshot:
         oms_by_key = {self._position_key(row): row for row in oms_rows}
         abor_by_key = {self._position_key(row): row for row in abor_rows}
         keys = sorted(set(oms_by_key) | set(abor_by_key))
@@ -70,6 +129,17 @@ class OversightService:
             security_id = (abor or oms or {}).get("security_id", "")
             entity_id = (abor or oms or {}).get("entity_id", "")
 
+            oms_mv = float(oms["market_value"]) if oms and oms.get("market_value") is not None else None
+            abor_mv = (
+                float(abor["market_value"])
+                if abor and abor.get("market_value") is not None
+                else None
+            )
+            if oms_mv is None or abor_mv is None:
+                mv_difference = None
+            else:
+                mv_difference = abs(abor_mv - oms_mv)
+
             comparison: Dict[str, Any] = {
                 "account_id": account_id,
                 "security_id": security_id,
@@ -77,65 +147,112 @@ class OversightService:
                 "oms_quantity": expected_qty,
                 "abor_quantity": actual_qty,
                 "absolute_quantity_difference": difference,
+                "oms_market_value": oms_mv,
+                "abor_market_value": abor_mv,
+                "absolute_market_value_difference": mv_difference,
                 "status": "missing_leg"
                 if expected_qty is None or actual_qty is None
-                else ("matched" if difference == 0 else "mismatch"),
+                else ("matched" if difference == 0 and (mv_difference in (None, 0)) else "mismatch"),
                 "oms_contract_id": self._contract_id(oms_contract) if oms_contract else None,
                 "abor_contract_id": self._contract_id(abor_contract)
                 if abor_contract
                 else None,
+                "break_ids": [],
+                "rule_result_ids": [],
             }
 
-            if abor_contract is not None and expected_qty is not None and difference is not None:
-                facts = {
-                    "target_contract_ids": [self._contract_id(abor_contract)],
-                    "payload": {
-                        "entity_id": entity_id,
-                        "account_id": account_id,
-                        "security_id": security_id,
-                        "quantity": actual_qty,
-                        "currency": abor_contract["payload"]["currency"],
-                        "position_date": abor_contract["payload"]["position_date"],
-                    },
-                    "derived": {
+            related_ids = [
+                cid
+                for cid in [
+                    comparison["oms_contract_id"],
+                    comparison["abor_contract_id"],
+                ]
+                if cid
+            ]
+            present_contract = abor_contract or oms_contract
+            if present_contract is not None:
+                base_payload = {
+                    "entity_id": entity_id,
+                    "account_id": account_id,
+                    "security_id": security_id,
+                    "quantity": actual_qty
+                    if actual_qty is not None
+                    else expected_qty,
+                    "currency": present_contract["payload"]["currency"],
+                    "position_date": present_contract["payload"]["position_date"],
+                }
+
+                rules_to_run: List[str] = []
+                if expected_qty is None or actual_qty is None:
+                    rules_to_run.append(self.MISSING_LEG_RULE)
+                else:
+                    rules_to_run.append(self.QUANTITY_RULE)
+                    if mv_difference is not None:
+                        rules_to_run.append(self.VALUATION_RULE)
+
+                for rule_family in rules_to_run:
+                    derived: Dict[str, Any] = {
                         "expected_quantity": expected_qty,
-                        "absolute_quantity_difference": difference,
+                        "absolute_quantity_difference": difference
+                        if difference is not None
+                        else 0,
                         "oms_quantity": expected_qty,
                         "abor_quantity": actual_qty,
-                    },
-                }
-                outcome = self.engine.evaluate_rule(
-                    self.RULE_FAMILY, self.RULE_VERSION, facts
-                )
-                result = outcome.result
-                result_payload = result.get("payload", {})
-                rule_results.append(result)
-
-                if outcome.triggered and outcome.evaluation_status == "success":
-                    break_contract = self._build_break(
-                        result_payload=result_payload,
-                        comparison=comparison,
-                        related_ids=[
-                            cid
-                            for cid in [
-                                comparison["oms_contract_id"],
-                                comparison["abor_contract_id"],
-                            ]
-                            if cid
-                        ],
-                        detected_at=now,
+                        "oms_market_value": oms_mv,
+                        "abor_market_value": abor_mv,
+                        "absolute_market_value_difference": mv_difference
+                        if mv_difference is not None
+                        else 0,
+                        "missing_leg": expected_qty is None or actual_qty is None,
+                        "missing_book": "abor"
+                        if abor is None
+                        else ("oms" if oms is None else ""),
+                        "present_book": "oms"
+                        if oms is not None and abor is None
+                        else (
+                            "abor"
+                            if abor is not None and oms is None
+                            else "both"
+                        ),
+                    }
+                    facts = {
+                        "target_contract_ids": [self._contract_id(present_contract)],
+                        "payload": base_payload,
+                        "derived": derived,
+                    }
+                    outcome = self.engine.evaluate_rule(
+                        rule_family, self.RULE_VERSION, facts
                     )
-                    breaks.append(break_contract)
-                    result_payload["created_reconciliation_break_id"] = break_contract[
-                        "payload"
-                    ]["break_id"]
-                    comparison["break_id"] = break_contract["payload"]["break_id"]
-                    comparison["rule_result_id"] = result_payload.get("rule_result_id")
-                    comparison["status"] = "break"
+                    result = outcome.result
+                    result_payload = result.get("payload", {})
+                    rule_results.append(result)
+                    comparison["rule_result_ids"].append(
+                        result_payload.get("rule_result_id")
+                    )
+
+                    if outcome.triggered and outcome.evaluation_status == "success":
+                        break_contract = self._build_break(
+                            result_payload=result_payload,
+                            comparison=comparison,
+                            related_ids=related_ids,
+                            detected_at=now,
+                        )
+                        breaks.append(break_contract)
+                        result_payload["created_reconciliation_break_id"] = (
+                            break_contract["payload"]["break_id"]
+                        )
+                        comparison["break_ids"].append(
+                            break_contract["payload"]["break_id"]
+                        )
+                        comparison["break_id"] = break_contract["payload"]["break_id"]
+                        comparison["rule_result_id"] = result_payload.get(
+                            "rule_result_id"
+                        )
+                        comparison["status"] = "break"
 
             comparisons.append(comparison)
 
-        snapshot = OversightSnapshot(
+        return OversightSnapshot(
             run_id=run_id,
             ran_at=now,
             positions=positions,
@@ -147,32 +264,19 @@ class OversightService:
                 "matched": sum(1 for c in comparisons if c["status"] == "matched"),
                 "breaks": len(breaks),
                 "missing_leg": sum(
-                    1 for c in comparisons if c["status"] == "missing_leg"
+                    1 for c in comparisons if c.get("absolute_quantity_difference") is None
+                    and (c.get("oms_quantity") is None or c.get("abor_quantity") is None)
                 ),
                 "rule_family": self.RULE_FAMILY,
                 "rule_version": self.RULE_VERSION,
+                "rules_evaluated": [
+                    self.QUANTITY_RULE,
+                    self.MISSING_LEG_RULE,
+                    self.VALUATION_RULE,
+                ],
+                "source": source,
             },
         )
-        self.store.replace(snapshot)
-        return self.snapshot_dict(snapshot)
-
-    def get_snapshot(self) -> Dict[str, Any]:
-        snapshot = self.store.get()
-        if not snapshot.run_id:
-            return self.run_fixture_slice()
-        return self.snapshot_dict(snapshot)
-
-    @staticmethod
-    def snapshot_dict(snapshot: OversightSnapshot) -> Dict[str, Any]:
-        return {
-            "run_id": snapshot.run_id,
-            "ran_at": snapshot.ran_at,
-            "summary": snapshot.summary,
-            "positions": snapshot.positions,
-            "comparisons": snapshot.comparisons,
-            "rule_results": snapshot.rule_results,
-            "breaks": snapshot.breaks,
-        }
 
     def _load_fixture(self, name: str) -> List[Dict[str, Any]]:
         path = self.fixtures_dir / name
@@ -249,7 +353,7 @@ class OversightService:
             },
             "payload": {
                 "break_id": break_id,
-                "break_type": "position_quantity_tolerance",
+                "break_type": result_payload.get("result_code", "reconciliation_break").lower(),
                 "entity_id": comparison.get("entity_id") or "",
                 "account_id": comparison.get("account_id") or "",
                 "related_contract_ids": related_ids,
@@ -263,6 +367,9 @@ class OversightService:
         }
 
 
-@lru_cache(maxsize=1)
-def get_oversight_service() -> OversightService:
-    return OversightService()
+# Module-level memory repo so process restarts aren't required for demo without DB wiring.
+_MEMORY_REPO = InMemoryOversightRepository()
+
+
+def get_memory_oversight_service() -> OversightService:
+    return OversightService(repository=_MEMORY_REPO)

@@ -1,0 +1,63 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "reconciliation.position_missing_leg.v1",
+  "payload": {
+    "rule_id": "reconciliation.position_missing_leg",
+    "rule_name": "Position missing on one book",
+    "rule_family": "reconciliation",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags account/security keys present on OMS or ABOR but missing on the other book (missing-record mismatch).",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Position"],
+    "input_scope": {
+      "group_by": ["payload.account_id", "payload.security_id"],
+      "filters": []
+    },
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "==": [
+        { "var": "derived.missing_leg" },
+        true
+      ]
+    },
+    "severity": "high",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "POSITION_MISSING_LEG",
+      "result_type": "break",
+      "create_exception": true,
+      "create_reconciliation_break": true,
+      "open_workflow_case": true,
+      "require_approval": false,
+      "explanation_template": "Position for {{payload.security_id}} in account {{payload.account_id}} is missing on {{derived.missing_book}} (present on {{derived.present_book}})."
+    },
+    "evidence": {
+      "fields": [
+        "payload.account_id",
+        "payload.security_id",
+        "derived.missing_book",
+        "derived.present_book",
+        "derived.oms_quantity",
+        "derived.abor_quantity"
+      ],
+      "rag_enabled": true,
+      "rag_collections": ["position-reconciliation-playbooks"]
+    },
+    "workflow_binding": {
+      "workflow_name": "position_break_resolution",
+      "case_type": "position_missing_leg"
+    },
+    "test_cases": [
+      { "name": "missing ABOR leg", "expected_result": "triggered" },
+      { "name": "both legs present", "expected_result": "not_triggered" }
+    ],
+    "tags": ["reconciliation", "position", "missing-record", "deterministic"]
+  }
+}
