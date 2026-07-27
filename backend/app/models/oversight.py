@@ -102,6 +102,42 @@ class OversightBreakRow(Base):
     status: Mapped[str] = mapped_column(String(64), nullable=False, default="open")
     severity: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     explanation: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    assignee: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
     contract_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
 
     run: Mapped[OversightRunRow] = relationship(back_populates="breaks")
+    events: Mapped[list["OversightBreakEventRow"]] = relationship(
+        back_populates="break_row", cascade="all, delete-orphan"
+    )
+
+
+class OversightBreakEventRow(Base):
+    """Immutable audit events for break control-loop transitions."""
+
+    __tablename__ = "oversight_break_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    break_id: Mapped[str] = mapped_column(
+        String(64),
+        ForeignKey("oversight_breaks.break_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    from_status: Mapped[str] = mapped_column(String(64), nullable=False)
+    to_status: Mapped[str] = mapped_column(String(64), nullable=False)
+    actor: Mapped[str] = mapped_column(String(256), nullable=False)
+    note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    assignee: Mapped[Optional[str]] = mapped_column(String(256), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+    break_row: Mapped[OversightBreakRow] = relationship(back_populates="events")
