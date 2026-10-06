@@ -36,6 +36,7 @@ from app.models.data_sandbox import (  # noqa: F401
 # models), so there is nothing to register here.
 from app.models.procedure_document_row import ProcedureDocumentRow  # noqa: F401
 from app.models.oversight import (  # noqa: F401
+    OversightBreakEventRow,
     OversightBreakRow,
     OversightComparisonRow,
     OversightPositionRow,

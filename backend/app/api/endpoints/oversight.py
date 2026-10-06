@@ -5,14 +5,23 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.oversight.csv_ingest import PositionCsvIngestError
+from app.oversight.lifecycle import BreakTransitionError
 from app.oversight.repository import SqlOversightRepository
 from app.oversight.service import OversightService
 
 router = APIRouter(prefix="/oversight", tags=["Custodian Oversight"])
+
+
+class BreakStatusUpdateRequest(BaseModel):
+    status: str = Field(..., description="Target break status")
+    note: Optional[str] = Field(None, description="Operator note for audit trail")
+    assignee: Optional[str] = Field(None, description="Owner of next step")
+    actor: str = Field("portal-user", description="Who performed the transition")
 
 
 async def get_oversight_service(
@@ -123,6 +132,45 @@ async def list_oversight_breaks(
     return list(snapshot.get("breaks") or [])
 
 
+@router.patch("/breaks/{break_id}/status", response_model=Dict[str, Any])
+async def update_break_status(
+    break_id: str,
+    body: BreakStatusUpdateRequest,
+    service: OversightService = Depends(get_oversight_service),
+) -> Dict[str, Any]:
+    """Transition official break status (control loop — backend enforces legality)."""
+    try:
+        return await service.update_break_status(
+            break_id,
+            new_status=body.status,
+            actor=body.actor,
+            note=body.note,
+            assignee=body.assignee,
+        )
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+    except BreakTransitionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
+
+
+@router.get("/breaks/{break_id}/events", response_model=List[Dict[str, Any]])
+async def list_break_events(
+    break_id: str,
+    service: OversightService = Depends(get_oversight_service),
+) -> List[Dict[str, Any]]:
+    """Immutable audit trail for a break's control-loop transitions."""
+    try:
+        return await service.list_break_events(break_id)
+    except KeyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)
+        ) from exc
+
+
 @router.get("/breaks/{break_id}/explain", response_model=Dict[str, Any])
 async def explain_oversight_break(
     break_id: str,
@@ -195,6 +243,7 @@ async def explain_oversight_break(
         or "A deterministic reconciliation rule detected a break.",
         "severity": payload.get("severity"),
         "status": payload.get("status"),
+        "assignee": payload.get("assignee"),
         "rule": {
             "rule_id": lineage.get("rule_id") or result_payload.get("rule_id"),
             "rule_version": result_payload.get("rule_version")
@@ -209,6 +258,8 @@ async def explain_oversight_break(
                 "rule_id": lineage.get("rule_id") or result_payload.get("rule_id"),
                 "rule_version": result_payload.get("rule_version"),
                 "contract_ids": payload.get("related_contract_ids") or [],
+                "status": payload.get("status"),
+                "assignee": payload.get("assignee"),
             },
             "power_user": {
                 "break_contract": break_contract,

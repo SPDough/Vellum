@@ -98,6 +98,29 @@ tooling UI would destroy the accessibility half of the moat.
   fixtures remain regression goldens
 - **Out of P1:** Drools investment, OWL runtime, portal rules editors, multi-custodian live APIs
 
+### P2 execution (harden the moat path)
+Engineering hygiene that protects backend-owned industry meaning and reliable
+client access — not platform sprawl.
+
+- **Auth:** replace placeholder middleware with JWT validation (`JwtAuthMiddleware`);
+  invalid Bearer tokens always rejected; `AUTH_REQUIRED` / production enforces login
+- **Defaults:** Postgres-first — Neo4j / Kafka / KG sync / Temporal off by default
+- **CI:** stop deleting `package-lock.json`; use `npm ci` for reproducible installs
+- **Tests:** oversight API round-trip + JWT middleware unit tests
+- **Out of P2:** Keycloak mandatory rollout, Drools, OWL reasoner, expanding in-repo Next UI
+
+### P3 execution (control loop — who owns the next step)
+Wedge success criteria: operators can triage breaks, ownership is explicit, and
+we can prove what happened later. Backend owns official break state; portal only
+calls transition APIs.
+
+- **Lifecycle:** `open → acknowledged → in_review → resolved | dismissed`
+  (illegal transitions rejected); `assignee` on break; immutable
+  `oversight_break_events` audit trail
+- **API:** `PATCH /oversight/breaks/{id}/status`, `GET /oversight/breaks/{id}/events`
+- **Portal:** triage actions (ack / assign / resolve / dismiss) on the explain panel
+- **Out of P3:** multi-tenant RBAC, SLA timers, live custodian APIs, Drools/OWL
+
 ## Related docs
 - `docs/product/vellum-authority-order.md` — who is allowed to decide
 - `docs/product/custodian-oversight-wedge.md` — first commercial wedge

@@ -42,12 +42,16 @@ services:
       - ENVIRONMENT=development
       - LOG_LEVEL=debug
       - PYTHONPATH=/app
+      - AUTH_REQUIRED=false
+      - STARTUP_ENABLE_NEO4J=false
+      - STARTUP_ENABLE_KAFKA=false
+      - STARTUP_ENABLE_KG_SYNC=false
+      - STARTUP_ENABLE_TEMPORAL=false
       # Prefect API can point to local server profile or Prefect Cloud
       - PREFECT_API_URL=${PREFECT_API_URL:-}
     depends_on:
       - postgres
       - redis
-      - neo4j
     networks:
       - otomeshon-dev-network
     restart: unless-stopped

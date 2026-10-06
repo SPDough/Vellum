@@ -69,4 +69,5 @@ Any `/api/auth/...` paths currently present in the simplified backend should be 
 
 - **Canonical backend for PRs and Portal wiring:** `uvicorn app.main:app` (module `backend/app/main.py`). OpenAPI and contract tests should target this app only.
 - **Demo / no-infra smoke:** `app.main_simple:app` is allowed for quick UI checks; it is **not** a substitute for `app.main` in integration tests.
-- **Environment flags for CI without Neo4j/Kafka:** set `ENVIRONMENT=testing` (defaults `STARTUP_ENABLE_NEO4J` etc. to false via `get_settings()`), or override explicitly: `STARTUP_ENABLE_NEO4J=false`, `STARTUP_ENABLE_KAFKA=false`, `STARTUP_ENABLE_KG_SYNC=false`.
+- **Environment flags for CI without Neo4j/Kafka:** Postgres-first defaults keep `STARTUP_ENABLE_NEO4J`, `STARTUP_ENABLE_KAFKA`, and `STARTUP_ENABLE_KG_SYNC` false. `ENVIRONMENT=testing` also defaults these flags to false; override them only when those services are available.
+- **Auth:** `JwtAuthMiddleware` validates HS256 Bearer tokens. Set `AUTH_REQUIRED=true` (or `ENVIRONMENT=production`) to reject anonymous API calls. Invalid tokens are always rejected.
