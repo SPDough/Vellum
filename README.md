@@ -30,8 +30,8 @@ Otomeshon is a banking operations platform focused on **middle office automation
 ### 1. Clone and Start
 
 ```bash
-git clone https://github.com/your-username/otomeshon.git
-cd otomeshon
+git clone https://github.com/SPDough/Vellum.git
+cd Vellum
 cp .env.example .env
 docker-compose -f docker-compose.dev.yml up -d
 ```
@@ -81,12 +81,14 @@ The sandbox includes realistic banking data:
 ## 🏗️ Architecture
 
 ### Frontend Stack
-- **React 18** with TypeScript
+- **Next.js (App Router)** with TypeScript — see `frontend/app/*`
 - **Material-UI (MUI)** for components
 - **TanStack Table** for advanced data grids
 - **Recharts** for data visualization
 - **Zustand** for state management
 - **React Query** for data fetching
+
+> Frontend direction is under active review — see [`docs/ADR-001-canonical-platform-stack.md`](docs/ADR-001-canonical-platform-stack.md) for a proposed migration to Vite + React Router. This README describes what runs today.
 
 ### Backend Stack
 - **FastAPI** with Python 3.12
@@ -308,7 +310,7 @@ For questions and support:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
