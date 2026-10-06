@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "compliance_checks.stale_kyc_review.v1",
+  "payload": {
+    "rule_id": "compliance_checks.stale_kyc_review",
+    "rule_name": "Stale KYC review",
+    "rule_family": "compliance_checks",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags clients whose last KYC review is over a year old. Ported from drools/custodian-banking-rules.drl \"Stale KYC Review\".",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Trade", "Client"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "==": [{ "var": "derived.kyc_review_stale" }, true]
+    },
+    "severity": "medium",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "STALE_KYC",
+      "result_type": "flag",
+      "create_exception": false,
+      "create_reconciliation_break": false,
+      "open_workflow_case": false,
+      "require_approval": true,
+      "explanation_template": "Client {{client.client_id}} KYC review ({{client.last_review_date}}) is over 1 year old and requires refresh."
+    },
+    "evidence": {
+      "fields": ["trade.trade_id", "client.client_id", "client.last_review_date"]
+    },
+    "test_cases": [
+      { "name": "last review over a year ago", "expected_result": "triggered" },
+      { "name": "last review within a year", "expected_result": "not_triggered" }
+    ],
+    "tags": ["compliance_checks", "deterministic"]
+  }
+}

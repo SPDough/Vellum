@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "compliance_checks.sanctioned_country_check.v1",
+  "payload": {
+    "rule_id": "compliance_checks.sanctioned_country_check",
+    "rule_name": "Sanctioned country check",
+    "rule_family": "compliance_checks",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Blocks trades for clients domiciled in a sanctioned country. Ported from drools/custodian-banking-rules.drl \"Sanctioned Country Check\" (sanctioned list: IR, KP, SY, CU).",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Trade", "Client"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "==": [{ "var": "derived.is_sanctioned_country" }, true]
+    },
+    "severity": "critical",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "SANCTIONS_VIOLATION",
+      "result_type": "exception",
+      "create_exception": true,
+      "create_reconciliation_break": false,
+      "open_workflow_case": true,
+      "require_approval": false,
+      "explanation_template": "Trade {{trade.trade_id}} blocked — client {{client.client_id}} is from a sanctioned country ({{client.country_code}})."
+    },
+    "evidence": {
+      "fields": ["trade.trade_id", "client.client_id", "client.country_code"]
+    },
+    "test_cases": [
+      { "name": "client from sanctioned country", "expected_result": "triggered" },
+      { "name": "client not from sanctioned country", "expected_result": "not_triggered" }
+    ],
+    "tags": ["compliance_checks", "deterministic"]
+  }
+}

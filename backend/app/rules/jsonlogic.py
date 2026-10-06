@@ -71,6 +71,27 @@ class JsonLogicEvaluator:
             for item in rest:
                 first -= item
             return first
+        if operator == '*':
+            values = [self.evaluate(item, data) for item in self._ensure_list(operand)]
+            result = 1
+            for item in values:
+                result *= item
+            return result
+        if operator == '/':
+            values = [self.evaluate(item, data) for item in self._ensure_list(operand)]
+            if len(values) != 2:
+                raise JsonLogicEvaluationError('Expected exactly two operands for /')
+            return values[0] / values[1]
+        if operator == 'if':
+            branches = self._ensure_list(operand)
+            index = 0
+            while index + 1 < len(branches):
+                if self.evaluate(branches[index], data):
+                    return self.evaluate(branches[index + 1], data)
+                index += 2
+            if index < len(branches):
+                return self.evaluate(branches[index], data)
+            return None
 
         raise JsonLogicEvaluationError(f'Unsupported operator: {operator}')
 

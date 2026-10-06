@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "risk_management.concentration_risk_check.v1",
+  "payload": {
+    "rule_id": "risk_management.concentration_risk_check",
+    "rule_name": "Concentration risk check",
+    "rule_family": "risk_management",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags trades where security concentration exceeds the portfolio's concentration limit. Ported from drools/custodian-banking-rules.drl \"Concentration Risk Check\".",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Trade", "Portfolio"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      ">": [{ "var": "derived.security_exposure" }, { "var": "portfolio.concentration_limit" }]
+    },
+    "severity": "medium",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "CONCENTRATION_RISK",
+      "result_type": "flag",
+      "create_exception": false,
+      "create_reconciliation_break": false,
+      "open_workflow_case": false,
+      "require_approval": false,
+      "explanation_template": "Security {{trade.security_id}} concentration {{derived.security_exposure}} exceeds portfolio limit {{portfolio.concentration_limit}}."
+    },
+    "evidence": {
+      "fields": ["trade.trade_id", "trade.security_id", "portfolio.concentration_limit"]
+    },
+    "test_cases": [
+      { "name": "security exposure exceeds concentration limit", "expected_result": "triggered" },
+      { "name": "security exposure within concentration limit", "expected_result": "not_triggered" }
+    ],
+    "tags": ["risk_management", "deterministic"]
+  }
+}

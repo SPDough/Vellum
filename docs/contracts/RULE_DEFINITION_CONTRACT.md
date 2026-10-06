@@ -10,14 +10,23 @@ Vellum rules are **deterministic, versioned JSON data artifacts** evaluated agai
 contract objects. They are **not** Drools and **not** hidden code paths.
 
 - **Canonical engine:** `backend/app/rules/` — `engine.py` (`RuleEngine`), `jsonlogic.py`
-  (`JsonLogicEvaluator`), `loader.py`, `registry.py`, `models.py`. This is the go-forward path,
-  wired into `rules_orchestration`.
+  (`JsonLogicEvaluator`), `loader.py`, `registry.py`, `models.py`, `derived_facts.py`,
+  `fact_builder.py`. This is the only rule engine in the repo — it backs `app/api/endpoints/rules.py`,
+  the LangGraph rule nodes (`app/flows/rules_engine_node.py`), and `workflow_execution_service.py`,
+  and is wired into `rules_orchestration`.
 - **Definitions live as data:** `contracts/rule-definition/1.0.0/*.json`, governed by
   `schema.json` (JSON Schema draft 2020-12), with a `dictionary.json` (business definitions) and
-  a `fibo-alignment.json` (optional ontology intersection).
-- **Legacy:** `backend/app/services/drools_service.py` + `drools/*.drl` still back the older
-  `/rules` REST endpoint (`app/api/endpoints/rules.py`). Drools is legacy and slated for phased
-  deprecation; new rules are JSON-native.
+  a `fibo-alignment.json` (optional ontology intersection). Rules are grouped via a tag
+  (`trade_validation`, `risk_management`, `compliance_checks`, `settlement_processing`,
+  `pricing_alerts`, plus the original `custody`/`reconciliation` rules) and evaluated together via
+  `RuleEngine.evaluate_rule_group`.
+- **Drools is fully decommissioned**: `drools_service.py`, the `drools/*.drl` files, the Kogito
+  container, and the `py4j` dependency have been removed. The ~19 rules that used to live in
+  `custodian-banking-rules.drl` and `equity-pricing-rules.drl` (trade validation, risk limits,
+  KYC/AML/sanctions, settlement, equity pricing) are now ported as JSON rule definitions (or, for
+  the equity pricing *calculations* specifically, as plain Python in
+  `app/services/pricing_service.py` — arithmetic pipelines don't fit the trigger/outcome rule
+  shape, only the pricing *alerts* run through the rule engine).
 
 ### Design principles (from `dictionary.json`)
 

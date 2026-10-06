@@ -1,9 +1,11 @@
 """
-Unified Workflow Execution Service for Otomeshon Custodian Portal
+Unified Workflow Execution Service for Vellum/Otomeshon Custodian Portal
 
 This service provides a unified interface for executing both rules-based and
-agent-based workflows for custodian banking operations. Combines Drools rules
-engine with LangGraph agent workflows for comprehensive automation.
+agent-based workflows for custodian banking operations. Combines Vellum's
+native JSON-first rules engine with LangGraph agent workflows for
+comprehensive automation. Migrated off Drools/Kogito — see
+docs/contracts/RULE_DEFINITION_CONTRACT.md.
 """
 
 import asyncio
@@ -29,7 +31,13 @@ from app.models.workflow import (
     WorkflowNode,
     WorkflowStatus,
 )
-from app.services.drools_service import RuleFact, get_drools_service
+from app.rules.engine import RULE_SET_TO_GROUP, get_rule_engine
+from app.rules.fact_builder import (
+    build_compliance_facts,
+    build_risk_management_facts,
+    build_settlement_facts,
+    build_trade_validation_facts,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +157,7 @@ class WorkflowExecutionService:
 
     def __init__(self):
         self.settings = get_settings()
-        self.drools_service = get_drools_service()
+        self.rule_engine = get_rule_engine()
         self.active_executions: Dict[str, WorkflowExecutionResult] = {}
         self.workflow_templates: Dict[str, WorkflowConfig] = {}
 
@@ -619,63 +627,47 @@ class WorkflowExecutionService:
         input_data: Dict[str, Any],
         node_result: NodeExecutionResult,
     ):
-        """Execute a rules engine node using Drools"""
+        """Execute a rules engine node using Vellum's native rules engine."""
 
         rule_sets = node_config.config.get("rule_sets", [])
-        timeout_seconds = node_config.config.get("timeout_seconds", 30)
 
-        # Extract trade data for rules
         trade_data = input_data.get("trade_data", input_data)
+        portfolio_data = input_data.get("portfolio_data")
+        client_data = input_data.get("client_data")
+        settlement_data = input_data.get("settlement_data")
 
-        # Create rule facts
-        from app.services.drools_service import RuleFact
-
-        facts = [
-            RuleFact(
-                fact_type="Trade",
-                fact_id=trade_data.get("tradeId", "unknown"),
-                data=trade_data,
-                timestamp=datetime.now(),
-            )
-        ]
-
-        # Add portfolio and client data if available
-        if "portfolio_data" in input_data:
-            facts.append(
-                RuleFact(
-                    fact_type="Portfolio",
-                    fact_id=trade_data.get("portfolio", "unknown"),
-                    data=input_data["portfolio_data"],
-                    timestamp=datetime.now(),
-                )
-            )
-
-        if "client_data" in input_data:
-            facts.append(
-                RuleFact(
-                    fact_type="Client",
-                    fact_id=trade_data.get("counterpartyId", "unknown"),
-                    data=input_data["client_data"],
-                    timestamp=datetime.now(),
-                )
-            )
-
-        # Execute rules for each rule set
         all_results = []
         all_alerts = []
+        facts_processed = 0
 
-        async with self.drools_service:
-            for rule_set in rule_sets:
-                result = await self.drools_service.execute_rules(
-                    rule_set=rule_set, facts=facts, timeout_seconds=timeout_seconds
+        for rule_set in rule_sets:
+            group = RULE_SET_TO_GROUP.get(rule_set)
+            if group == "trade_validation":
+                facts = build_trade_validation_facts(trade_data)
+                facts_processed += 1
+            elif group == "risk_management":
+                facts = build_risk_management_facts(trade_data, portfolio_data or {})
+                facts_processed += 2
+            elif group == "compliance_checks":
+                facts = build_compliance_facts(trade_data, client_data or {})
+                facts_processed += 2
+            elif group == "settlement_processing":
+                facts = build_settlement_facts(trade_data, settlement_data or {})
+                facts_processed += 2
+            else:
+                logger.warning(
+                    f"Rule set '{rule_set}' not supported by this node; skipping"
                 )
-                all_results.append(result.to_dict())
-                all_alerts.extend(result.actions_triggered)
+                continue
+
+            result = self.rule_engine.evaluate_rule_group(group, facts)
+            all_results.append(result)
+            all_alerts.extend(result["actions_triggered"])
 
         # Determine overall status
         validation_passed = not any(
             alert.get("type") in ["ValidationError", "RiskAlert", "ComplianceAlert"]
-            and alert.get("severity") in ["HIGH", "CRITICAL"]
+            and alert.get("severity", "").lower() in ["high", "critical"]
             for alert in all_alerts
         )
 
@@ -692,7 +684,7 @@ class WorkflowExecutionService:
         node_result.alerts = all_alerts
         node_result.metadata = {
             "rule_sets_executed": rule_sets,
-            "facts_processed": len(facts),
+            "facts_processed": facts_processed,
         }
 
     async def _execute_agent_node(

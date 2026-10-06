@@ -1,0 +1,51 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "settlement_processing.cash_availability_check.v1",
+  "payload": {
+    "rule_id": "settlement_processing.cash_availability_check",
+    "rule_name": "Cash availability check",
+    "rule_family": "settlement_processing",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags equity/bond trades where portfolio cash is insufficient to settle. Ported from drools/custodian-banking-rules.drl \"Cash Availability Check\".",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Trade", "Portfolio"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "and": [
+        {
+          "or": [
+            { "==": [{ "var": "trade.trade_type" }, "EQUITY"] },
+            { "==": [{ "var": "trade.trade_type" }, "BOND"] }
+          ]
+        },
+        { "<": [{ "var": "portfolio.available_cash" }, { "var": "trade.trade_value" }] }
+      ]
+    },
+    "severity": "high",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "INSUFFICIENT_CASH",
+      "result_type": "flag",
+      "create_exception": false,
+      "create_reconciliation_break": false,
+      "open_workflow_case": false,
+      "require_approval": true,
+      "explanation_template": "Insufficient cash for trade {{trade.trade_id}}: required {{trade.trade_value}}, available {{portfolio.available_cash}}."
+    },
+    "evidence": {
+      "fields": ["trade.trade_id", "trade.trade_value", "portfolio.available_cash"]
+    },
+    "test_cases": [
+      { "name": "available cash below trade value", "expected_result": "triggered" },
+      { "name": "available cash covers trade value", "expected_result": "not_triggered" }
+    ],
+    "tags": ["settlement_processing", "deterministic"]
+  }
+}

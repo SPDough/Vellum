@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "settlement_processing.corporate_action_pending.v1",
+  "payload": {
+    "rule_id": "settlement_processing.corporate_action_pending",
+    "rule_name": "Corporate action pending",
+    "rule_family": "settlement_processing",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags securities with a pending corporate action. Ported from drools/custodian-banking-rules.drl \"Corporate Action Pending\" — the underlying check was a stub there too (always false) pending a real corporate-actions data source.",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Trade"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "==": [{ "var": "derived.has_pending_corporate_action" }, true]
+    },
+    "severity": "medium",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "CORPORATE_ACTION_PENDING",
+      "result_type": "flag",
+      "create_exception": false,
+      "create_reconciliation_break": false,
+      "open_workflow_case": false,
+      "require_approval": true,
+      "explanation_template": "Security {{trade.security_id}} has a pending corporate action; trade {{trade.trade_id}} requires review."
+    },
+    "evidence": {
+      "fields": ["trade.trade_id", "trade.security_id"]
+    },
+    "test_cases": [
+      { "name": "security has pending corporate action", "expected_result": "triggered" },
+      { "name": "security has no pending corporate action", "expected_result": "not_triggered" }
+    ],
+    "tags": ["settlement_processing", "deterministic"]
+  }
+}

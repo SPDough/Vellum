@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "trade_validation.settlement_date_validation.v1",
+  "payload": {
+    "rule_id": "trade_validation.settlement_date_validation",
+    "rule_name": "Settlement date validation",
+    "rule_family": "trade_validation",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags trades whose settlement date is before the trade date. Ported from drools/custodian-banking-rules.drl \"Settlement Date Validation\".",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Trade"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "==": [{ "var": "derived.settlement_before_trade_date" }, true]
+    },
+    "severity": "high",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "INVALID_SETTLEMENT_DATE",
+      "result_type": "exception",
+      "create_exception": true,
+      "create_reconciliation_break": false,
+      "open_workflow_case": true,
+      "require_approval": false,
+      "explanation_template": "Trade {{trade.trade_id}} settlement date {{trade.settlement_date}} is before trade date {{trade.trade_date}}."
+    },
+    "evidence": {
+      "fields": ["trade.trade_id", "trade.trade_date", "trade.settlement_date"]
+    },
+    "test_cases": [
+      { "name": "settlement before trade date", "expected_result": "triggered" },
+      { "name": "settlement on or after trade date", "expected_result": "not_triggered" }
+    ],
+    "tags": ["trade_validation", "deterministic"]
+  }
+}

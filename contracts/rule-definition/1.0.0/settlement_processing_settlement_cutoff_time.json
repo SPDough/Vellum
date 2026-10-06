@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "settlement_processing.settlement_cutoff_time.v1",
+  "payload": {
+    "rule_id": "settlement_processing.settlement_cutoff_time",
+    "rule_name": "Settlement cutoff time",
+    "rule_family": "settlement_processing",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags trades received after their settlement cutoff time. Ported from drools/custodian-banking-rules.drl \"Settlement Cutoff Time\".",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Trade", "Settlement"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "==": [{ "var": "derived.past_cutoff_time" }, true]
+    },
+    "severity": "medium",
+    "materiality": {
+      "mode": "static",
+      "value": "immaterial"
+    },
+    "outcome": {
+      "result_code": "SETTLEMENT_CUTOFF",
+      "result_type": "flag",
+      "create_exception": false,
+      "create_reconciliation_break": false,
+      "open_workflow_case": false,
+      "require_approval": false,
+      "explanation_template": "Trade {{trade.trade_id}} was received after settlement cutoff {{settlement.cutoff_time}} and will settle next business day."
+    },
+    "evidence": {
+      "fields": ["trade.trade_id", "settlement.cutoff_time"]
+    },
+    "test_cases": [
+      { "name": "received after cutoff time", "expected_result": "triggered" },
+      { "name": "received before cutoff time", "expected_result": "not_triggered" }
+    ],
+    "tags": ["settlement_processing", "deterministic"]
+  }
+}

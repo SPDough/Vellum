@@ -39,8 +39,8 @@ api_router.include_router(auth_unified.router, tags=["Authentication"])
 # JSON-first native rules (product path) — /rules/evaluate, /rules/definitions
 api_router.include_router(native_rules.router, tags=["Native Rules"])
 
-# Drools rules router retained but dormant for P0 — /rules/*
-api_router.include_router(rules.router, tags=["Rules Engine (Drools)"])
+# Grouped native-rules evaluation (trade validation, risk, compliance, etc.) — /rules/*
+api_router.include_router(rules.router, tags=["Rules Engine"])
 
 # Custodian oversight vertical slice
 api_router.include_router(oversight.router, tags=["Custodian Oversight"])

@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "trade_validation.zero_price_validation.v1",
+  "payload": {
+    "rule_id": "trade_validation.zero_price_validation",
+    "rule_name": "Zero price validation",
+    "rule_family": "trade_validation",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags trades where price is zero or negative. Ported from drools/custodian-banking-rules.drl \"Zero Price Validation\".",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Trade"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "<=": [{ "var": "trade.price" }, 0]
+    },
+    "severity": "high",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "ZERO_PRICE",
+      "result_type": "exception",
+      "create_exception": true,
+      "create_reconciliation_break": false,
+      "open_workflow_case": true,
+      "require_approval": false,
+      "explanation_template": "Trade {{trade.trade_id}} price {{trade.price}} must be greater than zero."
+    },
+    "evidence": {
+      "fields": ["trade.trade_id", "trade.price"]
+    },
+    "test_cases": [
+      { "name": "price is zero", "expected_result": "triggered" },
+      { "name": "price is positive", "expected_result": "not_triggered" }
+    ],
+    "tags": ["trade_validation", "deterministic"]
+  }
+}

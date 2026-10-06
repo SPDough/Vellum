@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "pricing_alerts.zero_negative_price_validation.v1",
+  "payload": {
+    "rule_id": "pricing_alerts.zero_negative_price_validation",
+    "rule_name": "Zero or negative price validation",
+    "rule_family": "pricing_alerts",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags a calculated price that is zero or negative. Ported from drools/equity-pricing-rules.drl \"Zero or Negative Price Validation\".",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["EquityPricingRequest"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "<=": [{ "var": "pricing.calculated_price" }, 0]
+    },
+    "severity": "critical",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "INVALID_PRICE",
+      "result_type": "exception",
+      "create_exception": true,
+      "create_reconciliation_break": false,
+      "open_workflow_case": false,
+      "require_approval": false,
+      "explanation_template": "Calculated price for {{pricing.symbol}} is invalid: {{pricing.calculated_price}}."
+    },
+    "evidence": {
+      "fields": ["pricing.request_id", "pricing.symbol", "pricing.calculated_price"]
+    },
+    "test_cases": [
+      { "name": "calculated price is zero or negative", "expected_result": "triggered" },
+      { "name": "calculated price is positive", "expected_result": "not_triggered" }
+    ],
+    "tags": ["pricing_alerts", "deterministic"]
+  }
+}

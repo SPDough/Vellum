@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Dict
+from typing import Dict, List
 
 from .loader import RuleLoader
 from .models import RuleDefinitionRecord
@@ -15,6 +15,9 @@ class RuleRegistry:
 
     def get_rule(self, rule_family: str, version: str) -> RuleDefinitionRecord:
         return self.loader.load_rule(rule_family, version)
+
+    def list_rule_ids_by_tag(self, tag: str, version: str) -> List[str]:
+        return self.loader.list_rule_ids_by_tag(tag, version)
 
     def list_rule_versions(self) -> Dict[str, str]:
         return self.loader.list_rule_versions()

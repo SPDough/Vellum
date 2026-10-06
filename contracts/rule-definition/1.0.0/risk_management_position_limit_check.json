@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "risk_management.position_limit_check.v1",
+  "payload": {
+    "rule_id": "risk_management.position_limit_check",
+    "rule_name": "Position limit check",
+    "rule_family": "risk_management",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags trades that would push portfolio exposure over its limit. Ported from drools/custodian-banking-rules.drl \"Position Limit Check\".",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Trade", "Portfolio"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      ">": [{ "var": "derived.projected_exposure" }, { "var": "portfolio.exposure_limit" }]
+    },
+    "severity": "high",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "POSITION_LIMIT_EXCEEDED",
+      "result_type": "break",
+      "create_exception": true,
+      "create_reconciliation_break": false,
+      "open_workflow_case": true,
+      "require_approval": false,
+      "explanation_template": "Trade {{trade.trade_id}} would push portfolio {{portfolio.portfolio_id}} exposure to {{derived.projected_exposure}}, exceeding limit {{portfolio.exposure_limit}}."
+    },
+    "evidence": {
+      "fields": ["trade.trade_id", "portfolio.portfolio_id", "portfolio.total_exposure", "portfolio.exposure_limit"]
+    },
+    "test_cases": [
+      { "name": "exposure plus trade exceeds limit", "expected_result": "triggered" },
+      { "name": "exposure plus trade within limit", "expected_result": "not_triggered" }
+    ],
+    "tags": ["risk_management", "deterministic"]
+  }
+}
