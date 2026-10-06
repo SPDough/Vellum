@@ -10,6 +10,8 @@ import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
 
 const Home = lazy(() => import('@/components/pages/Home'));
 const Login = lazy(() => import('@/components/pages/Login'));
+const NotFound = lazy(() => import('@/components/pages/NotFound'));
+const Unauthorized = lazy(() => import('@/components/pages/Unauthorized'));
 const CustodianLangGraph = lazy(() => import('@/components/pages/CustodianLangGraph'));
 const Dashboard = lazy(() => import('@/components/pages/Dashboard'));
 const Agents = lazy(() => import('@/components/pages/Agents'));
@@ -92,7 +94,10 @@ const App: React.FC = () => {
                 <Route path="/workflow-configuration-test" element={<WorkflowConfigurationTest />} />
                 <Route path="/workflow-executor" element={<WorkflowExecutor />} />
                 <Route path="/workflows" element={<WorkflowManagement />} />
+                <Route path="/unauthorized" element={<Unauthorized />} />
               </Route>
+
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </HashRouter>
