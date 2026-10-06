@@ -145,9 +145,6 @@ class WorkflowExecution(Base):
     requires_human_review = Column(Boolean, default=False)
     human_review_reason = Column(Text)
 
-    # Temporal workflow ID for correlation
-    temporal_workflow_id = Column(String, index=True)
-
     # Relationships
     definition = relationship("WorkflowDefinition", back_populates="executions")
     node_executions = relationship("NodeExecution", back_populates="workflow_execution")
@@ -254,7 +251,6 @@ class WorkflowExecutionResponse(BaseModel):
     duration_seconds: Optional[int] = None
     requires_human_review: bool
     human_review_reason: Optional[str] = None
-    temporal_workflow_id: Optional[str] = None
 
     class Config:
         from_attributes = True

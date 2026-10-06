@@ -290,6 +290,6 @@ The production deployment includes:
 - **Message Queue**: Apache Kafka
 - **Monitoring**: Prometheus + Grafana
 - **Search**: Elasticsearch (optional)
-- **Workflow Engine**: Temporal (optional)
+- **Workflow Engine**: Prefect (optional)
 
 All services run in Docker containers with proper resource limits, health checks, and restart policies.

@@ -25,4 +25,4 @@ Passing demo-backend tests does **not** prove the full backend contract is healt
 
 1. Keep existing demo tests, but label them honestly.
 2. Grow `test_real_backend_contract.py` into a real smoke/integration suite for `app.main`.
-3. Add infrastructure-gated tests separately for services that require Postgres, Neo4j, Kafka, or Temporal.
+3. Add infrastructure-gated tests separately for services that require Postgres, Neo4j, Kafka, or Prefect.

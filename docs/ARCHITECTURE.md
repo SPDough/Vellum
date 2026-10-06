@@ -73,7 +73,7 @@ Backend Services:
 ├── Neo4jService          # Knowledge graph operations
 ├── LLMService            # AI model abstraction layer
 ├── WebSocketService      # Real-time communication
-├── TemporalService       # Workflow orchestration
+├── Prefect flows         # Workflow orchestration (backend/flows/)
 ├── KafkaService          # Event streaming
 └── EmbeddingService      # Vector embeddings
 ```
@@ -164,7 +164,6 @@ The system implements Command Query Responsibility Segregation for data operatio
 2. Neo4j knowledge graph
 3. Knowledge graph sync service
 4. Kafka event streaming
-5. Temporal workflow engine
 ```
 
 #### Simplified Application (`main_simple.py`)
@@ -184,7 +183,7 @@ Environment-based configuration using Pydantic settings:
 - Application: Environment, logging, debug mode
 - Database: PostgreSQL, Redis, Neo4j connection strings
 - External APIs: OpenAI, Anthropic API keys
-- Services: Kafka, Temporal, Keycloak endpoints
+- Services: Kafka, Prefect, Keycloak endpoints
 - Observability: OpenTelemetry, LangSmith integration
 ```
 
@@ -302,11 +301,11 @@ External Data Sources
 
 ### Workflow Orchestration
 
-**Temporal Integration**:
-- Long-running workflows
+**Prefect Integration**:
+- Long-running, scheduled, and batch flows (`backend/flows/`)
 - Retry and error handling
-- Workflow versioning
-- Activity scheduling
+- Deployment/work-pool versioning
+- Task scheduling
 
 **LangGraph Integration**:
 - AI-powered decision making

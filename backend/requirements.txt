@@ -20,7 +20,6 @@ langchain-ollama==0.2.0
 langsmith==0.1.143
 
 # Workflow Orchestration
-temporalio==1.6.0
 prefect>=3.0.0,<4
 
 # Database & Graph
@@ -50,9 +49,6 @@ opentelemetry-exporter-otlp>=1.27.0,<2.0.0
 opentelemetry-instrumentation-fastapi>=0.48b0,<1.0.0
 opentelemetry-instrumentation-psycopg2>=0.48b0,<1.0.0
 opentelemetry-instrumentation-sqlalchemy>=0.48b0,<1.0.0
-
-# Rules Engine Integration
-py4j==0.10.9.7
 
 # Vector Operations & ML
 numpy==1.26.4

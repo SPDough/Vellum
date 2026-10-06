@@ -51,6 +51,7 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - ENVIRONMENT=production
       - LOG_LEVEL=info
+      - PREFECT_API_URL=${PREFECT_API_URL:-http://prefect-server:4200/api}
     volumes:
       - ./logs:/app/logs
       - ./data:/app/data
@@ -177,38 +178,29 @@ services:
       timeout: 10s
       retries: 3
 
-  # Temporal Workflow Engine
-  temporal:
-    image: temporalio/auto-setup:1.22.0
-    container_name: otomeshon-temporal
-    depends_on:
-      - postgres
-    environment:
-      - DB=postgresql
-      - DB_PORT=5432
-      - POSTGRES_USER=otomeshon
-      - POSTGRES_PWD=${POSTGRES_PASSWORD}
-      - POSTGRES_SEEDS=postgres
-      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
-    volumes:
-      - temporal_data:/etc/temporal
+  # Prefect orchestration server (deterministic pipelines — see
+  # docs/ADR-001-canonical-platform-stack.md)
+  prefect-server:
+    image: prefecthq/prefect:3-python3.12
+    container_name: otomeshon-prefect
+    command: prefect server start --host 0.0.0.0
     ports:
-      - "7233:7233"
+      - "4200:4200"
     networks:
       - otomeshon-network
     restart: unless-stopped
 
-  # Temporal Web UI
-  temporal-web:
-    image: temporalio/web:2.21.3
-    container_name: otomeshon-temporal-web
-    depends_on:
-      - temporal
+  prefect-worker:
+    image: prefecthq/prefect:3-python3.12
+    container_name: otomeshon-prefect-worker
+    command: >
+      sh -c "prefect worker start --pool ${PREFECT_WORK_POOL:-default-agent-pool} --type process"
     environment:
-      - TEMPORAL_GRPC_ENDPOINT=temporal:7233
-      - TEMPORAL_PERMIT_WRITE_API=true
-    ports:
-      - "8088:8088"
+      - PREFECT_API_URL=${PREFECT_API_URL:-http://prefect-server:4200/api}
+      - PREFECT_API_KEY=${PREFECT_API_KEY:-}
+      - PREFECT_WORK_POOL=${PREFECT_WORK_POOL:-default-agent-pool}
+    depends_on:
+      - prefect-server
     networks:
       - otomeshon-network
     restart: unless-stopped
@@ -305,7 +297,6 @@ volumes:
   kafka_data:
   zookeeper_data:
   zookeeper_logs:
-  temporal_data:
   prometheus_data:
   grafana_data:
   loki_data:
