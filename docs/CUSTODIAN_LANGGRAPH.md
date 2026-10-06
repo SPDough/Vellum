@@ -256,7 +256,7 @@ response = await llm.ainvoke(messages)
 
 ```bash
 # Test the service
-python test_custodian_langgraph.py
+cd backend && pytest tests/ -k custodian
 
 # Test API endpoints (requires running server)
 curl http://localhost:8000/api/custodian-langgraph/custodians
