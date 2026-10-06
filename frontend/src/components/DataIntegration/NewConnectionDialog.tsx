@@ -199,7 +199,12 @@ const NewConnectionDialog: React.FC<NewConnectionDialogProps> = ({
             </Typography>
             <Grid container spacing={2}>
               {predefinedProviders.map((provider) => (
-                <Grid item xs={12} sm={6} key={provider.id}>
+                <Grid
+                  key={provider.id}
+                  size={{
+                    xs: 12,
+                    sm: 6
+                  }}>
                   <Card
                     sx={{
                       cursor: 'pointer',

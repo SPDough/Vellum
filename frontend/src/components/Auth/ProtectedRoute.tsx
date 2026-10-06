@@ -1,52 +1,34 @@
 import React, { useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { Box, CircularProgress } from '@mui/material';
-import { useAuth } from '../../contexts/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuthStore } from '@/store';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: string;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requiredRole 
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  requiredRole
 }) => {
-  const { isAuthenticated, user, loading } = useAuth();
-  const router = useRouter();
-  const pathname = usePathname();
+  const { isAuthenticated, user } = useAuthStore();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const pathname = location.pathname;
+
+  const hasRequiredRole =
+    !requiredRole || user?.roles?.includes(requiredRole) || user?.roles?.includes('admin');
 
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      // Redirect to login page with return url
-      router.push(`/login?from=${encodeURIComponent(pathname || '/')}`);
-    } else if (!loading && requiredRole && user?.role !== requiredRole && user?.role !== 'admin') {
-      // User doesn't have required role
-      router.push('/unauthorized');
+    if (!isAuthenticated) {
+      navigate(`/login?from=${encodeURIComponent(pathname || '/')}`, { replace: true });
+    } else if (!hasRequiredRole) {
+      navigate('/unauthorized', { replace: true });
     }
-  }, [isAuthenticated, loading, requiredRole, user?.role, router, pathname]);
+  }, [isAuthenticated, hasRequiredRole, navigate, pathname]);
 
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-        }}
-      >
-        <CircularProgress />
-      </Box>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null; // Will redirect via useEffect
-  }
-
-  if (requiredRole && user?.role !== requiredRole && user?.role !== 'admin') {
-    return null; // Will redirect via useEffect
+  if (!isAuthenticated || !hasRequiredRole) {
+    return null; // Will redirect via the effect above
   }
 
   return <>{children}</>;

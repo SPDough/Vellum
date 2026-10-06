@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState } from 'react';
 import {
   Box,
@@ -227,7 +225,12 @@ const Agents: React.FC<AgentsProps> = () => {
 
       {/* Statistics Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
             color: 'white',
@@ -249,7 +252,12 @@ const Agents: React.FC<AgentsProps> = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
             color: 'white',
@@ -271,7 +279,12 @@ const Agents: React.FC<AgentsProps> = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
             color: 'white',
@@ -293,7 +306,12 @@ const Agents: React.FC<AgentsProps> = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
             color: 'white',
@@ -475,7 +493,13 @@ const Agents: React.FC<AgentsProps> = () => {
               
               <Grid container spacing={3}>
                 {templates?.map((template) => (
-                  <Grid item xs={12} md={6} lg={4} key={template.id}>
+                  <Grid
+                    key={template.id}
+                    size={{
+                      xs: 12,
+                      md: 6,
+                      lg: 4
+                    }}>
                     <Card sx={{ borderRadius: 2, height: '100%' }}>
                       <CardContent>
                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
@@ -528,7 +552,11 @@ const Agents: React.FC<AgentsProps> = () => {
         <DialogTitle>Create New Agent</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <TextField
                 fullWidth
                 label="Agent Name"
@@ -537,7 +565,11 @@ const Agents: React.FC<AgentsProps> = () => {
                 required
               />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6
+              }}>
               <FormControl fullWidth>
                 <InputLabel>Agent Type</InputLabel>
                 <Select
@@ -553,7 +585,7 @@ const Agents: React.FC<AgentsProps> = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 multiline
@@ -565,14 +597,18 @@ const Agents: React.FC<AgentsProps> = () => {
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Accordion>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                   <Typography variant="subtitle1">Model Configuration</Typography>
                 </AccordionSummary>
                 <AccordionDetails>
                   <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
+                    <Grid
+                      size={{
+                        xs: 12,
+                        sm: 6
+                      }}>
                       <FormControl fullWidth>
                         <InputLabel>Provider</InputLabel>
                         <Select
@@ -590,7 +626,11 @@ const Agents: React.FC<AgentsProps> = () => {
                         </Select>
                       </FormControl>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid
+                      size={{
+                        xs: 12,
+                        sm: 6
+                      }}>
                       <TextField
                         fullWidth
                         label="Model Name"

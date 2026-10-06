@@ -1,5 +1,3 @@
-'use client';
-
 import React, { useState } from 'react';
 import {
   Box,
@@ -142,7 +140,12 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = () => {
 
       {/* Statistics Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
             color: 'white',
@@ -164,7 +167,12 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
             color: 'white',
@@ -186,7 +194,12 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
             color: 'white',
@@ -208,7 +221,12 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
             color: 'white',
@@ -316,7 +334,11 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = () => {
           {activeTab === 2 && (
             <Box sx={{ p: 3 }}>
               <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 6
+                  }}>
                   <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                     Entity Types
                   </Typography>
@@ -340,7 +362,11 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = () => {
                   </TableContainer>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid
+                  size={{
+                    xs: 12,
+                    md: 6
+                  }}>
                   <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                     Relationship Types
                   </Typography>
@@ -374,7 +400,7 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = () => {
         <DialogTitle>Create New Entity</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <FormControl fullWidth>
                 <InputLabel>Entity Type</InputLabel>
                 <Select
@@ -392,7 +418,12 @@ const KnowledgeGraph: React.FC<KnowledgeGraphProps> = () => {
             </Grid>
             
             {getRequiredFields(newEntityType).map((field) => (
-              <Grid item xs={12} sm={6} key={field}>
+              <Grid
+                key={field}
+                size={{
+                  xs: 12,
+                  sm: 6
+                }}>
                 <TextField
                   fullWidth
                   label={field.charAt(0).toUpperCase() + field.slice(1).replace('_', ' ')}

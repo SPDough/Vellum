@@ -320,7 +320,13 @@ const SOPManager: React.FC = () => {
       
       <Grid container spacing={3}>
         {Object.entries(templates).map(([templateId, template]) => (
-          <Grid item xs={12} md={6} lg={4} key={templateId}>
+          <Grid
+            key={templateId}
+            size={{
+              xs: 12,
+              md: 6,
+              lg: 4
+            }}>
             <Card 
               sx={{ 
                 cursor: 'pointer',
@@ -546,7 +552,11 @@ const SOPManager: React.FC = () => {
       
       {metrics && (
         <Grid container spacing={3}>
-          <Grid item xs={12} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 3
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h4" color="primary">
@@ -558,7 +568,11 @@ const SOPManager: React.FC = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 3
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h4" color="success.main">
@@ -570,7 +584,11 @@ const SOPManager: React.FC = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 3
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h4" color="info.main">
@@ -582,7 +600,11 @@ const SOPManager: React.FC = () => {
               </CardContent>
             </Card>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 3
+            }}>
             <Card>
               <CardContent>
                 <Typography variant="h4" color="warning.main">
@@ -629,17 +651,17 @@ const SOPManager: React.FC = () => {
         {executionDialog && (
           <Box>
             <Grid container spacing={2} mb={3}>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="subtitle2">SOP Title</Typography>
                 <Typography variant="body2">
                   {executionDialog.sop_title}
                 </Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="subtitle2">Status</Typography>
                 <Chip label={executionDialog.status} size="small" />
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="subtitle2">Progress</Typography>
                 <Box display="flex" alignItems="center" gap={1}>
                   <LinearProgress
@@ -652,7 +674,7 @@ const SOPManager: React.FC = () => {
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="subtitle2">Compliance Status</Typography>
                 <Chip 
                   label={executionDialog.compliance_status} 
@@ -666,23 +688,23 @@ const SOPManager: React.FC = () => {
               Execution Summary
             </Typography>
             <Grid container spacing={2} mb={3}>
-              <Grid item xs={3}>
+              <Grid size={3}>
                 <Typography variant="subtitle2">Total Steps</Typography>
                 <Typography variant="h6">{executionDialog.total_steps}</Typography>
               </Grid>
-              <Grid item xs={3}>
+              <Grid size={3}>
                 <Typography variant="subtitle2">Completed</Typography>
                 <Typography variant="h6" color="success.main">
                   {executionDialog.completed_steps}
                 </Typography>
               </Grid>
-              <Grid item xs={3}>
+              <Grid size={3}>
                 <Typography variant="subtitle2">Failed</Typography>
                 <Typography variant="h6" color="error.main">
                   {executionDialog.failed_steps}
                 </Typography>
               </Grid>
-              <Grid item xs={3}>
+              <Grid size={3}>
                 <Typography variant="subtitle2">Time Remaining</Typography>
                 <Typography variant="h6" color="info.main">
                   {formatDuration(executionDialog.estimated_time_remaining_minutes)}

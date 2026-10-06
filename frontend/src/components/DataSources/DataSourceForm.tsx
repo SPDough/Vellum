@@ -251,7 +251,7 @@ const DataSourceForm: React.FC<DataSourceFormProps> = ({ open, onClose, config, 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {fields.map((field, index) => (
             <Grid container spacing={2} key={index} alignItems="center">
-              <Grid item xs={4}>
+              <Grid size={4}>
                 <TextField
                   fullWidth
                   label="Key"
@@ -260,7 +260,7 @@ const DataSourceForm: React.FC<DataSourceFormProps> = ({ open, onClose, config, 
                   size="small"
                 />
               </Grid>
-              <Grid item xs={7}>
+              <Grid size={7}>
                 <TextField
                   fullWidth
                   label="Value"
@@ -271,7 +271,7 @@ const DataSourceForm: React.FC<DataSourceFormProps> = ({ open, onClose, config, 
                   maxRows={3}
                 />
               </Grid>
-              <Grid item xs={1}>
+              <Grid size={1}>
                 <IconButton
                   size="small"
                   onClick={() => removeConfigField(index, fields, setFields)}
@@ -311,7 +311,11 @@ const DataSourceForm: React.FC<DataSourceFormProps> = ({ open, onClose, config, 
                   Basic Information
                 </Typography>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
+                  <Grid
+                    size={{
+                      xs: 12,
+                      md: 6
+                    }}>
                     <TextField
                       fullWidth
                       label="Name"
@@ -320,7 +324,11 @@ const DataSourceForm: React.FC<DataSourceFormProps> = ({ open, onClose, config, 
                       helperText={formik.touched.name && typeof formik.errors.name === 'string' ? formik.errors.name : ''}
                     />
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid
+                    size={{
+                      xs: 12,
+                      md: 6
+                    }}>
                     <FormControl fullWidth>
                       <InputLabel>Data Source Type</InputLabel>
                       <Select
@@ -333,7 +341,7 @@ const DataSourceForm: React.FC<DataSourceFormProps> = ({ open, onClose, config, 
                       </Select>
                     </FormControl>
                   </Grid>
-                  <Grid item xs={12}>
+                  <Grid size={12}>
                     <TextField
                       fullWidth
                       label="Description"
@@ -392,7 +400,11 @@ const DataSourceForm: React.FC<DataSourceFormProps> = ({ open, onClose, config, 
                   Schedule Configuration
                 </Typography>
                 <Grid container spacing={2} alignItems="center">
-                  <Grid item xs={12} md={6}>
+                  <Grid
+                    size={{
+                      xs: 12,
+                      md: 6
+                    }}>
                     <FormControl fullWidth>
                       <InputLabel>Schedule Type</InputLabel>
                       <Select
@@ -426,7 +438,7 @@ const DataSourceForm: React.FC<DataSourceFormProps> = ({ open, onClose, config, 
                   Output Configuration
                 </Typography>
                 <Grid container spacing={2}>
-                  <Grid item xs={12}>
+                  <Grid size={12}>
                     <FormControlLabel
                       control={
                         <Switch
@@ -438,7 +450,11 @@ const DataSourceForm: React.FC<DataSourceFormProps> = ({ open, onClose, config, 
                     />
                   </Grid>
                   {formik.values.output_to_sandbox && (
-                    <Grid item xs={12} md={6}>
+                    <Grid
+                      size={{
+                        xs: 12,
+                        md: 6
+                      }}>
                       <TextField
                         fullWidth
                         label="Output Table Name"

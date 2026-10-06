@@ -147,7 +147,7 @@ const WorkflowDataConnector: React.FC<WorkflowDataConnectorProps> = ({ onDataSou
 
       {/* Recent Workflow Outputs */}
       <Grid container spacing={3}>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Card sx={{ borderRadius: 2 }}>
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
@@ -214,7 +214,7 @@ const WorkflowDataConnector: React.FC<WorkflowDataConnectorProps> = ({ onDataSou
         </Grid>
 
         {/* Workflow Output Details */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Accordion>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6">Workflow Integration Guide</Typography>
@@ -253,7 +253,7 @@ const WorkflowDataConnector: React.FC<WorkflowDataConnectorProps> = ({ onDataSou
         <DialogTitle>Connect Workflow Output</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <FormControl fullWidth>
                 <InputLabel>Workflow</InputLabel>
                 <Select
@@ -270,7 +270,7 @@ const WorkflowDataConnector: React.FC<WorkflowDataConnectorProps> = ({ onDataSou
               </FormControl>
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 label="Output Step Name"
@@ -281,7 +281,7 @@ const WorkflowDataConnector: React.FC<WorkflowDataConnectorProps> = ({ onDataSou
               />
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 label="Data Source Name"

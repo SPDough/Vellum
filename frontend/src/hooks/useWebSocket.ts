@@ -58,8 +58,8 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
 
   const getWebSocketUrl = useCallback(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = process.env.NODE_ENV === 'development' 
-      ? 'localhost:8000' 
+    const host = import.meta.env.DEV
+      ? 'localhost:8000'
       : window.location.host;
     
     const baseUrl = `${protocol}//${host}/api/v1/data-sandbox`;

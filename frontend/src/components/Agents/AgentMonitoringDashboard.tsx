@@ -136,7 +136,12 @@ const AgentMonitoringDashboard: React.FC<AgentMonitoringDashboardProps> = ({ age
     <Box>
       {/* Overview Metrics */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card sx={{ borderRadius: 2 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -154,7 +159,12 @@ const AgentMonitoringDashboard: React.FC<AgentMonitoringDashboardProps> = ({ age
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card sx={{ borderRadius: 2 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -172,7 +182,12 @@ const AgentMonitoringDashboard: React.FC<AgentMonitoringDashboardProps> = ({ age
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card sx={{ borderRadius: 2 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -190,7 +205,12 @@ const AgentMonitoringDashboard: React.FC<AgentMonitoringDashboardProps> = ({ age
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}>
           <Card sx={{ borderRadius: 2 }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -290,7 +310,11 @@ const AgentMonitoringDashboard: React.FC<AgentMonitoringDashboardProps> = ({ age
             <Box sx={{ p: 3 }}>
               {selectedAgent && metrics ? (
                 <Grid container spacing={3}>
-                  <Grid item xs={12} md={6}>
+                  <Grid
+                    size={{
+                      xs: 12,
+                      md: 6
+                    }}>
                     <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                       Execution Metrics
                     </Typography>
@@ -306,7 +330,11 @@ const AgentMonitoringDashboard: React.FC<AgentMonitoringDashboardProps> = ({ age
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={12} md={6}>
+                  <Grid
+                    size={{
+                      xs: 12,
+                      md: 6
+                    }}>
                     <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                       Token Usage
                     </Typography>

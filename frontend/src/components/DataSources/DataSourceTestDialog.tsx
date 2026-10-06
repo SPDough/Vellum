@@ -108,7 +108,7 @@ const DataSourceTestDialog: React.FC<DataSourceTestDialogProps> = ({ open, onClo
         </Typography>
         <Grid container spacing={1}>
           {Object.entries(schema).map(([column, type]) => (
-            <Grid item key={column}>
+            <Grid key={column}>
               <Chip
                 label={`${column}: ${type}`}
                 variant="outlined"
@@ -134,7 +134,11 @@ const DataSourceTestDialog: React.FC<DataSourceTestDialogProps> = ({ open, onClo
               Test Configuration
             </Typography>
             <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={4}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 4
+                }}>
                 <TextField
                   fullWidth
                   label="Sample Size"
@@ -145,7 +149,11 @@ const DataSourceTestDialog: React.FC<DataSourceTestDialogProps> = ({ open, onClo
                   size="small"
                 />
               </Grid>
-              <Grid item xs={12} md={4}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 4
+                }}>
                 <Chip
                   label={config.data_source_type.replace('_', ' ')}
                   color="primary"

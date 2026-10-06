@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
@@ -435,7 +433,13 @@ const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({
             </Box>
             <Grid container spacing={2}>
               {nodes.map((node) => (
-                <Grid item xs={12} md={6} lg={4} key={node.id}>
+                <Grid
+                  key={node.id}
+                  size={{
+                    xs: 12,
+                    md: 6,
+                    lg: 4
+                  }}>
                   <Card>
                     <CardContent>
                       <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
@@ -495,8 +499,16 @@ const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({
           <TabPanel value={tabValue} index={2}>
             <Typography variant="h6" mb={2}>Execution Settings</Typography>
             <Grid container spacing={3}>
-              <Grid item xs={12} md={6}><TextField label="Max Concurrent Executions" type="number" value={executionSettings.maxConcurrentExecutions} onChange={(e) => setExecutionSettings({ ...executionSettings, maxConcurrentExecutions: Number(e.target.value) })} disabled={!editMode} fullWidth margin="normal" /></Grid>
-              <Grid item xs={12} md={6}><TextField label="Execution Timeout (minutes)" type="number" value={executionSettings.executionTimeoutMinutes} onChange={(e) => setExecutionSettings({ ...executionSettings, executionTimeoutMinutes: Number(e.target.value) })} disabled={!editMode} fullWidth margin="normal" /></Grid>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}><TextField label="Max Concurrent Executions" type="number" value={executionSettings.maxConcurrentExecutions} onChange={(e) => setExecutionSettings({ ...executionSettings, maxConcurrentExecutions: Number(e.target.value) })} disabled={!editMode} fullWidth margin="normal" /></Grid>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}><TextField label="Execution Timeout (minutes)" type="number" value={executionSettings.executionTimeoutMinutes} onChange={(e) => setExecutionSettings({ ...executionSettings, executionTimeoutMinutes: Number(e.target.value) })} disabled={!editMode} fullWidth margin="normal" /></Grid>
             </Grid>
           </TabPanel>
 
@@ -547,8 +559,16 @@ const WorkflowConfiguration: React.FC<WorkflowConfigurationProps> = ({
         <DialogTitle>{editingParameter?.name ? 'Edit Parameter' : 'Add Parameter'}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={6}><TextField label="Parameter Name" value={editingParameter?.name || ''} onChange={(e) => setEditingParameter(editingParameter ? { ...editingParameter, name: e.target.value } : null)} fullWidth margin="normal" required /></Grid>
-            <Grid item xs={12} md={6}>
+            <Grid
+              size={{
+                xs: 12,
+                md: 6
+              }}><TextField label="Parameter Name" value={editingParameter?.name || ''} onChange={(e) => setEditingParameter(editingParameter ? { ...editingParameter, name: e.target.value } : null)} fullWidth margin="normal" required /></Grid>
+            <Grid
+              size={{
+                xs: 12,
+                md: 6
+              }}>
               <FormControl fullWidth margin="normal">
                 <InputLabel>Type</InputLabel>
                 <Select value={editingParameter?.type || 'string'} onChange={(e) => setEditingParameter(editingParameter ? { ...editingParameter, type: e.target.value as WorkflowParameter['type'] } : null)}>

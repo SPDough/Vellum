@@ -84,7 +84,12 @@ const PortfolioManagementSection: React.FC<PortfolioManagementSectionProps> = ({
       {/* Portfolio Management System Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         {portfolioManagementSystems.map((system) => (
-          <Grid item xs={12} md={6} key={system.id}>
+          <Grid
+            key={system.id}
+            size={{
+              xs: 12,
+              md: 6
+            }}>
             <Card 
               sx={{ 
                 height: '100%',
@@ -205,7 +210,11 @@ const PortfolioManagementSection: React.FC<PortfolioManagementSectionProps> = ({
             Portfolio Management Integration Benefits
           </Typography>
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={4}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 4
+              }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                 <Avatar sx={{ bgcolor: 'primary.light', color: 'primary.dark', width: 40, height: 40 }}>
                   <SpeedIcon />
@@ -220,7 +229,11 @@ const PortfolioManagementSection: React.FC<PortfolioManagementSectionProps> = ({
                 </Box>
               </Box>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 4
+              }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                 <Avatar sx={{ bgcolor: 'success.light', color: 'success.dark', width: 40, height: 40 }}>
                   <SecurityIcon />
@@ -235,7 +248,11 @@ const PortfolioManagementSection: React.FC<PortfolioManagementSectionProps> = ({
                 </Box>
               </Box>
             </Grid>
-            <Grid item xs={12} sm={4}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 4
+              }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
                 <Avatar sx={{ bgcolor: 'info.light', color: 'info.dark', width: 40, height: 40 }}>
                   <AssessmentIcon />

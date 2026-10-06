@@ -265,7 +265,13 @@ const WorkflowExecutor: React.FC = () => {
       
       <Grid container spacing={3}>
         {templates.map((template) => (
-          <Grid item xs={12} md={6} lg={4} key={template.workflow_id}>
+          <Grid
+            key={template.workflow_id}
+            size={{
+              xs: 12,
+              md: 6,
+              lg: 4
+            }}>
             <Card 
               sx={{ 
                 cursor: 'pointer',
@@ -481,23 +487,23 @@ const WorkflowExecutor: React.FC = () => {
         {executionDialog && (
           <Box>
             <Grid container spacing={2} mb={3}>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="subtitle2">Execution ID</Typography>
                 <Typography variant="body2" fontFamily="monospace">
                   {executionDialog.execution_id}
                 </Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="subtitle2">Workflow</Typography>
                 <Typography variant="body2">
                   {executionDialog.workflow_id}
                 </Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="subtitle2">Status</Typography>
                 <Chip label={executionDialog.status} size="small" />
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="subtitle2">Duration</Typography>
                 <Typography variant="body2">
                   {formatDuration(executionDialog.total_execution_time_ms)}
@@ -580,25 +586,25 @@ const WorkflowExecutor: React.FC = () => {
                   Execution Summary
                 </Typography>
                 <Grid container spacing={2}>
-                  <Grid item xs={3}>
+                  <Grid size={3}>
                     <Typography variant="subtitle2">Success Rate</Typography>
                     <Typography variant="h6" color="primary">
                       {(executionDialog.summary.success_rate * 100).toFixed(1)}%
                     </Typography>
                   </Grid>
-                  <Grid item xs={3}>
+                  <Grid size={3}>
                     <Typography variant="subtitle2">Total Alerts</Typography>
                     <Typography variant="h6" color="warning.main">
                       {executionDialog.summary.total_alerts}
                     </Typography>
                   </Grid>
-                  <Grid item xs={3}>
+                  <Grid size={3}>
                     <Typography variant="subtitle2">Completed Nodes</Typography>
                     <Typography variant="h6" color="success.main">
                       {executionDialog.summary.completed_nodes}
                     </Typography>
                   </Grid>
-                  <Grid item xs={3}>
+                  <Grid size={3}>
                     <Typography variant="subtitle2">Failed Nodes</Typography>
                     <Typography variant="h6" color="error.main">
                       {executionDialog.summary.failed_nodes}

@@ -66,15 +66,6 @@ export interface ComplianceCheckRequest {
   client_data: Record<string, any>;
 }
 
-export interface RuleDeploymentRequest {
-  rule_name: string;
-  rule_content: string;
-}
-
-export interface RuleValidationRequest {
-  rule_content: string;
-}
-
 export interface SearchRulesParams {
   query: string;
   category?: string;
@@ -82,9 +73,10 @@ export interface SearchRulesParams {
 
 export interface RulesStatus {
   engine_status: string;
+  engine: string;
   timestamp: string;
   user: string;
-  rules_status: Record<string, any>;
+  rule_versions: Record<string, string>;
 }
 
 export const rulesService = {
@@ -147,59 +139,6 @@ export const rulesService = {
   // Check compliance
   async checkCompliance(request: ComplianceCheckRequest): Promise<RuleExecutionResult> {
     return api.post<RuleExecutionResult>('/rules/check-compliance', request);
-  },
-
-  // Deploy rules
-  async deployRules(request: RuleDeploymentRequest): Promise<{
-    status: string;
-    message: string;
-    deployed_by: string;
-    deployment_time: string;
-  }> {
-    return api.post('/rules/deploy', request);
-  },
-
-  // Deploy rules from file
-  async deployRulesFromFile(ruleName: string, file: File): Promise<{
-    status: string;
-    message: string;
-    deployed_by: string;
-    deployment_time: string;
-  }> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('rule_name', ruleName);
-
-    return api.post('/rules/deploy-file', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-  },
-
-  // Validate rule syntax
-  async validateRuleSyntax(request: RuleValidationRequest): Promise<{
-    valid: boolean;
-    errors?: string[];
-    warnings?: string[];
-    validated_by: string;
-    validation_time: string;
-  }> {
-    return api.post('/rules/validate', request);
-  },
-
-  // Get rule templates
-  async getRuleTemplates(): Promise<{
-    templates: Record<string, {
-      name: string;
-      description: string;
-      template: string;
-    }>;
-    total_templates: number;
-    requested_by: string;
-    timestamp: string;
-  }> {
-    return api.get('/rules/templates');
   },
 
   // Test equity pricing

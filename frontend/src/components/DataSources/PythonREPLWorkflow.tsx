@@ -156,7 +156,11 @@ const PythonREPLWorkflow: React.FC<PythonREPLWorkflowProps> = ({ open, onClose, 
 
           {isHealthy && replHealth.capabilities && (
             <Grid container spacing={2}>
-              <Grid item xs={6} md={3}>
+              <Grid
+                size={{
+                  xs: 6,
+                  md: 3
+                }}>
                 <Box sx={{ textAlign: 'center' }}>
                   <SpeedIcon color="primary" />
                   <Typography variant="caption" display="block">
@@ -164,7 +168,11 @@ const PythonREPLWorkflow: React.FC<PythonREPLWorkflowProps> = ({ open, onClose, 
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={6} md={3}>
+              <Grid
+                size={{
+                  xs: 6,
+                  md: 3
+                }}>
                 <Box sx={{ textAlign: 'center' }}>
                   <MemoryIcon color="primary" />
                   <Typography variant="caption" display="block">
@@ -172,7 +180,11 @@ const PythonREPLWorkflow: React.FC<PythonREPLWorkflowProps> = ({ open, onClose, 
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={6} md={3}>
+              <Grid
+                size={{
+                  xs: 6,
+                  md: 3
+                }}>
                 <Box sx={{ textAlign: 'center' }}>
                   <CodeIcon color="primary" />
                   <Typography variant="caption" display="block">
@@ -180,7 +192,11 @@ const PythonREPLWorkflow: React.FC<PythonREPLWorkflowProps> = ({ open, onClose, 
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={6} md={3}>
+              <Grid
+                size={{
+                  xs: 6,
+                  md: 3
+                }}>
                 <Box sx={{ textAlign: 'center' }}>
                   <SecurityIcon color="primary" />
                   <Typography variant="caption" display="block">
@@ -231,7 +247,12 @@ const PythonREPLWorkflow: React.FC<PythonREPLWorkflowProps> = ({ open, onClose, 
           <AccordionDetails>
             <Grid container spacing={2}>
               {Object.entries(templates.templates).map(([key, template]: [string, any]) => (
-                <Grid item xs={12} md={6} key={key}>
+                <Grid
+                  key={key}
+                  size={{
+                    xs: 12,
+                    md: 6
+                  }}>
                   <Card 
                     sx={{ 
                       cursor: 'pointer',

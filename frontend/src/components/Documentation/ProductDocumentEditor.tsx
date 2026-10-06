@@ -269,11 +269,27 @@ export const ProductDocumentEditor: React.FC<ProductDocumentEditorProps> = ({
         )}
 
         <Grid container spacing={3}>
-          <Grid item xs={12}><Typography variant="h6">Basic Information</Typography></Grid>
-          <Grid item xs={12} md={6}><TextField fullWidth label="Document Title" value={formData.title} onChange={(e) => handleInputChange('title', e.target.value)} required /></Grid>
-          <Grid item xs={12} md={6}><TextField fullWidth label="Product Name" value={formData.product_name} onChange={(e) => handleInputChange('product_name', e.target.value)} required /></Grid>
-          <Grid item xs={12} md={4}><TextField fullWidth label="Version" value={formData.version} onChange={(e) => handleInputChange('version', e.target.value)} required /></Grid>
-          <Grid item xs={12} md={4}>
+          <Grid size={12}><Typography variant="h6">Basic Information</Typography></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}><TextField fullWidth label="Document Title" value={formData.title} onChange={(e) => handleInputChange('title', e.target.value)} required /></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}><TextField fullWidth label="Product Name" value={formData.product_name} onChange={(e) => handleInputChange('product_name', e.target.value)} required /></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4
+            }}><TextField fullWidth label="Version" value={formData.version} onChange={(e) => handleInputChange('version', e.target.value)} required /></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4
+            }}>
             <FormControl fullWidth>
               <InputLabel>Status</InputLabel>
               <Select value={formData.status} label="Status" onChange={(e) => handleInputChange('status', e.target.value)}>
@@ -284,22 +300,50 @@ export const ProductDocumentEditor: React.FC<ProductDocumentEditorProps> = ({
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} md={4}><TextField fullWidth label="Owner" value={formData.owner} onChange={(e) => handleInputChange('owner', e.target.value)} required /></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4
+            }}><TextField fullWidth label="Owner" value={formData.owner} onChange={(e) => handleInputChange('owner', e.target.value)} required /></Grid>
 
-          <Grid item xs={12}><Typography variant="h6">Stakeholders & Users</Typography></Grid>
-          <Grid item xs={12} md={6}>{renderArrayField('Stakeholders', 'stakeholders', newStakeholder, setNewStakeholder)}</Grid>
-          <Grid item xs={12} md={6}>{renderArrayField('Target Users', 'target_users', newTargetUser, setNewTargetUser)}</Grid>
-          <Grid item xs={12} md={6}>{renderArrayField('Use Cases', 'use_cases', newUseCase, setNewUseCase)}</Grid>
-          <Grid item xs={12} md={6}>{renderArrayField('Primary Tech', 'primary_tech', newTech, setNewTech)}</Grid>
-          <Grid item xs={12}>{renderArrayField('Regulatory Considerations', 'regulatory_considerations', newRegulatory, setNewRegulatory)}</Grid>
+          <Grid size={12}><Typography variant="h6">Stakeholders & Users</Typography></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>{renderArrayField('Stakeholders', 'stakeholders', newStakeholder, setNewStakeholder)}</Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>{renderArrayField('Target Users', 'target_users', newTargetUser, setNewTargetUser)}</Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>{renderArrayField('Use Cases', 'use_cases', newUseCase, setNewUseCase)}</Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>{renderArrayField('Primary Tech', 'primary_tech', newTech, setNewTech)}</Grid>
+          <Grid size={12}>{renderArrayField('Regulatory Considerations', 'regulatory_considerations', newRegulatory, setNewRegulatory)}</Grid>
 
-          <Grid item xs={12}><Typography variant="h6">Requirements</Typography></Grid>
-          <Grid item xs={12} md={6}><TextField fullWidth label="SLA Requirements" value={formData.sla_requirements} onChange={(e) => handleInputChange('sla_requirements', e.target.value)} multiline rows={3} /></Grid>
-          <Grid item xs={12} md={6}><TextField fullWidth label="Data Residency" value={formData.data_residency} onChange={(e) => handleInputChange('data_residency', e.target.value)} /></Grid>
+          <Grid size={12}><Typography variant="h6">Requirements</Typography></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}><TextField fullWidth label="SLA Requirements" value={formData.sla_requirements} onChange={(e) => handleInputChange('sla_requirements', e.target.value)} multiline rows={3} /></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}><TextField fullWidth label="Data Residency" value={formData.data_residency} onChange={(e) => handleInputChange('data_residency', e.target.value)} /></Grid>
 
-          <Grid item xs={12}><Typography variant="h6">Document Content</Typography></Grid>
+          <Grid size={12}><Typography variant="h6">Document Content</Typography></Grid>
           {sections.map((section, index) => (
-            <Grid item xs={12} key={section.order}>
+            <Grid key={section.order} size={12}>
               <Paper variant="outlined" sx={{ p: 2 }}>
                 <Typography variant="subtitle1" gutterBottom>{section.title}</Typography>
                 <MarkdownEditor value={section.content} onChange={(value: string) => handleSectionChange(index, value)} placeholder={`Enter content for ${section.title}...`} minHeight={200} />

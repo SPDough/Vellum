@@ -87,7 +87,13 @@ const DataStreamMonitor: React.FC<DataStreamMonitorProps> = ({ streams }) => {
       ) : (
         <Grid container spacing={3}>
           {streams.map((stream) => (
-            <Grid item xs={12} md={6} lg={4} key={stream.id}>
+            <Grid
+              key={stream.id}
+              size={{
+                xs: 12,
+                md: 6,
+                lg: 4
+              }}>
               <Card sx={{ borderRadius: 3 }}>
                 <CardContent>
                   {/* Header */}
