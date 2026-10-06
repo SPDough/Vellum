@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "pricing_alerts.stale_market_data_warning.v1",
+  "payload": {
+    "rule_id": "pricing_alerts.stale_market_data_warning",
+    "rule_name": "Stale market data warning",
+    "rule_family": "pricing_alerts",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags pricing calculated from market data older than 30 minutes. Ported from drools/equity-pricing-rules.drl \"Stale Market Data Warning\".",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["EquityPricingRequest", "MarketData"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      ">": [{ "var": "market.data_age_minutes" }, 30]
+    },
+    "severity": "medium",
+    "materiality": {
+      "mode": "static",
+      "value": "immaterial"
+    },
+    "outcome": {
+      "result_code": "STALE_DATA",
+      "result_type": "flag",
+      "create_exception": false,
+      "create_reconciliation_break": false,
+      "open_workflow_case": false,
+      "require_approval": false,
+      "explanation_template": "Market data for {{pricing.symbol}} is {{market.data_age_minutes}} minutes old; pricing may be unreliable."
+    },
+    "evidence": {
+      "fields": ["pricing.request_id", "pricing.symbol", "market.data_age_minutes"]
+    },
+    "test_cases": [
+      { "name": "market data over 30 minutes old", "expected_result": "triggered" },
+      { "name": "market data under 30 minutes old", "expected_result": "not_triggered" }
+    ],
+    "tags": ["pricing_alerts", "deterministic"]
+  }
+}

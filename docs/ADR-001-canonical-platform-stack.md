@@ -18,7 +18,7 @@ Otomeshon spans multiple repositories (`Vellum` backend + UIs, `otomeshon-portal
 | **Agentic workflows** | **LangGraph** for branching / tool-using automation (not for simple cron DAGs) |
 | **Reasoning LLM** | **Anthropic Claude** as primary chat/reasoning provider when `ANTHROPIC_API_KEY` is set |
 | **Embeddings** | **OpenAI `text-embedding-3-small`** as primary embedding model when `OPENAI_API_KEY` is set (pgvector dimensions must match 1536 for this model) |
-| **Frontend** | **Product UI:** [`otomeshon-portal`](https://github.com/SPDough/otomeshon-portal) — Vite + React 18 + React Router + MUI. In-repo `Vellum/frontend` (Next.js) is non-canonical reference only. |
+| **Frontend** | **Vite + React 18 + React Router + MUI v7**; **no Tailwind** in product UIs; Radix primitives allowed only where MUI does not cover a11y needs. `Vellum/frontend` has been migrated off Next.js onto this stack; the sibling [`otomeshon-portal`](https://github.com/SPDough/otomeshon-portal) repo targets the same stack. |
 | **Local dev** | **Docker Compose** (`docker-compose.dev.yml`) for integrated services |
 | **Scheduled / cloud orchestration** | **Prefect Cloud** (free tier) for managed work pools; API URL via `PREFECT_API_URL` |
 
@@ -33,13 +33,12 @@ Otomeshon spans multiple repositories (`Vellum` backend + UIs, `otomeshon-portal
 | `PREFECT_API_URL` | e.g. `http://prefect-server:4200/api` (Compose) or Prefect Cloud API URL |
 | `PREFECT_API_KEY` | Prefect Cloud API key (unset for local server profile) |
 | `PREFECT_WORK_POOL` | Prefect work pool name for worker processes (e.g. `default-agent-pool`) |
-| `STARTUP_ENABLE_TEMPORAL` | Default **`false`** in dev Compose; Temporal retained only during migration |
 
 ## Consequences
 
-- **Temporal**: phased deprecation; new deterministic pipelines should be Prefect flows.
-- **`Vellum/frontend` (Next.js)**: non-canonical reference only; product UI is **otomeshon-portal**.
-- **Two frontends temporarily**: allowed during cleanup, but both must target this stack document for API conventions (`/api/v1/...`).
+- **Temporal**: fully removed; all deterministic pipelines are Prefect flows.
+- **`Vellum/frontend`**: migrated off Next.js onto Vite + React Router + MUI v7.
+- **Two frontends**: `Vellum/frontend` and `otomeshon-portal` both target this stack document for framework and API conventions.
 
 ## References
 

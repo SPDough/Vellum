@@ -90,10 +90,30 @@ const Transactions: React.FC = () => {
       </Typography>
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">Compared transactions</Typography><Typography variant="h5">{mockTransactions.length}</Typography></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">Matched trades</Typography><Typography variant="h5">{mockTransactions.filter((t) => t.breakType === 'MATCHED').length}</Typography></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">Open transaction breaks</Typography><Typography variant="h5" color="warning.main">{mockTransactions.filter((t) => t.breakType !== 'MATCHED').length}</Typography></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">Net notional tracked</Typography><Typography variant="h5">{formatCurrency(mockTransactions.reduce((sum, txn) => sum + txn.netAmount, 0))}</Typography></CardContent></Card></Grid>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}><Card><CardContent><Typography color="text.secondary">Compared transactions</Typography><Typography variant="h5">{mockTransactions.length}</Typography></CardContent></Card></Grid>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}><Card><CardContent><Typography color="text.secondary">Matched trades</Typography><Typography variant="h5">{mockTransactions.filter((t) => t.breakType === 'MATCHED').length}</Typography></CardContent></Card></Grid>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}><Card><CardContent><Typography color="text.secondary">Open transaction breaks</Typography><Typography variant="h5" color="warning.main">{mockTransactions.filter((t) => t.breakType !== 'MATCHED').length}</Typography></CardContent></Card></Grid>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}><Card><CardContent><Typography color="text.secondary">Net notional tracked</Typography><Typography variant="h5">{formatCurrency(mockTransactions.reduce((sum, txn) => sum + txn.netAmount, 0))}</Typography></CardContent></Card></Grid>
       </Grid>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, gap: 2 }}>

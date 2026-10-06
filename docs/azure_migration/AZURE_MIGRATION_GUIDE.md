@@ -25,7 +25,7 @@ The Otomeshon platform is designed as a microservices architecture with the foll
 - **Frontend**: React 18 with TypeScript
 - **Databases**: PostgreSQL (with pgvector), Neo4j, Redis
 - **Message Queue**: Apache Kafka
-- **Workflow Engine**: Temporal
+- **Workflow Engine**: Prefect
 - **Authentication**: Keycloak
 - **Monitoring**: Prometheus + Grafana + Jaeger
 - **AI/ML**: LangChain, LangGraph, Ollama

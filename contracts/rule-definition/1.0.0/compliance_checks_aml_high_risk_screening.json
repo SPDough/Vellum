@@ -1,0 +1,46 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "compliance_checks.aml_high_risk_screening.v1",
+  "payload": {
+    "rule_id": "compliance_checks.aml_high_risk_screening",
+    "rule_name": "AML high risk screening",
+    "rule_family": "compliance_checks",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags trades over $10,000 for high-AML-risk clients. Ported from drools/custodian-banking-rules.drl \"AML High Risk Screening\".",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Trade", "Client"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "and": [
+        { ">": [{ "var": "trade.trade_value" }, 10000] },
+        { "==": [{ "var": "client.aml_risk_rating" }, "HIGH"] }
+      ]
+    },
+    "severity": "high",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "AML_HIGH_RISK",
+      "result_type": "flag",
+      "create_exception": false,
+      "create_reconciliation_break": false,
+      "open_workflow_case": false,
+      "require_approval": false,
+      "explanation_template": "Client {{client.client_id}} is high AML risk; trade {{trade.trade_id}} value {{trade.trade_value}} requires AML review."
+    },
+    "evidence": {
+      "fields": ["trade.trade_id", "trade.trade_value", "client.client_id", "client.aml_risk_rating"]
+    },
+    "test_cases": [
+      { "name": "large trade with high AML risk client", "expected_result": "triggered" },
+      { "name": "small trade or low AML risk client", "expected_result": "not_triggered" }
+    ],
+    "tags": ["compliance_checks", "deterministic"]
+  }
+}

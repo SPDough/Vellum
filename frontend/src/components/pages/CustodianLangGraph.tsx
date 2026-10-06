@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -301,7 +299,12 @@ const CustodianLangGraph: React.FC = () => {
 
           <Grid container spacing={2}>
             {custodians.map((custodian) => (
-              <Grid item xs={12} md={6} key={custodian.name}>
+              <Grid
+                key={custodian.name}
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <Card>
                   <CardContent>
                     <Typography variant="h6">{custodian.name}</Typography>

@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "risk_management.market_hours_check.v1",
+  "payload": {
+    "rule_id": "risk_management.market_hours_check",
+    "rule_name": "Market hours check",
+    "rule_family": "risk_management",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags trades executed outside market hours. Ported from drools/custodian-banking-rules.drl \"Market Hours Check\".",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Trade"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "==": [{ "var": "derived.is_market_open" }, false]
+    },
+    "severity": "low",
+    "materiality": {
+      "mode": "static",
+      "value": "immaterial"
+    },
+    "outcome": {
+      "result_code": "OUTSIDE_MARKET_HOURS",
+      "result_type": "flag",
+      "create_exception": false,
+      "create_reconciliation_break": false,
+      "open_workflow_case": false,
+      "require_approval": false,
+      "explanation_template": "Trade {{trade.trade_id}} was executed outside market hours for {{trade.security_id}}."
+    },
+    "evidence": {
+      "fields": ["trade.trade_id", "trade.security_id"]
+    },
+    "test_cases": [
+      { "name": "trade outside market hours", "expected_result": "triggered" },
+      { "name": "trade during market hours", "expected_result": "not_triggered" }
+    ],
+    "tags": ["risk_management", "deterministic"]
+  }
+}

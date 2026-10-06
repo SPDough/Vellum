@@ -1,0 +1,46 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "risk_management.overnight_risk_limit.v1",
+  "payload": {
+    "rule_id": "risk_management.overnight_risk_limit",
+    "rule_name": "Overnight risk limit",
+    "rule_family": "risk_management",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags large trades executed outside business hours for approval. Ported from drools/custodian-banking-rules.drl \"Overnight Risk Limit\".",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Trade"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "and": [
+        { ">": [{ "var": "trade.trade_value" }, 5000000] },
+        { "==": [{ "var": "derived.is_outside_business_hours" }, true] }
+      ]
+    },
+    "severity": "high",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "OVERNIGHT_RISK",
+      "result_type": "flag",
+      "create_exception": false,
+      "create_reconciliation_break": false,
+      "open_workflow_case": false,
+      "require_approval": true,
+      "explanation_template": "Trade {{trade.trade_id}} value {{trade.trade_value}} was executed outside business hours and requires approval."
+    },
+    "evidence": {
+      "fields": ["trade.trade_id", "trade.trade_value"]
+    },
+    "test_cases": [
+      { "name": "large trade outside business hours", "expected_result": "triggered" },
+      { "name": "large trade during business hours", "expected_result": "not_triggered" }
+    ],
+    "tags": ["risk_management", "deterministic"]
+  }
+}

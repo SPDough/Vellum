@@ -48,10 +48,11 @@ import { rulesService, Rule, RulesCatalog } from '../../services/rulesService';
 const categoryConfig = {
   trade_validation: { icon: <Assessment />, color: 'primary' },
   risk_management: { icon: <Security />, color: 'error' },
-  compliance: { icon: <Security />, color: 'warning' },
-  settlement: { icon: <Speed />, color: 'info' },
-  market_timing: { icon: <TrendingUp />, color: 'secondary' },
-  pricing: { icon: <TrendingUp />, color: 'success' },
+  compliance_checks: { icon: <Security />, color: 'warning' },
+  settlement_processing: { icon: <Speed />, color: 'info' },
+  pricing_alerts: { icon: <TrendingUp />, color: 'success' },
+  custody: { icon: <Assessment />, color: 'secondary' },
+  reconciliation: { icon: <Speed />, color: 'secondary' },
 };
 
 const RulesCatalogPage: React.FC = () => {
@@ -147,20 +148,48 @@ const RulesCatalogPage: React.FC = () => {
 
       {catalog && (
         <Grid container spacing={3} mb={3}>
-          <Grid item xs={12} sm={6} md={3}><Card sx={{ textAlign: 'center', p: 2 }}><Typography variant="h4" color="primary">{catalog.summary.total_rules}</Typography><Typography variant="body2" color="text.secondary">Total rules</Typography></Card></Grid>
-          <Grid item xs={12} sm={6} md={3}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'success.light', color: 'success.contrastText' }}><Typography variant="h4">{catalog.summary.total_categories}</Typography><Typography variant="body2">Rule domains</Typography></Card></Grid>
-          <Grid item xs={12} sm={6} md={3}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'warning.light', color: 'warning.contrastText' }}><Typography variant="h4">9</Typography><Typography variant="body2">Break classes covered</Typography></Card></Grid>
-          <Grid item xs={12} sm={6} md={3}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'error.light', color: 'error.contrastText' }}><Typography variant="h4">Rules First</Typography><Typography variant="body2">Authority principle</Typography></Card></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}><Card sx={{ textAlign: 'center', p: 2 }}><Typography variant="h4" color="primary">{catalog.summary.total_rules}</Typography><Typography variant="body2" color="text.secondary">Total rules</Typography></Card></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'success.light', color: 'success.contrastText' }}><Typography variant="h4">{catalog.summary.total_categories}</Typography><Typography variant="body2">Rule domains</Typography></Card></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'warning.light', color: 'warning.contrastText' }}><Typography variant="h4">9</Typography><Typography variant="body2">Break classes covered</Typography></Card></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'error.light', color: 'error.contrastText' }}><Typography variant="h4">Rules First</Typography><Typography variant="body2">Authority principle</Typography></Card></Grid>
         </Grid>
       )}
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" mb={2}>Search deterministic controls</Typography>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={6}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>
             <TextField fullWidth label="Search rules..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} InputProps={{ startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} /> }} />
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 4
+            }}>
             <FormControl fullWidth>
               <InputLabel>Category Filter</InputLabel>
               <Select value={selectedCategory} label="Category Filter" onChange={(e) => setSelectedCategory(e.target.value)}>
@@ -169,7 +198,11 @@ const RulesCatalogPage: React.FC = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} md={2}><Button fullWidth variant="outlined" startIcon={<FilterList />} onClick={performSearch}>Search</Button></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              md: 2
+            }}><Button fullWidth variant="outlined" startIcon={<FilterList />} onClick={performSearch}>Search</Button></Grid>
         </Grid>
 
         {searchResults.length > 0 && (
@@ -207,13 +240,21 @@ const RulesCatalogPage: React.FC = () => {
         <DialogContent>
           {selectedRule && (
             <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <Typography variant="subtitle2" gutterBottom>Description</Typography>
                 <Typography variant="body2" paragraph>{selectedRule.description}</Typography>
                 <Typography variant="subtitle2" gutterBottom>Trigger Condition</Typography>
                 <Paper sx={{ p: 2, bgcolor: 'grey.100', fontFamily: 'monospace' }}>{selectedRule.trigger_condition}</Paper>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid
+                size={{
+                  xs: 12,
+                  md: 6
+                }}>
                 <Typography variant="subtitle2" gutterBottom>Actions</Typography>
                 <List dense>{selectedRule.actions.map((action, index) => <ListItem key={index}><ListItemText primary={action} /></ListItem>)}</List>
               </Grid>

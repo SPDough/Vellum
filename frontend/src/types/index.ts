@@ -154,7 +154,6 @@ export interface WorkflowExecution {
   duration_seconds?: number;
   requires_human_review: boolean;
   human_review_reason?: string;
-  temporal_workflow_id?: string;
 }
 
 export enum WorkflowStatus {

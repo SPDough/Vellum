@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "trade_validation.weekend_settlement_check.v1",
+  "payload": {
+    "rule_id": "trade_validation.weekend_settlement_check",
+    "rule_name": "Weekend settlement check",
+    "rule_family": "trade_validation",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Alerts when a trade's settlement date falls on a weekend. Ported from drools/custodian-banking-rules.drl \"Weekend Settlement Check\".",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Trade"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "==": [{ "var": "derived.settlement_is_weekend" }, true]
+    },
+    "severity": "medium",
+    "materiality": {
+      "mode": "static",
+      "value": "immaterial"
+    },
+    "outcome": {
+      "result_code": "WEEKEND_SETTLEMENT",
+      "result_type": "flag",
+      "create_exception": false,
+      "create_reconciliation_break": false,
+      "open_workflow_case": false,
+      "require_approval": false,
+      "explanation_template": "Trade {{trade.trade_id}} settlement date {{trade.settlement_date}} falls on a weekend and will move to the next business day."
+    },
+    "evidence": {
+      "fields": ["trade.trade_id", "trade.settlement_date"]
+    },
+    "test_cases": [
+      { "name": "settlement date on Saturday", "expected_result": "triggered" },
+      { "name": "settlement date on weekday", "expected_result": "not_triggered" }
+    ],
+    "tags": ["trade_validation", "deterministic"]
+  }
+}

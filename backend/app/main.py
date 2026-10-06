@@ -31,7 +31,6 @@ from app.integrations.bootstrap import register_default_providers
 from app.services.kafka_service import kafka_service
 from app.services.knowledge_graph_sync_service import kg_sync_service
 from app.services.neo4j_service import neo4j_service
-from app.services.temporal_service import temporal_service
 
 logger = logging.getLogger(__name__)
 
@@ -85,22 +84,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
                 raise
             logger.warning("Continuing without Kafka: %s", exc)
 
-    if settings.startup_enable_temporal:
-        try:
-            await temporal_service.start()
-        except Exception as exc:
-            logger.exception("Temporal start failed")
-            if settings.environment == "production":
-                raise
-            logger.warning("Continuing without Temporal: %s", exc)
-
     yield
 
-    if settings.startup_enable_temporal:
-        try:
-            await temporal_service.stop()
-        except Exception as exc:
-            logger.warning("Temporal stop: %s", exc)
     if settings.startup_enable_kafka:
         try:
             await kafka_service.stop()

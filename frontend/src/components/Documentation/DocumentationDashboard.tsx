@@ -166,16 +166,40 @@ export const DocumentationDashboard: React.FC<DocumentationDashboardProps> = ({ 
 
       {stats && (
         <Grid container spacing={3} mb={3}>
-          <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">Total Documents</Typography><Typography variant="h4">{stats.total_documents}</Typography></CardContent></Card></Grid>
-          <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">In Review</Typography><Typography variant="h4" color="warning.main">{stats.documents_by_status.Review || 0}</Typography></CardContent></Card></Grid>
-          <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">Approved</Typography><Typography variant="h4" color="success.main">{stats.documents_by_status.Approved || 0}</Typography></CardContent></Card></Grid>
-          <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">Drafts</Typography><Typography variant="h4">{stats.documents_by_status.Draft || 0}</Typography></CardContent></Card></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}><Card><CardContent><Typography color="text.secondary">Total Documents</Typography><Typography variant="h4">{stats.total_documents}</Typography></CardContent></Card></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}><Card><CardContent><Typography color="text.secondary">In Review</Typography><Typography variant="h4" color="warning.main">{stats.documents_by_status.Review || 0}</Typography></CardContent></Card></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}><Card><CardContent><Typography color="text.secondary">Approved</Typography><Typography variant="h4" color="success.main">{stats.documents_by_status.Approved || 0}</Typography></CardContent></Card></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}><Card><CardContent><Typography color="text.secondary">Drafts</Typography><Typography variant="h4">{stats.documents_by_status.Draft || 0}</Typography></CardContent></Card></Grid>
         </Grid>
       )}
 
       <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={6}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 6
+            }}>
             <TextField
               fullWidth
               placeholder="Search documents..."
@@ -184,12 +208,20 @@ export const DocumentationDashboard: React.FC<DocumentationDashboardProps> = ({ 
               InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }}
             />
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 3
+            }}>
             <TextField select fullWidth label="Status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <MenuItem value="all">All Statuses</MenuItem><MenuItem value="Draft">Draft</MenuItem><MenuItem value="Review">Review</MenuItem><MenuItem value="Approved">Approved</MenuItem><MenuItem value="Deprecated">Deprecated</MenuItem>
             </TextField>
           </Grid>
-          <Grid item xs={12} md={3}>
+          <Grid
+            size={{
+              xs: 12,
+              md: 3
+            }}>
             <TextField select fullWidth label="Owner" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
               <MenuItem value="all">All Owners</MenuItem>
               {Object.keys(stats?.documents_by_owner || {}).map((owner) => <MenuItem key={owner} value={owner}>{owner}</MenuItem>)}
@@ -214,7 +246,7 @@ export const DocumentationDashboard: React.FC<DocumentationDashboardProps> = ({ 
           ) : (
             <Grid container spacing={2}>
               {filteredDocuments.map((document) => (
-                <Grid item xs={12} key={document.id}>
+                <Grid key={document.id} size={12}>
                   <Card>
                     <CardContent>
                       <Box display="flex" justifyContent="space-between" alignItems="flex-start">

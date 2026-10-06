@@ -69,10 +69,30 @@ const Positions: React.FC = () => {
       </Typography>
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">Compared position records</Typography><Typography variant="h5">{mockPositions.length}</Typography></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">Downstream market value</Typography><Typography variant="h5">{formatCurrency(mockPositions.reduce((sum, pos) => sum + pos.marketValue, 0))}</Typography></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">Open position breaks</Typography><Typography variant="h5" color="warning.main">{mockPositions.filter((pos) => pos.breakType !== 'MATCHED').length}</Typography></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">Comparison surfaces</Typography><Typography variant="h5">2</Typography></CardContent></Card></Grid>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}><Card><CardContent><Typography color="text.secondary">Compared position records</Typography><Typography variant="h5">{mockPositions.length}</Typography></CardContent></Card></Grid>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}><Card><CardContent><Typography color="text.secondary">Downstream market value</Typography><Typography variant="h5">{formatCurrency(mockPositions.reduce((sum, pos) => sum + pos.marketValue, 0))}</Typography></CardContent></Card></Grid>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}><Card><CardContent><Typography color="text.secondary">Open position breaks</Typography><Typography variant="h5" color="warning.main">{mockPositions.filter((pos) => pos.breakType !== 'MATCHED').length}</Typography></CardContent></Card></Grid>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}><Card><CardContent><Typography color="text.secondary">Comparison surfaces</Typography><Typography variant="h5">2</Typography></CardContent></Card></Grid>
       </Grid>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>

@@ -1,5 +1,7 @@
 # Workflow Configuration System
 
+> **Scope**: this covers the `langchain_service.py` / `langgraph_service.py` workflow-builder/CRUD feature (parameter and node configuration UI). It is unrelated to the separate `backend/app/ai/langgraph_workflows/` scaffold (knowledge agent + rules orchestration).
+
 ## Overview
 
 The Workflow Configuration System provides a comprehensive interface for viewing and modifying LangGraph and LangChain workflow parameters, nodes, and execution settings within the Otomeshon platform.

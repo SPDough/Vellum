@@ -4,14 +4,53 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, UTC
+from functools import lru_cache
 from typing import Any, Dict
 from uuid import uuid4
+
+PLACEHOLDER_PATTERN = re.compile(r'\{\{([^}]+)\}\}')
+
+# Rule-set names callers already use (matching the old DroolsService
+# execute_rules rule_set argument) mapped to this engine's rule_family tags.
+RULE_SET_TO_GROUP = {
+    'trade-validation': 'trade_validation',
+    'risk-management': 'risk_management',
+    'compliance-checks': 'compliance_checks',
+    'settlement-processing': 'settlement_processing',
+    'equity-pricing': 'pricing_alerts',
+}
 
 from app.integrations.contracts.registry import get_contract_registry
 
 from .jsonlogic import JsonLogicEvaluator, JsonLogicEvaluationError
 from .models import RuleEvaluationOutcome
 from .registry import get_rule_registry
+
+# Maps each ported rule_id to the legacy Drools fact class name its outcome
+# should be reported as, so callers migrated off DroolsService (API routes,
+# LangGraph nodes) can keep filtering actions_triggered by "type" unchanged.
+LEGACY_ACTION_TYPE = {
+    'trade_validation.large_trade_alert': 'Alert',
+    'trade_validation.settlement_date_validation': 'ValidationError',
+    'trade_validation.weekend_settlement_check': 'Alert',
+    'trade_validation.zero_price_validation': 'ValidationError',
+    'risk_management.position_limit_check': 'RiskAlert',
+    'risk_management.concentration_risk_check': 'RiskAlert',
+    'risk_management.overnight_risk_limit': 'RiskAlert',
+    'risk_management.high_frequency_trading_detection': 'RiskAlert',
+    'risk_management.market_hours_check': 'Alert',
+    'compliance_checks.kyc_status_check': 'ComplianceAlert',
+    'compliance_checks.aml_high_risk_screening': 'ComplianceAlert',
+    'compliance_checks.stale_kyc_review': 'ComplianceAlert',
+    'compliance_checks.sanctioned_country_check': 'ComplianceAlert',
+    'settlement_processing.cash_availability_check': 'Alert',
+    'settlement_processing.settlement_cutoff_time': 'Alert',
+    'settlement_processing.corporate_action_pending': 'Alert',
+    'pricing_alerts.price_variance_check': 'PricingAlert',
+    'pricing_alerts.stale_market_data_warning': 'PricingAlert',
+    'pricing_alerts.zero_negative_price_validation': 'PricingAlert',
+    'pricing_alerts.low_confidence_price_warning': 'PricingAlert',
+}
 
 
 class RuleEngine:
@@ -45,6 +84,53 @@ class RuleEngine:
                 evaluation_status='error',
                 result=result,
             )
+
+    def evaluate_rule_group(self, group: str, facts: Dict[str, Any], version: str = '1.0.0') -> Dict[str, Any]:
+        """Evaluate every active rule tagged with `group` against shared facts.
+
+        Returns a DroolsService.RuleResult-shaped dict (rule_name, status,
+        facts_processed, rules_fired, actions_triggered, execution_time_ms,
+        error_message) so callers migrated off Drools need minimal changes.
+        """
+        start = datetime.now(UTC)
+        rule_ids = self.rule_registry.list_rule_ids_by_tag(group, version)
+
+        rules_fired = []
+        actions_triggered = []
+        error_messages = []
+
+        for rule_id in rule_ids:
+            outcome = self.evaluate_rule(rule_id, version, facts)
+            if outcome.evaluation_status == 'error':
+                error_messages.append(outcome.result['payload'].get('error_message', ''))
+                continue
+            if outcome.triggered:
+                rules_fired.append(rule_id)
+                actions_triggered.append(self._to_legacy_action(rule_id, outcome.result))
+
+        execution_time_ms = (datetime.now(UTC) - start).total_seconds() * 1000
+
+        return {
+            'rule_name': group,
+            'status': 'failed' if error_messages and not rules_fired else 'success',
+            'facts_processed': 1,
+            'rules_fired': rules_fired,
+            'actions_triggered': actions_triggered,
+            'execution_time_ms': execution_time_ms,
+            'error_message': '; '.join(error_messages) if error_messages else None,
+        }
+
+    def _to_legacy_action(self, rule_id: str, result: Dict[str, Any]) -> Dict[str, Any]:
+        payload = result['payload']
+        evidence = payload.get('evidence_snapshot') or {}
+        return {
+            'type': LEGACY_ACTION_TYPE.get(rule_id, 'Alert'),
+            'code': payload.get('result_code', ''),
+            'message': payload.get('explanation', ''),
+            'trade_id': evidence.get('trade.trade_id') or evidence.get('pricing.request_id', ''),
+            'severity': payload.get('severity', ''),
+            'timestamp': payload.get('evaluated_at', ''),
+        }
 
     def _resolve_rule_family(self, rule_family: str, facts: Dict[str, Any]) -> str:
         """Map coarse families to concrete indexed definitions when needed."""
@@ -138,10 +224,14 @@ class RuleEngine:
         template = outcome.get('explanation_template', '')
         if not template:
             return 'Rule triggered.' if triggered else 'Rule did not trigger.'
-        rendered = template
-        # Replace {{dotted.path}} placeholders from facts (payload.*, derived.*, …).
-        for key in re.findall(r'\{\{([a-zA-Z0-9_.]+)\}\}', template):
-            placeholder = '{{' + key + '}}'
-            value = self.evaluator.evaluate({'var': key}, facts)
-            rendered = rendered.replace(placeholder, '' if value is None else str(value))
-        return rendered
+
+        def substitute(match: re.Match) -> str:
+            value = self.evaluator.evaluate({'var': match.group(1)}, facts)
+            return '' if value is None else str(value)
+
+        return PLACEHOLDER_PATTERN.sub(substitute, template)
+
+
+@lru_cache(maxsize=1)
+def get_rule_engine() -> RuleEngine:
+    return RuleEngine()

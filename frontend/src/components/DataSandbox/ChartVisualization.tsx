@@ -266,7 +266,12 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({
           </Typography>
           
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 3
+              }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Chart Type</InputLabel>
                 <Select
@@ -283,7 +288,12 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 3
+              }}>
               <FormControl fullWidth size="small">
                 <InputLabel>X-Axis</InputLabel>
                 <Select
@@ -300,7 +310,12 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 3
+              }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Y-Axis</InputLabel>
                 <Select
@@ -317,7 +332,12 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 3
+              }}>
               <FormControl fullWidth size="small">
                 <InputLabel>Group By (Optional)</InputLabel>
                 <Select
@@ -366,7 +386,11 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({
             </Typography>
             
             <Grid container spacing={2}>
-              <Grid item xs={6} sm={3}>
+              <Grid
+                size={{
+                  xs: 6,
+                  sm: 3
+                }}>
                 <Typography variant="body2" color="text.secondary">
                   Data Points
                 </Typography>
@@ -377,7 +401,11 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({
               
               {numericFields.includes(yAxis) && (
                 <>
-                  <Grid item xs={6} sm={3}>
+                  <Grid
+                    size={{
+                      xs: 6,
+                      sm: 3
+                    }}>
                     <Typography variant="body2" color="text.secondary">
                       Max {yAxis}
                     </Typography>
@@ -386,7 +414,11 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({
                     </Typography>
                   </Grid>
                   
-                  <Grid item xs={6} sm={3}>
+                  <Grid
+                    size={{
+                      xs: 6,
+                      sm: 3
+                    }}>
                     <Typography variant="body2" color="text.secondary">
                       Min {yAxis}
                     </Typography>
@@ -395,7 +427,11 @@ const ChartVisualization: React.FC<ChartVisualizationProps> = ({
                     </Typography>
                   </Grid>
                   
-                  <Grid item xs={6} sm={3}>
+                  <Grid
+                    size={{
+                      xs: 6,
+                      sm: 3
+                    }}>
                     <Typography variant="body2" color="text.secondary">
                       Avg {yAxis}
                     </Typography>

@@ -212,10 +212,30 @@ const WorkflowManagement: React.FC = () => {
 
       {workflowSummary && (
         <Grid container spacing={3} mb={3}>
-          <Grid item xs={12} sm={6} md={3}><Card sx={{ textAlign: 'center', p: 2 }}><Typography variant="h4" color="primary">{workflowSummary.summary.total_workflows}</Typography><Typography variant="body2" color="text.secondary">Total workflows</Typography></Card></Grid>
-          <Grid item xs={12} sm={6} md={3}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}><Typography variant="h4">{workflowSummary.summary.langchain_count}</Typography><Typography variant="body2">AI assist workflows</Typography></Card></Grid>
-          <Grid item xs={12} sm={6} md={3}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'secondary.light', color: 'secondary.contrastText' }}><Typography variant="h4">{workflowSummary.summary.langgraph_count}</Typography><Typography variant="body2">Orchestration graphs</Typography></Card></Grid>
-          <Grid item xs={12} sm={6} md={3}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.200' }}><Typography variant="h4">{workflowSummary.summary.standard_count}</Typography><Typography variant="body2">Standard control flows</Typography></Card></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}><Card sx={{ textAlign: 'center', p: 2 }}><Typography variant="h4" color="primary">{workflowSummary.summary.total_workflows}</Typography><Typography variant="body2" color="text.secondary">Total workflows</Typography></Card></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}><Typography variant="h4">{workflowSummary.summary.langchain_count}</Typography><Typography variant="body2">AI assist workflows</Typography></Card></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'secondary.light', color: 'secondary.contrastText' }}><Typography variant="h4">{workflowSummary.summary.langgraph_count}</Typography><Typography variant="body2">Orchestration graphs</Typography></Card></Grid>
+          <Grid
+            size={{
+              xs: 12,
+              sm: 6,
+              md: 3
+            }}><Card sx={{ textAlign: 'center', p: 2, bgcolor: 'grey.200' }}><Typography variant="h4">{workflowSummary.summary.standard_count}</Typography><Typography variant="body2">Standard control flows</Typography></Card></Grid>
         </Grid>
       )}
 
@@ -248,11 +268,19 @@ const WorkflowManagement: React.FC = () => {
         </AccordionSummary>
         <AccordionDetails>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
+            <Grid
+              size={{
+                xs: 12,
+                md: 6
+              }}>
               <Typography variant="subtitle1" mb={2}>Langchain templates</Typography>
               <List>{langchainTemplates.map((template, index) => <ListItem key={index}><ListItemText primary={template.name} secondary={template.description} /></ListItem>)}</List>
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid
+              size={{
+                xs: 12,
+                md: 6
+              }}>
               <Typography variant="subtitle1" mb={2}>Langgraph templates</Typography>
               <List>{langgraphTemplates.map((template, index) => <ListItem key={index}><ListItemText primary={template.class_name} secondary={template.description} /></ListItem>)}</List>
             </Grid>

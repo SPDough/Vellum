@@ -167,7 +167,7 @@ const MCPDataConnector: React.FC<MCPDataConnectorProps> = ({ onDataSourceCreated
 
       {/* MCP Data Streams */}
       <Grid container spacing={3}>
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Card sx={{ borderRadius: 2 }}>
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
@@ -244,7 +244,7 @@ const MCPDataConnector: React.FC<MCPDataConnectorProps> = ({ onDataSourceCreated
         </Grid>
 
         {/* Connected MCP Servers Overview */}
-        <Grid item xs={12}>
+        <Grid size={12}>
           <Card sx={{ borderRadius: 2 }}>
             <CardContent>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
@@ -254,7 +254,13 @@ const MCPDataConnector: React.FC<MCPDataConnectorProps> = ({ onDataSourceCreated
               {mcpServers && mcpServers.length > 0 ? (
                 <Grid container spacing={2}>
                   {mcpServers.map((server) => (
-                    <Grid item xs={12} sm={6} md={4} key={server.id}>
+                    <Grid
+                      key={server.id}
+                      size={{
+                        xs: 12,
+                        sm: 6,
+                        md: 4
+                      }}>
                       <Card variant="outlined" sx={{ borderRadius: 2 }}>
                         <CardContent>
                           <Typography variant="body1" sx={{ fontWeight: 600, mb: 1 }}>
@@ -295,7 +301,7 @@ const MCPDataConnector: React.FC<MCPDataConnectorProps> = ({ onDataSourceCreated
         <DialogTitle>Connect MCP Data Stream</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <FormControl fullWidth>
                 <InputLabel>MCP Server</InputLabel>
                 <Select
@@ -312,7 +318,7 @@ const MCPDataConnector: React.FC<MCPDataConnectorProps> = ({ onDataSourceCreated
               </FormControl>
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 label="Stream Name"
@@ -323,7 +329,7 @@ const MCPDataConnector: React.FC<MCPDataConnectorProps> = ({ onDataSourceCreated
               />
             </Grid>
             
-            <Grid item xs={12}>
+            <Grid size={12}>
               <TextField
                 fullWidth
                 label="Data Source Name"

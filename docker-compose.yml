@@ -56,25 +56,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # Temporal (all-in-one dev setup)
-  temporal:
-    image: temporalio/auto-setup:1.25
-    environment:
-      DB: postgresql
-      POSTGRES_USER: app
-      POSTGRES_PWD: ${POSTGRES_PASSWORD:-changeme}
-      POSTGRES_SEEDS: db
-      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
-    ports: [ "7233:7233", "8233:8233" ]
-    depends_on:
-      db:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "tctl", "--address", "temporal:7233", "cluster", "health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   # Keycloak OIDC provider
   keycloak:
     image: keycloak/keycloak:25.0
@@ -123,20 +104,6 @@ services:
       timeout: 10s
       retries: 3
 
-  # Drools 9 Rules Engine (using Kogito)
-  drools:
-    image: quay.io/kiegroup/kogito-runtime-jvm:latest
-    ports: [ "8090:8080" ]
-    environment:
-      QUARKUS_HTTP_PORT: 8080
-    volumes:
-      - ./drools:/home/kogito/serverless-workflow-project/src/main/resources
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/q/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   # FastAPI Backend with LangGraph
   api:
     build: ./backend
@@ -146,15 +113,12 @@ services:
       NEO4J_USER: neo4j
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-changeme}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      TEMPORAL_HOST: temporal
-      TEMPORAL_PORT: 7233
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_SERVICE_NAME: otomeshon-api
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       OLLAMA_BASE_URL: http://ollama:11434
       KEYCLOAK_URL: http://keycloak:8080
-      DROOLS_URL: http://drools:8080
       LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
       LANGCHAIN_TRACING_V2: "true"
       LANGCHAIN_PROJECT: otomeshon
@@ -166,8 +130,6 @@ services:
       neo4j:
         condition: service_healthy
       kafka:
-        condition: service_healthy
-      temporal:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

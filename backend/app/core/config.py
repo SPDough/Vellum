@@ -39,10 +39,6 @@ class Settings(BaseSettings):
         default="kafka:9092", alias="KAFKA_BOOTSTRAP_SERVERS"
     )
 
-    # Temporal
-    temporal_host: str = Field(default="temporal", alias="TEMPORAL_HOST")
-    temporal_port: int = Field(default=7233, alias="TEMPORAL_PORT")
-
     # LLM APIs
     openai_api_key: Optional[str] = Field(default=None, alias="OPENAI_API_KEY")
     anthropic_api_key: Optional[str] = Field(default=None, alias="ANTHROPIC_API_KEY")
@@ -74,9 +70,6 @@ class Settings(BaseSettings):
         default="changeme-jwt-secret-key-for-production-use-32-chars-min",
         alias="JWT_SECRET_KEY",
     )
-
-    # Rules Engine
-    drools_url: str = Field(default="http://drools:8080", alias="DROOLS_URL")
 
     # Observability
     otel_exporter_otlp_endpoint: str = Field(
@@ -126,7 +119,6 @@ class Settings(BaseSettings):
     # Optional infrastructure at startup (Postgres-first defaults for local / oversight path)
     startup_enable_neo4j: bool = Field(default=False, alias="STARTUP_ENABLE_NEO4J")
     startup_enable_kafka: bool = Field(default=False, alias="STARTUP_ENABLE_KAFKA")
-    startup_enable_temporal: bool = Field(default=False, alias="STARTUP_ENABLE_TEMPORAL")
     startup_enable_kg_sync: bool = Field(default=False, alias="STARTUP_ENABLE_KG_SYNC")
 
     # When True, requests without a valid Bearer token are rejected (production).
@@ -270,7 +262,6 @@ def get_settings() -> Settings:
         os.environ.setdefault("ENVIRONMENT", "testing")
         os.environ.setdefault("STARTUP_ENABLE_NEO4J", "false")
         os.environ.setdefault("STARTUP_ENABLE_KAFKA", "false")
-        os.environ.setdefault("STARTUP_ENABLE_TEMPORAL", "false")
         os.environ.setdefault("STARTUP_ENABLE_KG_SYNC", "false")
         return Settings()
 

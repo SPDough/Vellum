@@ -68,7 +68,7 @@ The simplified backend (`app/main_simple.py`) includes:
 | `/api/v1/data-sandbox/export` | POST | Export data |
 | `/docs` | GET | Interactive API documentation |
 
-### Frontend (React + Vite)
+### Frontend (Next.js)
 
 The frontend development server includes:
 
@@ -222,5 +222,5 @@ docker-compose -f docker-compose.dev.yml up -d
 - **API Documentation**: http://localhost:8000/docs (when backend is running)
 - **React DevTools**: Install browser extension for debugging
 - **FastAPI Documentation**: https://fastapi.tiangolo.com/
-- **Vite Documentation**: https://vitejs.dev/
+- **Next.js Documentation**: https://nextjs.org/docs
 - **Material-UI Documentation**: https://mui.com/

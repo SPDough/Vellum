@@ -31,19 +31,14 @@ async def list_native_rule_definitions() -> List[Dict[str, Any]]:
     """List versioned JSON rule definitions from the contracts registry."""
     loader = RuleLoader()
     definitions: List[Dict[str, Any]] = []
-    for (rule_family, version), filename in sorted(loader.RULE_INDEX.items()):
-        try:
-            record = loader.load_rule(rule_family, version)
-        except FileNotFoundError:
-            continue
+    for record in loader.list_rule_definitions("1.0.0"):
         payload = record.definition.get("payload", {})
         definitions.append(
             {
-                "rule_family": rule_family,
-                "version": version,
-                "filename": filename,
-                "rule_id": payload.get("rule_id", rule_family),
-                "rule_name": payload.get("rule_name", rule_family),
+                "rule_family": record.rule_family,
+                "version": record.version,
+                "rule_id": payload.get("rule_id", record.rule_family),
+                "rule_name": payload.get("rule_name", record.rule_family),
                 "status": payload.get("status", "unknown"),
                 "expression_language": payload.get("expression_language"),
                 "determinism_class": payload.get("determinism_class"),

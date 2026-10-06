@@ -49,9 +49,7 @@ The Otomeshon banking platform uses a tiered dependency structure to reduce comp
 
 ### Infrastructure (`requirements-infrastructure.txt`) 
 - Kafka message streaming
-- Temporal workflow engine
 - Redis caching
-- Drools rules engine
 - Data analysis tools
 
 ### Observability (`requirements-observability.txt`)
@@ -104,7 +102,6 @@ The following dependencies were removed from the original `requirements.txt` as 
 
 ### Moved to Optional Tiers
 - Kafka dependencies → `requirements-infrastructure.txt`
-- Temporal dependencies → `requirements-infrastructure.txt` 
 - AI/LLM dependencies → `requirements-ai.txt`
 - Monitoring dependencies → `requirements-observability.txt`
 

@@ -136,10 +136,30 @@ const Reconciliation: React.FC = () => {
       </Typography>
 
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">Today's control runs</Typography><Typography variant="h5">{mockReconciliationRuns.length}</Typography></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">Aggregate match rate</Typography><Typography variant="h5" color="success.main">{calculateMatchRate(mockReconciliationRuns.reduce((s, r) => s + r.matchedRecords, 0), mockReconciliationRuns.reduce((s, r) => s + r.totalRecords, 0))}%</Typography></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">Open workflow exceptions</Typography><Typography variant="h5" color="warning.main">{mockExceptions.filter((exc) => exc.status === 'OPEN').length}</Typography></CardContent></Card></Grid>
-        <Grid item xs={12} sm={6} md={3}><Card><CardContent><Typography color="text.secondary">High-priority breaks</Typography><Typography variant="h5" color="error.main">{mockExceptions.filter((exc) => exc.severity === 'HIGH').length}</Typography></CardContent></Card></Grid>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}><Card><CardContent><Typography color="text.secondary">Today's control runs</Typography><Typography variant="h5">{mockReconciliationRuns.length}</Typography></CardContent></Card></Grid>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}><Card><CardContent><Typography color="text.secondary">Aggregate match rate</Typography><Typography variant="h5" color="success.main">{calculateMatchRate(mockReconciliationRuns.reduce((s, r) => s + r.matchedRecords, 0), mockReconciliationRuns.reduce((s, r) => s + r.totalRecords, 0))}%</Typography></CardContent></Card></Grid>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}><Card><CardContent><Typography color="text.secondary">Open workflow exceptions</Typography><Typography variant="h5" color="warning.main">{mockExceptions.filter((exc) => exc.status === 'OPEN').length}</Typography></CardContent></Card></Grid>
+        <Grid
+          size={{
+            xs: 12,
+            sm: 6,
+            md: 3
+          }}><Card><CardContent><Typography color="text.secondary">High-priority breaks</Typography><Typography variant="h5" color="error.main">{mockExceptions.filter((exc) => exc.severity === 'HIGH').length}</Typography></CardContent></Card></Grid>
       </Grid>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>

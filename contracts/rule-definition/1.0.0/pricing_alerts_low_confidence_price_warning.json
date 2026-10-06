@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "pricing_alerts.low_confidence_price_warning.v1",
+  "payload": {
+    "rule_id": "pricing_alerts.low_confidence_price_warning",
+    "rule_name": "Low confidence price warning",
+    "rule_family": "pricing_alerts",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags pricing completed with confidence below 0.50. Ported from drools/equity-pricing-rules.drl \"Low Confidence Price Warning\".",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["EquityPricingRequest"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      "<": [{ "var": "pricing.confidence" }, 0.5]
+    },
+    "severity": "high",
+    "materiality": {
+      "mode": "static",
+      "value": "immaterial"
+    },
+    "outcome": {
+      "result_code": "LOW_CONFIDENCE",
+      "result_type": "flag",
+      "create_exception": false,
+      "create_reconciliation_break": false,
+      "open_workflow_case": false,
+      "require_approval": false,
+      "explanation_template": "Pricing for {{pricing.symbol}} completed with low confidence {{pricing.confidence}} — manual review recommended."
+    },
+    "evidence": {
+      "fields": ["pricing.request_id", "pricing.symbol", "pricing.confidence"]
+    },
+    "test_cases": [
+      { "name": "confidence below 0.50", "expected_result": "triggered" },
+      { "name": "confidence at or above 0.50", "expected_result": "not_triggered" }
+    ],
+    "tags": ["pricing_alerts", "deterministic"]
+  }
+}

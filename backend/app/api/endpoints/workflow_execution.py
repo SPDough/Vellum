@@ -2,8 +2,8 @@
 Workflow Execution API Endpoints for Otomeshon Custodian Portal
 
 Provides REST API endpoints for configuring, executing, and monitoring
-workflows that combine Drools rules engine with LangGraph agent workflows
-for comprehensive custodian banking automation.
+workflows that combine Vellum's native rules engine with LangGraph agent
+workflows for comprehensive custodian banking automation.
 """
 
 from datetime import datetime
@@ -497,7 +497,7 @@ async def get_supported_node_types(current_user: User = Depends(get_current_user
         node_types = {
             "RULES_ENGINE": {
                 "name": "Rules Engine",
-                "description": "Execute Drools business rules",
+                "description": "Execute Vellum native business rules",
                 "config_schema": {
                     "rule_sets": {
                         "type": "array",

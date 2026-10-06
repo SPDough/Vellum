@@ -5,25 +5,18 @@ This document is the first-pass truth source for `Vellum-main`.
 ## Current source-of-truth decisions
 
 - `Vellum-main` is the primary product repository.
-- The frontend target architecture is **Next.js App Router**.
+- The frontend target architecture is **Vite + React 18 + React Router + MUI v7** (migrated off Next.js).
 - The backend primary API contract is **`/api/v1/...`**.
 - The real backend entrypoint is **`backend/app/main.py`**.
 - The simplified backend entrypoint **`backend/app/main_simple.py`** is **demo/dev-only**.
-- The separate `otomeshon-custodian-portal-main` repository is a **UI reference / donor only**, not a replacement foundation.
+- The sibling [`otomeshon-portal`](https://github.com/SPDough/otomeshon-portal) repository targets the same stack (Vite + React Router + MUI) and the same `/api/v1/...` backend contract.
 
 ## Frontend truth
 
-The repository currently contains two frontend shapes:
-
-1. **Next.js App Router** under `frontend/app/*` (legacy / in-repo reference)
-2. **Legacy SPA entry files** under `frontend/src/main.tsx` and `frontend/src/App.tsx`
-
-**Canonical product UI (P0):** [`otomeshon-portal`](https://github.com/SPDough/otomeshon-portal)
-(`Vite + React + MUI`). Custodian oversight screens such as Position
-Reconciliation live there and call this backend under `/api/v1/...`.
-
-The in-repo `frontend/` tree is not the long-term product home. Keep it only
-as migration/reference until removed.
+`frontend/` is a Vite + React Router + MUI v7 SPA (`HashRouter`). Next.js has
+been fully removed — no `next.config.js`, no `app/` directory, no `next`
+dependency. Routes live in `frontend/src/App.tsx`; page components live under
+`frontend/src/components/pages/*`.
 
 ## Backend truth
 

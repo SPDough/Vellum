@@ -58,6 +58,11 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
+// Hydrate auth state from localStorage synchronously on load, so a page
+// refresh doesn't bounce an already-logged-in user back to /login before
+// ProtectedRoute gets a chance to see the restored state.
+useAuthStore.getState().checkAuth();
+
 // Workspace Store (Notion-style)
 interface WorkspaceState {
   currentWorkspace: Workspace | null;

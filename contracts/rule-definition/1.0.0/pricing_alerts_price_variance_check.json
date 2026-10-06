@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "pricing_alerts.price_variance_check.v1",
+  "payload": {
+    "rule_id": "pricing_alerts.price_variance_check",
+    "rule_name": "Price variance check",
+    "rule_family": "pricing_alerts",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags calculated prices that vary more than 5% from last market price. Ported from drools/equity-pricing-rules.drl \"Price Variance Check\"; the variance ratio is precomputed by pricing_service.py as pricing.variance_ratio.",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["EquityPricingRequest", "MarketData"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      ">": [{ "var": "pricing.variance_ratio" }, 0.05]
+    },
+    "severity": "high",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "PRICE_VARIANCE",
+      "result_type": "flag",
+      "create_exception": false,
+      "create_reconciliation_break": false,
+      "open_workflow_case": false,
+      "require_approval": false,
+      "explanation_template": "Calculated price variance {{pricing.variance_ratio}} for {{pricing.symbol}} exceeds the 5% threshold."
+    },
+    "evidence": {
+      "fields": ["pricing.request_id", "pricing.symbol", "pricing.variance_ratio"]
+    },
+    "test_cases": [
+      { "name": "variance over 5%", "expected_result": "triggered" },
+      { "name": "variance within 5%", "expected_result": "not_triggered" }
+    ],
+    "tags": ["pricing_alerts", "deterministic"]
+  }
+}

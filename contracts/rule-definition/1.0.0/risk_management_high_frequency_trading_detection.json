@@ -1,0 +1,43 @@
+{
+  "contract_type": "RuleDefinition",
+  "contract_version": "1.0.0",
+  "source_system": "vellum",
+  "source_type": "native-rule-registry",
+  "source_record_id": "risk_management.high_frequency_trading_detection.v1",
+  "payload": {
+    "rule_id": "risk_management.high_frequency_trading_detection",
+    "rule_name": "High frequency trading detection",
+    "rule_family": "risk_management",
+    "version": "1.0.0",
+    "status": "active",
+    "description": "Flags counterparties with 10 or more same-day trades. Ported from drools/custodian-banking-rules.drl \"High Frequency Trading Detection\" (originally a RETE accumulate; the count is precomputed as derived.same_day_trade_count).",
+    "determinism_class": "deterministic",
+    "target_contract_types": ["Trade"],
+    "expression_language": "jsonlogic",
+    "predicate": {
+      ">=": [{ "var": "derived.same_day_trade_count" }, 10]
+    },
+    "severity": "medium",
+    "materiality": {
+      "mode": "static",
+      "value": "material"
+    },
+    "outcome": {
+      "result_code": "HIGH_FREQUENCY_TRADING",
+      "result_type": "flag",
+      "create_exception": false,
+      "create_reconciliation_break": false,
+      "open_workflow_case": false,
+      "require_approval": true,
+      "explanation_template": "Counterparty {{trade.counterparty_id}} has {{derived.same_day_trade_count}} trades today, indicating a high-frequency trading pattern."
+    },
+    "evidence": {
+      "fields": ["trade.trade_id", "trade.counterparty_id"]
+    },
+    "test_cases": [
+      { "name": "10 or more same-day trades", "expected_result": "triggered" },
+      { "name": "fewer than 10 same-day trades", "expected_result": "not_triggered" }
+    ],
+    "tags": ["risk_management", "deterministic"]
+  }
+}
